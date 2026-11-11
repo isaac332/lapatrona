@@ -2,26 +2,33 @@
 
 import React from 'react';
 import { TimeframeFilter, ProductItem, SaleRecord } from '@/types/accounting';
-import { ShoppingBag, DollarSign, Award, Layers, Sparkles, RotateCcw } from 'lucide-react';
+import { ShoppingBag, DollarSign, Award, Sparkles, RotateCcw, Wallet, Calculator } from 'lucide-react';
 
 interface KPICardsProps {
   timeframe: TimeframeFilter;
   sales: SaleRecord[];
   products: ProductItem[];
+  totalExpenses: number;
   onLoadSample: () => void;
   onOpenZeroOut: () => void;
+  onOpenGastos: () => void;
+  onOpenCalculadora: () => void;
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
   timeframe,
   sales,
   products,
+  totalExpenses,
   onLoadSample,
   onOpenZeroOut,
+  onOpenGastos,
+  onOpenCalculadora,
 }) => {
   // Aggregate units and revenue
   const totalUnits = sales.reduce((acc, curr) => acc + curr.quantity, 0);
   const totalRevenue = sales.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0);
+  const netCash = totalRevenue - totalExpenses;
 
   // Top seller
   const productCountMap: Record<string, number> = {};
@@ -69,7 +76,27 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          {/* Quick Cash Change Calculator Button */}
+          <button
+            onClick={onOpenCalculadora}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 transition-colors touch-manipulation active:scale-95"
+            title="Calculadora de cambio de efectivo"
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            <span>Calcular Cambio</span>
+          </button>
+
+          {/* Quick Expense Button */}
+          <button
+            onClick={onOpenGastos}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 transition-colors touch-manipulation active:scale-95"
+            title="Registrar salida o gasto de caja"
+          >
+            <Wallet className="w-3.5 h-3.5" />
+            <span>Registrar Gasto</span>
+          </button>
+
           {sales.length > 0 && (
             <button
               onClick={onOpenZeroOut}
@@ -100,8 +127,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
       </div>
 
-      {/* 4 Sleek KPI Cards - 2x2 Grid on Mobile for Maximum Thumb Ergonomics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      {/* 5 Sleek KPI Cards - Responsive Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         
         {/* Metric 1: Total Units */}
         <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] transition-all">
@@ -124,7 +151,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
         </div>
 
-        {/* Metric 2: Estimated Revenue */}
+        {/* Metric 2: Estimated Gross Revenue */}
         <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs uppercase tracking-wider text-neutral-400 font-medium">
@@ -135,17 +162,60 @@ export const KPICards: React.FC<KPICardsProps> = ({
             </div>
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
-            <span className="font-serif text-xl sm:text-4xl font-bold text-white truncate">
+            <span className="font-serif text-xl sm:text-3xl font-bold text-white truncate">
               ${totalRevenue.toFixed(2)}
             </span>
           </div>
           <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-500 truncate">
-            Precios vigentes
+            Ingreso total acumulado
           </div>
         </div>
 
-        {/* Metric 3: Top Seller */}
-        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] transition-all">
+        {/* Metric 3: Salidas / Gastos */}
+        <div
+          onClick={onOpenGastos}
+          className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-rose-500/20 p-3 sm:p-5 hover:border-rose-500/40 cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs uppercase tracking-wider text-rose-300 font-medium">
+              Gastos Caja
+            </span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/25">
+              <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-rose-400" />
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
+            <span className="font-serif text-xl sm:text-3xl font-bold text-rose-400 truncate">
+              -${totalExpenses.toFixed(2)}
+            </span>
+          </div>
+          <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-500 group-hover:text-rose-300 transition-colors truncate">
+            Toca para ver / registrar
+          </div>
+        </div>
+
+        {/* Metric 4: Efectivo Neto en Caja */}
+        <div className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1a1e1b] to-[#141417] border border-emerald-500/30 p-3 sm:p-5 hover:border-emerald-500/50 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs uppercase tracking-wider text-emerald-300 font-bold">
+              Efectivo Neto
+            </span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
+              <span className="font-mono text-emerald-400 text-xs font-black">$</span>
+            </div>
+          </div>
+          <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
+            <span className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-400 truncate">
+              ${netCash.toFixed(2)}
+            </span>
+          </div>
+          <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-400 truncate">
+            Ventas - Gastos
+          </div>
+        </div>
+
+        {/* Metric 5: Top Seller & Combos */}
+        <div className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs uppercase tracking-wider text-neutral-400 font-medium">
               Más Vendido
@@ -159,32 +229,11 @@ export const KPICards: React.FC<KPICardsProps> = ({
               {topProduct ? topProduct.name : 'Sin ventas'}
             </div>
             <div className="text-[10px] sm:text-xs text-[#e59b38] font-mono mt-0.5 truncate">
-              {topProduct ? `${topCount} uds (${topProduct.variantLabel})` : 'Registra ventas'}
+              {topProduct ? `${topCount} uds (${comboRate}% c/papas)` : 'Registra ventas'}
             </div>
           </div>
           <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-500 truncate">
             Líder {timeframeLabels[timeframe]}
-          </div>
-        </div>
-
-        {/* Metric 4: Combo Attachment */}
-        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs uppercase tracking-wider text-neutral-400 font-medium">
-              Combos Papas
-            </span>
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/[0.08]">
-              <Layers className="w-3 h-3 sm:w-4 sm:h-4 text-amber-300" />
-            </div>
-          </div>
-          <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5">
-            <span className="font-serif text-2xl sm:text-4xl font-bold text-white">
-              {comboRate}%
-            </span>
-            <span className="text-[10px] sm:text-xs text-neutral-400">c/ papas</span>
-          </div>
-          <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-500 truncate">
-            {totalFriesCombos} de {totalMains} combos
           </div>
         </div>
 

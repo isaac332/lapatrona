@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore } from 'react';
-import { ProductItem, SaleRecord, TimeframeFilter } from '@/types/accounting';
+import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter } from '@/types/accounting';
 import { INITIAL_PRODUCTS } from '@/data/initialProducts';
 import {
   filterSalesByTimeframe,
+  filterExpensesByTimeframe,
   getProductCountsByTimeframe,
   generateSampleSales,
+  generateSampleExpenses,
   getDailyHourlyBreakdown,
   getWeeklyDailyBreakdown,
   getMonthlyWeeklyBreakdown,
@@ -22,6 +24,8 @@ import { PriceManagerModal } from '@/components/PriceManagerModal';
 import { SalesHistoryModal } from '@/components/SalesHistoryModal';
 import { ZeroOutModal } from '@/components/ZeroOutModal';
 import { CorteDeCajaModal } from '@/components/CorteDeCajaModal';
+import { GastosModal } from '@/components/GastosModal';
+import { CalculadoraCambioModal } from '@/components/CalculadoraCambioModal';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -81,12 +85,27 @@ export default function SalesCounterPage() {
     }
   });
 
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('philly_fry_expenses');
+      if (saved !== null) return JSON.parse(saved);
+      const sample = generateSampleExpenses();
+      localStorage.setItem('philly_fry_expenses', JSON.stringify(sample));
+      return sample;
+    } catch {
+      return [];
+    }
+  });
+
   const [timeframe, setTimeframe] = useState<TimeframeFilter>('today');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isZeroOutModalOpen, setIsZeroOutModalOpen] = useState(false);
   const [isCorteModalOpen, setIsCorteModalOpen] = useState(false);
+  const [isGastosModalOpen, setIsGastosModalOpen] = useState(false);
+  const [isCalculadoraModalOpen, setIsCalculadoraModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -174,9 +193,39 @@ export default function SalesCounterPage() {
     handleSaveSales(updated);
   };
 
+  // Expenses management
+  const handleSaveExpenses = (updatedExpenses: ExpenseRecord[]) => {
+    setExpenses(updatedExpenses);
+    try {
+      localStorage.setItem('philly_fry_expenses', JSON.stringify(updatedExpenses));
+    } catch (e) {
+      console.error('Failed to save expenses to localStorage', e);
+    }
+  };
+
+  const handleAddExpense = (description: string, amount: number, category: string) => {
+    const newRecord: ExpenseRecord = {
+      id: `exp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      description,
+      amount,
+      category,
+      timestamp: new Date().toISOString(),
+    };
+    const updated = [newRecord, ...expenses];
+    handleSaveExpenses(updated);
+    showToast(`✓ Salida de efectivo registrada: $${amount.toFixed(2)} (${description}).`);
+  };
+
+  const handleDeleteExpense = (expenseId: string) => {
+    const updated = expenses.filter((e) => e.id !== expenseId);
+    handleSaveExpenses(updated);
+    showToast('✓ Gasto eliminado de la contabilidad.');
+  };
+
   // ZERO OUT THE WHOLE ACCOUNTING
   const handleConfirmZeroOut = () => {
     handleSaveSales([]);
+    handleSaveExpenses([]);
     showToast('✓ Contabilidad reiniciada en ceros exitosamente.');
   };
 
@@ -184,6 +233,8 @@ export default function SalesCounterPage() {
   const handleLoadSample = () => {
     const sample = generateSampleSales(products, new Date());
     handleSaveSales(sample);
+    const sampleExp = generateSampleExpenses(new Date());
+    handleSaveExpenses(sampleExp);
     showToast('✓ Datos de prueba cargados en el sistema.');
   };
 
@@ -192,6 +243,16 @@ export default function SalesCounterPage() {
     if (!currentDate) return [];
     return filterSalesByTimeframe(sales, timeframe, currentDate);
   }, [sales, timeframe, currentDate]);
+
+  // Filter expenses for the selected timeframe
+  const filteredExpenses = useMemo(() => {
+    if (!currentDate) return [];
+    return filterExpensesByTimeframe(expenses, timeframe, currentDate);
+  }, [expenses, timeframe, currentDate]);
+
+  const totalExpensesInTimeframe = useMemo(() => {
+    return filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+  }, [filteredExpenses]);
 
   // Overall counts for Today (used in Hero banner and Daily Granular view)
   const todaySales = useMemo(() => {
@@ -288,6 +349,8 @@ export default function SalesCounterPage() {
         onOpenHistory={() => setIsHistoryModalOpen(true)}
         onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
         onOpenCorte={() => setIsCorteModalOpen(true)}
+        onOpenGastos={() => setIsGastosModalOpen(true)}
+        onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -310,8 +373,11 @@ export default function SalesCounterPage() {
             timeframe={timeframe}
             sales={filteredSales}
             products={products}
+            totalExpenses={totalExpensesInTimeframe}
             onLoadSample={handleLoadSample}
             onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
+            onOpenGastos={() => setIsGastosModalOpen(true)}
+            onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
           />
 
           {/* Section 2: Dedicated Granular Timeframe View (Day / Week / Month / Total) */}
@@ -516,6 +582,8 @@ export default function SalesCounterPage() {
         onOpenHistory={() => setIsHistoryModalOpen(true)}
         onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
         onOpenCorte={() => setIsCorteModalOpen(true)}
+        onOpenGastos={() => setIsGastosModalOpen(true)}
+        onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -553,12 +621,29 @@ export default function SalesCounterPage() {
         onClose={() => setIsCorteModalOpen(false)}
         sales={filteredSales}
         products={products}
+        expenses={filteredExpenses}
         timeframe={timeframe}
         hourlyBlocks={hourlyBlocks}
         onConfirmZeroOut={() => {
           setIsCorteModalOpen(false);
           setIsZeroOutModalOpen(true);
         }}
+      />
+
+      {/* Gastos Menores y Salidas de Caja Modal */}
+      <GastosModal
+        isOpen={isGastosModalOpen}
+        onClose={() => setIsGastosModalOpen(false)}
+        expenses={filteredExpenses}
+        timeframe={timeframe}
+        onAddExpense={handleAddExpense}
+        onDeleteExpense={handleDeleteExpense}
+      />
+
+      {/* Calculadora de Cambio Modal */}
+      <CalculadoraCambioModal
+        isOpen={isCalculadoraModalOpen}
+        onClose={() => setIsCalculadoraModalOpen(false)}
       />
     </div>
   );

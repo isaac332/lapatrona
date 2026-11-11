@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator } from 'lucide-react';
 
 interface NavbarProps {
   timeframe: TimeframeFilter;
@@ -11,6 +11,8 @@ interface NavbarProps {
   onOpenHistory: () => void;
   onOpenZeroOut: () => void;
   onOpenCorte: () => void;
+  onOpenGastos: () => void;
+  onOpenCalculadora: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -21,6 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenHistory,
   onOpenZeroOut,
   onOpenCorte,
+  onOpenGastos,
+  onOpenCalculadora,
   totalUnitsInTimeframe,
 }) => {
   const timeframeLabels: Record<TimeframeFilter, string> = {
@@ -76,6 +80,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Receipt className="w-3.5 h-3.5 text-[#e59b38]" />
             <span>Corte de Caja</span>
+          </button>
+
+          {/* GASTOS DE CAJA BUTTON */}
+          <button
+            onClick={onOpenGastos}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/25 transition-all shadow-sm active:scale-95"
+            title="Registrar salida o gasto de caja menor"
+          >
+            <Wallet className="w-3.5 h-3.5 text-rose-400" />
+            <span>Gastos</span>
+          </button>
+
+          {/* CALCULADORA DE CAMBIO BUTTON */}
+          <button
+            onClick={onOpenCalculadora}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/25 transition-all shadow-sm active:scale-95"
+            title="Calculadora rápida de cambio"
+          >
+            <Calculator className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Cambio</span>
           </button>
 
           {/* ZERO OUT ACTION BUTTON */}

@@ -1,5 +1,6 @@
 import {
   SaleRecord,
+  ExpenseRecord,
   TimeframeFilter,
   ProductItem,
   HourlyBlock,
@@ -57,6 +58,58 @@ export function filterSalesByTimeframe(
         return true;
     }
   });
+}
+
+export function filterExpensesByTimeframe(
+  expenses: ExpenseRecord[],
+  timeframe: TimeframeFilter,
+  referenceDate?: Date
+): ExpenseRecord[] {
+  if (!referenceDate) return expenses;
+
+  return expenses.filter((exp) => {
+    const expDate = new Date(exp.timestamp);
+    if (isNaN(expDate.getTime())) return false;
+
+    switch (timeframe) {
+      case 'today':
+        return isSameDay(expDate, referenceDate);
+      case 'week':
+        return isSameWeek(expDate, referenceDate);
+      case 'month':
+        return isSameMonth(expDate, referenceDate);
+      case 'all':
+      default:
+        return true;
+    }
+  });
+}
+
+export function generateSampleExpenses(referenceDate?: Date): ExpenseRecord[] {
+  const now = referenceDate || new Date();
+  return [
+    {
+      id: 'exp-1',
+      description: '2 Bolsas de Hielo para Bebidas',
+      category: 'insumos',
+      amount: 70,
+      timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'exp-2',
+      description: 'Cebollas y Pimientos en el Mercado',
+      category: 'mercado',
+      amount: 145,
+      timestamp: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'exp-3',
+      description: 'Papel manteca y servilletas',
+      category: 'insumos',
+      amount: 95,
+      timestamp: new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
 }
 
 export function getProductCountsByTimeframe(

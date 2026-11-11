@@ -20,6 +20,14 @@ export interface SaleRecord {
   unitCost: number;
 }
 
+export interface ExpenseRecord {
+  id: string;
+  description: string;
+  category: string; // 'insumos' | 'servicios' | 'mercado' | 'otro'
+  amount: number;
+  timestamp: string; // ISO string
+}
+
 export type TimeframeFilter = 'today' | 'week' | 'month' | 'all';
 
 export interface HourlyBlock {

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -11,6 +11,8 @@ interface MobileBottomDockProps {
   onOpenHistory: () => void;
   onOpenZeroOut: () => void;
   onOpenCorte: () => void;
+  onOpenGastos: () => void;
+  onOpenCalculadora: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -21,6 +23,8 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenHistory,
   onOpenZeroOut,
   onOpenCorte,
+  onOpenGastos,
+  onOpenCalculadora,
   totalUnitsInTimeframe,
 }) => {
   const tabs: { id: TimeframeFilter; label: string; icon: React.FC<{ className?: string }> }[] = [
@@ -60,22 +64,42 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
         <div className="w-[1px] h-8 bg-white/[0.08] mx-1 shrink-0" />
 
         {/* Action Icon Buttons for Thumb */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 overflow-x-auto no-scrollbar py-0.5">
           <button
             onClick={onOpenCorte}
             aria-label="Corte de caja"
             title="Ticket de Corte de Caja"
-            className="w-10 h-10 rounded-xl bg-[#e59b38]/15 active:bg-[#e59b38]/30 border border-[#e59b38]/30 flex flex-col items-center justify-center text-[#e59b38] active:scale-95 touch-manipulation select-none"
+            className="w-10 h-10 rounded-xl bg-[#e59b38]/15 active:bg-[#e59b38]/30 border border-[#e59b38]/30 flex flex-col items-center justify-center text-[#e59b38] active:scale-95 touch-manipulation select-none shrink-0"
           >
             <Receipt className="w-4 h-4" />
             <span className="text-[8px] font-bold uppercase mt-0.5">Corte</span>
           </button>
 
           <button
+            onClick={onOpenGastos}
+            aria-label="Gastos de caja"
+            title="Gastos y Salidas de Caja"
+            className="w-10 h-10 rounded-xl bg-rose-500/15 active:bg-rose-500/30 border border-rose-500/30 flex flex-col items-center justify-center text-rose-400 active:scale-95 touch-manipulation select-none shrink-0"
+          >
+            <Wallet className="w-4 h-4" />
+            <span className="text-[8px] font-bold uppercase mt-0.5">Gastos</span>
+          </button>
+
+          <button
+            onClick={onOpenCalculadora}
+            aria-label="Calculadora de cambio"
+            title="Calcular Cambio"
+            className="w-10 h-10 rounded-xl bg-emerald-500/15 active:bg-emerald-500/30 border border-emerald-500/30 flex flex-col items-center justify-center text-emerald-400 active:scale-95 touch-manipulation select-none shrink-0"
+          >
+            <Calculator className="w-4 h-4" />
+            <span className="text-[8px] font-bold uppercase mt-0.5">Cambio</span>
+          </button>
+
+          <button
             onClick={onOpenZeroOut}
             aria-label="Poner en ceros"
             title="Poner en Ceros"
-            className="w-10 h-10 rounded-xl bg-red-500/10 active:bg-red-500/25 border border-red-500/25 flex flex-col items-center justify-center text-red-400 active:scale-95 touch-manipulation select-none"
+            className="w-10 h-10 rounded-xl bg-red-500/10 active:bg-red-500/25 border border-red-500/25 flex flex-col items-center justify-center text-red-400 active:scale-95 touch-manipulation select-none shrink-0"
           >
             <RotateCcw className="w-4 h-4" />
             <span className="text-[8px] font-bold uppercase mt-0.5">Ceros</span>
@@ -85,7 +109,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             onClick={onOpenPriceManager}
             aria-label="Gestionar precios"
             title="Precios y Costos"
-            className="w-10 h-10 rounded-xl bg-white/[0.04] active:bg-white/[0.1] border border-white/[0.08] flex flex-col items-center justify-center text-neutral-300 active:scale-95 touch-manipulation select-none"
+            className="w-10 h-10 rounded-xl bg-white/[0.04] active:bg-white/[0.1] border border-white/[0.08] flex flex-col items-center justify-center text-neutral-300 active:scale-95 touch-manipulation select-none shrink-0"
           >
             <DollarSign className="w-4 h-4 text-[#e59b38]" />
             <span className="text-[8px] uppercase mt-0.5">Costos</span>
@@ -95,7 +119,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             onClick={onOpenHistory}
             aria-label="Ver registro de ventas"
             title="Libro Contable"
-            className="h-10 px-2.5 rounded-xl bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold flex flex-col items-center justify-center shadow-md active:scale-95 touch-manipulation select-none"
+            className="h-10 px-2.5 rounded-xl bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold flex flex-col items-center justify-center shadow-md active:scale-95 touch-manipulation select-none shrink-0"
           >
             <span className="text-[11px] font-mono leading-none">{totalUnitsInTimeframe}</span>
             <span className="text-[8px] uppercase tracking-wider leading-none mt-0.5">Uds</span>

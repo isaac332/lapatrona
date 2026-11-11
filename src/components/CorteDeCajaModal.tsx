@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock } from '@/types/accounting';
+import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord } from '@/types/accounting';
 import { X, Printer, RotateCcw, Receipt } from 'lucide-react';
 
 interface CorteDeCajaModalProps {
@@ -9,6 +9,7 @@ interface CorteDeCajaModalProps {
   onClose: () => void;
   sales: SaleRecord[];
   products: ProductItem[];
+  expenses: ExpenseRecord[];
   timeframe: TimeframeFilter;
   hourlyBlocks: HourlyBlock[];
   onConfirmZeroOut: () => void;
@@ -19,6 +20,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   onClose,
   sales,
   products,
+  expenses,
   timeframe,
   hourlyBlocks,
   onConfirmZeroOut,
@@ -29,6 +31,8 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
   const totalUnits = sales.reduce((sum, s) => sum + s.quantity, 0);
   const totalRevenue = sales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const netCash = totalRevenue - totalExpenses;
 
   // Group by product
   const productStats = products.map((prod) => {
@@ -116,12 +120,26 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
               </div>
             </div>
 
-            {/* Total Revenue Highlight */}
-            <div className="flex justify-between items-center py-2 border-b border-dashed border-white/20 print:border-black/30">
-              <span className="text-sm font-bold uppercase text-white print:text-black">VENTA TOTAL:</span>
-              <span className="text-xl font-bold text-[#e59b38] print:text-black">
-                ${totalRevenue.toFixed(2)} MXN
-              </span>
+            {/* Financial Summary */}
+            <div className="space-y-1.5 py-1 border-b border-dashed border-white/20 print:border-black/30">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-neutral-400 print:text-black">VENTA BRUTA TOTAL:</span>
+                <span className="font-bold text-white print:text-black">${totalRevenue.toFixed(2)} MXN</span>
+              </div>
+
+              {totalExpenses > 0 && (
+                <div className="flex justify-between items-center text-xs text-rose-400 print:text-black">
+                  <span>(-) GASTOS DE CAJA:</span>
+                  <span className="font-bold font-mono">-${totalExpenses.toFixed(2)} MXN</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-2 mt-1 border-t border-dashed border-white/10 print:border-black/20">
+                <span className="text-sm font-black uppercase text-emerald-300 print:text-black">EFECTIVO NETO:</span>
+                <span className="text-xl font-black text-emerald-400 print:text-black">
+                  ${netCash.toFixed(2)} MXN
+                </span>
+              </div>
             </div>
 
             <div className="flex justify-between items-center py-1 text-xs">
@@ -144,6 +162,21 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                   <div key={block.id} className="flex justify-between text-[11px]">
                     <span className="text-neutral-400 print:text-black">{block.label} ({block.timeRange}):</span>
                     <span>{block.count} uds • ${block.revenue.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Expenses Detail */}
+            {expenses.length > 0 && (
+              <div className="pt-2 border-t border-dashed border-white/10 print:border-black/20 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-rose-300 print:text-black">
+                  Salidas de Caja Registradas ({expenses.length}):
+                </div>
+                {expenses.map((exp) => (
+                  <div key={exp.id} className="flex justify-between text-[11px] text-neutral-400 print:text-black">
+                    <span>• {exp.description}</span>
+                    <span className="font-mono text-rose-400 print:text-black">-${exp.amount.toFixed(2)}</span>
                   </div>
                 ))}
               </div>

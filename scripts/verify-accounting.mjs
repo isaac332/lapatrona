@@ -352,4 +352,21 @@ const reloaded = mockStorage.philly_fry_sales !== null ? JSON.parse(mockStorage.
 assert.deepEqual(reloaded, [], 'Reloading after zero out must preserve empty sales array');
 console.log('✓ Zero out persistence across page reload verified');
 
-console.log('\nAll 6 accounting verification tests passed flawlessly!');
+// Test 7: Expenses Ledger & Net Cash Cut-off Calculation
+console.log('Test 7: Cash Expenses & Net Cash Discrepancy-Free Calculation');
+const sampleExpenses = [
+  { id: 'e1', description: 'Hielo', amount: 70, timestamp: '2026-11-10T14:00:00' },
+  { id: 'e2', description: 'Verdura mercado', amount: 145, timestamp: '2026-11-10T11:00:00' },
+  { id: 'e3', description: 'Papel manteca', amount: 95, timestamp: '2026-11-09T18:00:00' },
+];
+const todayExpenses = sampleExpenses.filter(e => isSameDay(new Date(e.timestamp), refDate));
+assert.equal(todayExpenses.length, 2);
+const todayExpensesTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0); // 70 + 145 = 215
+assert.equal(todayExpensesTotal, 215);
+
+const grossSalesToday = 3000;
+const netCashToday = grossSalesToday - todayExpensesTotal;
+assert.equal(netCashToday, 2785, 'Net cash must equal Gross Sales minus Expenses without discrepancy');
+console.log('✓ Cash expenses filtering and net cash cut-off calculations verified');
+
+console.log('\nAll 7 accounting verification tests passed flawlessly!');
