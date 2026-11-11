@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter } from '@/types/accounting';
+import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod } from '@/types/accounting';
 import { INITIAL_PRODUCTS } from '@/data/initialProducts';
 import {
   filterSalesByTimeframe,
@@ -26,7 +26,7 @@ import { ZeroOutModal } from '@/components/ZeroOutModal';
 import { CorteDeCajaModal } from '@/components/CorteDeCajaModal';
 import { GastosModal } from '@/components/GastosModal';
 import { CalculadoraCambioModal } from '@/components/CalculadoraCambioModal';
-import { CheckCircle2, RotateCcw } from 'lucide-react';
+import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 const subscribe = () => () => {};
 
@@ -100,6 +100,7 @@ export default function SalesCounterPage() {
 
   const [timeframe, setTimeframe] = useState<TimeframeFilter>('today');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('efectivo');
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isZeroOutModalOpen, setIsZeroOutModalOpen] = useState(false);
@@ -166,11 +167,24 @@ export default function SalesCounterPage() {
         quantity: 1,
         unitPrice: targetProduct.defaultPrice,
         unitCost: targetProduct.cost,
+        paymentMethod: selectedPaymentMethod,
       });
     }
 
     const updated = [...newRecords, ...sales];
     handleSaveSales(updated);
+  };
+
+  // Update payment method of a past sale (from audit ledger)
+  const handleUpdateSalePaymentMethod = (saleId: string, newMethod: PaymentMethod) => {
+    const updated = sales.map((s) => (s.id === saleId ? { ...s, paymentMethod: newMethod } : s));
+    handleSaveSales(updated);
+    const methodNames: Record<PaymentMethod, string> = {
+      efectivo: 'Efectivo',
+      tarjeta: 'Tarjeta / Clip',
+      transferencia: 'Transferencia SPEI',
+    };
+    showToast(`✓ Método de pago cambiado a ${methodNames[newMethod]}.`);
   };
 
   // Decrement: remove latest sale for this product
@@ -394,41 +408,80 @@ export default function SalesCounterPage() {
           {/* Section 3: Products & Sales Counter Grid */}
           <div ref={productsSectionRef} className="pt-2 sm:pt-6 space-y-4 sm:space-y-6">
             
-            {/* Header with Category Filter Chips */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 border-b border-white/[0.08] pb-3 sm:pb-5">
-              <div>
-                <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-[#e59b38]">
-                  Registro Rápido al Mostrador
+            {/* Header with Category Filter Chips and Active Payment Selector */}
+            <div className="flex flex-col gap-3 sm:gap-4 border-b border-white/[0.08] pb-3 sm:pb-5">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
+                <div>
+                  <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-[#e59b38]">
+                    Registro Rápido al Mostrador
+                  </div>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-white mt-0.5 sm:mt-1">
+                    Mostrador de Ventas y Comandas
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-neutral-400 mt-1">
+                    Toca <span className="text-[#e59b38] font-bold">+1 Venta</span> para registrar pedidos al vuelo. Toca el <span className="text-white underline decoration-[#e59b38] underline-offset-2">precio en la tarjeta</span> para ajustarlo.
+                  </p>
                 </div>
-                <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-white mt-0.5 sm:mt-1">
-                  Mostrador de Ventas y Comandas
-                </h2>
-                <p className="text-[11px] sm:text-xs text-neutral-400 mt-1">
-                  Toca <span className="text-[#e59b38] font-bold">+1 Venta</span> para registrar pedidos al vuelo. Toca el <span className="text-white underline decoration-[#e59b38] underline-offset-2">precio en la tarjeta</span> para ajustarlo.
-                </p>
+
+                {/* Forma de Cobro Activa (Payment Mode Switcher) */}
+                <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.08] self-start sm:self-auto overflow-x-auto no-scrollbar">
+                  <span className="text-[10px] uppercase font-bold text-neutral-400 px-2 tracking-wider shrink-0">
+                    Cobro:
+                  </span>
+                  {[
+                    { id: 'efectivo', label: 'Efectivo', icon: Banknote, color: 'text-emerald-400', activeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                    { id: 'tarjeta', label: 'Tarjeta / Clip', icon: CreditCard, color: 'text-cyan-400', activeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
+                    { id: 'transferencia', label: 'Transferencia', icon: Smartphone, color: 'text-violet-400', activeBg: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
+                  ].map((m) => {
+                    const Icon = m.icon;
+                    const isActive = selectedPaymentMethod === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setSelectedPaymentMethod(m.id as PaymentMethod)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all touch-manipulation select-none active:scale-95 border ${
+                          isActive
+                            ? `${m.activeBg} font-bold shadow-sm`
+                            : 'border-transparent text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 ${isActive ? '' : m.color}`} />
+                        <span>{m.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Category Filter Pills in Mexican Spanish - Mobile Swipeable */}
-              <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06] overflow-x-auto no-scrollbar">
-                {[
-                  { id: 'all', label: 'Todos' },
-                  { id: 'sandwiches', label: 'Sándwiches' },
-                  { id: 'quesadillas', label: 'Quesadillas' },
-                  { id: 'steak-frites', label: 'Steak Frites' },
-                  { id: 'fries', label: 'Papas y Queso' },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setActiveCategoryFilter(cat.id)}
-                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium whitespace-nowrap shrink-0 touch-manipulation select-none active:scale-95 ${
-                      activeCategoryFilter === cat.id
-                        ? 'bg-[#e59b38] text-black font-semibold'
-                        : 'text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06] overflow-x-auto no-scrollbar">
+                  {[
+                    { id: 'all', label: 'Todos' },
+                    { id: 'sandwiches', label: 'Sándwiches' },
+                    { id: 'quesadillas', label: 'Quesadillas' },
+                    { id: 'steak-frites', label: 'Steak Frites' },
+                    { id: 'fries', label: 'Papas y Queso' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveCategoryFilter(cat.id)}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium whitespace-nowrap shrink-0 touch-manipulation select-none active:scale-95 ${
+                        activeCategoryFilter === cat.id
+                          ? 'bg-[#e59b38] text-black font-semibold'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="hidden md:flex items-center gap-1.5 text-[11px] text-neutral-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Cobrando en: <strong className="text-white capitalize">{selectedPaymentMethod}</strong></span>
+                </div>
               </div>
             </div>
 
@@ -603,6 +656,7 @@ export default function SalesCounterPage() {
         products={products}
         timeframe={timeframe}
         onDeleteSale={handleDeleteSale}
+        onUpdatePaymentMethod={handleUpdateSalePaymentMethod}
         onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
       />
 

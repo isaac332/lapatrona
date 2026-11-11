@@ -369,4 +369,74 @@ const netCashToday = grossSalesToday - todayExpensesTotal;
 assert.equal(netCashToday, 2785, 'Net cash must equal Gross Sales minus Expenses without discrepancy');
 console.log('✓ Cash expenses filtering and net cash cut-off calculations verified');
 
-console.log('\nAll 7 accounting verification tests passed flawlessly!');
+// Test 8: Payment Methods Breakdown & Cash Drawer Discrepancy Prevention
+console.log('Test 8: Payment Methods Breakdown (Cash vs Card vs Transfer)');
+function getPaymentBreakdown(sales) {
+  let efectivoTotal = 0;
+  let tarjetaTotal = 0;
+  let transfTotal = 0;
+  let efectivoCount = 0;
+  let tarjetaCount = 0;
+  let transfCount = 0;
+
+  for (const s of sales) {
+    const method = s.paymentMethod || 'efectivo';
+    const amount = s.quantity * s.unitPrice;
+    if (method === 'tarjeta') {
+      tarjetaTotal += amount;
+      tarjetaCount += s.quantity;
+    } else if (method === 'transferencia') {
+      transfTotal += amount;
+      transfCount += s.quantity;
+    } else {
+      efectivoTotal += amount;
+      efectivoCount += s.quantity;
+    }
+  }
+
+  const totalRevenue = efectivoTotal + tarjetaTotal + transfTotal;
+
+  return {
+    efectivo: {
+      count: efectivoCount,
+      total: efectivoTotal,
+      percentage: totalRevenue > 0 ? Math.round((efectivoTotal / totalRevenue) * 100) : 0,
+    },
+    tarjeta: {
+      count: tarjetaCount,
+      total: tarjetaTotal,
+      percentage: totalRevenue > 0 ? Math.round((tarjetaTotal / totalRevenue) * 100) : 0,
+    },
+    transferencia: {
+      count: transfCount,
+      total: transfTotal,
+      percentage: totalRevenue > 0 ? Math.round((transfTotal / totalRevenue) * 100) : 0,
+    },
+    totalRevenue,
+  };
+}
+
+const mixedSales = [
+  { id: 'm1', quantity: 5, unitPrice: 185, paymentMethod: 'efectivo' },      // 5 * 185 = $925 (Cash)
+  { id: 'm2', quantity: 3, unitPrice: 185, paymentMethod: 'tarjeta' },       // 3 * 185 = $555 (Card)
+  { id: 'm3', quantity: 2, unitPrice: 195, paymentMethod: 'transferencia' }, // 2 * 195 = $390 (Transfer)
+  { id: 'm4', quantity: 1, unitPrice: 85 },                                  // 1 * 85 = $85 (Legacy omitted paymentMethod -> Cash)
+];
+
+const breakdown = getPaymentBreakdown(mixedSales);
+assert.equal(breakdown.efectivo.total, 925 + 85); // $1,010
+assert.equal(breakdown.tarjeta.total, 555);       // $555
+assert.equal(breakdown.transferencia.total, 390); // $390
+assert.equal(breakdown.totalRevenue, 1955);       // Total: $1,955
+
+// Drawer cash reconciliation with $215 in expenses:
+const drawerCash = breakdown.efectivo.total - 215;
+assert.equal(drawerCash, 795, 'Cash in drawer must equal Cash Sales minus Cash Expenses');
+
+// Bank money reconciliation:
+const bankMoney = breakdown.tarjeta.total + breakdown.transferencia.total;
+assert.equal(bankMoney, 945, 'Bank money must equal Card Sales plus Transfer Sales');
+assert.equal(drawerCash + bankMoney + 215, breakdown.totalRevenue, 'Complete financial balance: Drawer + Bank + Expenses == Gross Sales');
+console.log('✓ Payment method breakdown and drawer/bank reconciliation verified');
+
+console.log('\nAll 8 accounting verification tests passed flawlessly!');

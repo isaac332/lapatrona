@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter, ProductItem, SaleRecord } from '@/types/accounting';
+import { getPaymentBreakdown } from '@/utils/accountingCalculations';
 import { ShoppingBag, DollarSign, Award, Sparkles, RotateCcw, Wallet, Calculator } from 'lucide-react';
 
 interface KPICardsProps {
@@ -28,7 +29,9 @@ export const KPICards: React.FC<KPICardsProps> = ({
   // Aggregate units and revenue
   const totalUnits = sales.reduce((acc, curr) => acc + curr.quantity, 0);
   const totalRevenue = sales.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0);
-  const netCash = totalRevenue - totalExpenses;
+  const paymentBreakdown = getPaymentBreakdown(sales);
+  const efectivoEnCajon = paymentBreakdown.efectivo.total - totalExpenses;
+  const dineroEnBanco = paymentBreakdown.tarjeta.total + paymentBreakdown.transferencia.total;
 
   // Top seller
   const productCountMap: Record<string, number> = {};
@@ -194,11 +197,11 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
         </div>
 
-        {/* Metric 4: Efectivo Neto en Caja */}
+        {/* Metric 4: Efectivo Físico en Cajón */}
         <div className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1a1e1b] to-[#141417] border border-emerald-500/30 p-3 sm:p-5 hover:border-emerald-500/50 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs uppercase tracking-wider text-emerald-300 font-bold">
-              Efectivo Neto
+              Efectivo en Cajón
             </span>
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
               <span className="font-mono text-emerald-400 text-xs font-black">$</span>
@@ -206,11 +209,11 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
             <span className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-400 truncate">
-              ${netCash.toFixed(2)}
+              ${efectivoEnCajon.toFixed(2)}
             </span>
           </div>
           <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-400 truncate">
-            Ventas - Gastos
+            {dineroEnBanco > 0 ? `+ $${dineroEnBanco.toFixed(0)} en banco/tarjeta` : 'Ventas Ef. - Gastos'}
           </div>
         </div>
 

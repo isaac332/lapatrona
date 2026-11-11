@@ -7,6 +7,8 @@ import {
   DailyStat,
   MonthlyWeekStat,
   ProductPerformance,
+  PaymentMethod,
+  PaymentBreakdown,
 } from '@/types/accounting';
 
 export function isSameDay(date1: Date, date2: Date): boolean {
@@ -142,6 +144,51 @@ export function getProductCountsByTimeframe(
   }
 
   return { today, week, month, all };
+}
+
+export function getPaymentBreakdown(sales: SaleRecord[]): PaymentBreakdown {
+  let efectivoTotal = 0;
+  let tarjetaTotal = 0;
+  let transfTotal = 0;
+  let efectivoCount = 0;
+  let tarjetaCount = 0;
+  let transfCount = 0;
+
+  for (const s of sales) {
+    const method = s.paymentMethod || 'efectivo';
+    const amount = s.quantity * s.unitPrice;
+    if (method === 'tarjeta') {
+      tarjetaTotal += amount;
+      tarjetaCount += s.quantity;
+    } else if (method === 'transferencia') {
+      transfTotal += amount;
+      transfCount += s.quantity;
+    } else {
+      efectivoTotal += amount;
+      efectivoCount += s.quantity;
+    }
+  }
+
+  const totalRevenue = efectivoTotal + tarjetaTotal + transfTotal;
+
+  return {
+    efectivo: {
+      count: efectivoCount,
+      total: efectivoTotal,
+      percentage: totalRevenue > 0 ? Math.round((efectivoTotal / totalRevenue) * 100) : 0,
+    },
+    tarjeta: {
+      count: tarjetaCount,
+      total: tarjetaTotal,
+      percentage: totalRevenue > 0 ? Math.round((tarjetaTotal / totalRevenue) * 100) : 0,
+    },
+    transferencia: {
+      count: transfCount,
+      total: transfTotal,
+      percentage: totalRevenue > 0 ? Math.round((transfTotal / totalRevenue) * 100) : 0,
+    },
+    totalRevenue,
+  };
 }
 
 // Granular Daily: Hourly Shift Breakdown
@@ -343,6 +390,10 @@ export function generateSampleSales(products: ProductItem[], referenceDate?: Dat
         saleDate.setTime(now.getTime() - Math.floor(Math.random() * 4 * 60 * 60 * 1000));
       }
 
+      const methodRoll = Math.random();
+      const paymentMethod: PaymentMethod =
+        methodRoll < 0.65 ? 'efectivo' : methodRoll < 0.9 ? 'tarjeta' : 'transferencia';
+
       sampleSales.push({
         id: `sample-today-${idCounter++}`,
         productId: prod.id,
@@ -350,6 +401,7 @@ export function generateSampleSales(products: ProductItem[], referenceDate?: Dat
         quantity: 1,
         unitPrice: prod.defaultPrice,
         unitCost: prod.cost,
+        paymentMethod,
       });
     }
 
@@ -360,6 +412,10 @@ export function generateSampleSales(products: ProductItem[], referenceDate?: Dat
       const saleDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
       saleDate.setHours(hourOffset, Math.floor(Math.random() * 60), 0, 0);
 
+      const methodRoll = Math.random();
+      const paymentMethod: PaymentMethod =
+        methodRoll < 0.65 ? 'efectivo' : methodRoll < 0.9 ? 'tarjeta' : 'transferencia';
+
       sampleSales.push({
         id: `sample-week-${idCounter++}`,
         productId: prod.id,
@@ -367,6 +423,7 @@ export function generateSampleSales(products: ProductItem[], referenceDate?: Dat
         quantity: 1,
         unitPrice: prod.defaultPrice,
         unitCost: prod.cost,
+        paymentMethod,
       });
     }
 
@@ -376,6 +433,10 @@ export function generateSampleSales(products: ProductItem[], referenceDate?: Dat
       const hourOffset = 12 + Math.floor(Math.random() * 9);
       const saleDate = new Date(year, month, dayOfMonth, hourOffset, Math.floor(Math.random() * 60), 0);
 
+      const methodRoll = Math.random();
+      const paymentMethod: PaymentMethod =
+        methodRoll < 0.65 ? 'efectivo' : methodRoll < 0.9 ? 'tarjeta' : 'transferencia';
+
       sampleSales.push({
         id: `sample-month-${idCounter++}`,
         productId: prod.id,
@@ -383,6 +444,7 @@ export function generateSampleSales(products: ProductItem[], referenceDate?: Dat
         quantity: 1,
         unitPrice: prod.defaultPrice,
         unitCost: prod.cost,
+        paymentMethod,
       });
     }
   }

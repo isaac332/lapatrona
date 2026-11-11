@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord } from '@/types/accounting';
+import { getPaymentBreakdown } from '@/utils/accountingCalculations';
 import { X, Printer, RotateCcw, Receipt } from 'lucide-react';
 
 interface CorteDeCajaModalProps {
@@ -32,7 +33,9 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   const totalUnits = sales.reduce((sum, s) => sum + s.quantity, 0);
   const totalRevenue = sales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const netCash = totalRevenue - totalExpenses;
+  const paymentBreakdown = getPaymentBreakdown(sales);
+  const efectivoEnCajon = paymentBreakdown.efectivo.total - totalExpenses;
+  const dineroEnBanco = paymentBreakdown.tarjeta.total + paymentBreakdown.transferencia.total;
 
   // Group by product
   const productStats = products.map((prod) => {
@@ -120,8 +123,33 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
               </div>
             </div>
 
-            {/* Financial Summary */}
-            <div className="space-y-1.5 py-1 border-b border-dashed border-white/20 print:border-black/30">
+            {/* Breakdown by Payment Method */}
+            <div className="py-2 border-b border-dashed border-white/20 print:border-black/30 space-y-1.5">
+              <div className="text-[10px] uppercase font-bold text-neutral-400 print:text-black">
+                Desglose por Forma de Pago:
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-neutral-300 print:text-black">💵 Efectivo ({paymentBreakdown.efectivo.count} pedidos):</span>
+                <span className="font-mono font-bold text-white print:text-black">
+                  ${paymentBreakdown.efectivo.total.toFixed(2)} ({paymentBreakdown.efectivo.percentage}%)
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-neutral-300 print:text-black">💳 Tarjeta / Clip ({paymentBreakdown.tarjeta.count} pedidos):</span>
+                <span className="font-mono font-bold text-white print:text-black">
+                  ${paymentBreakdown.tarjeta.total.toFixed(2)} ({paymentBreakdown.tarjeta.percentage}%)
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-neutral-300 print:text-black">📱 Transferencia ({paymentBreakdown.transferencia.count} pedidos):</span>
+                <span className="font-mono font-bold text-white print:text-black">
+                  ${paymentBreakdown.transferencia.total.toFixed(2)} ({paymentBreakdown.transferencia.percentage}%)
+                </span>
+              </div>
+            </div>
+
+            {/* Financial Summary & Cash Drawer Reconciliation */}
+            <div className="space-y-1.5 py-2 border-b border-dashed border-white/20 print:border-black/30">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400 print:text-black">VENTA BRUTA TOTAL:</span>
                 <span className="font-bold text-white print:text-black">${totalRevenue.toFixed(2)} MXN</span>
@@ -129,15 +157,31 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
               {totalExpenses > 0 && (
                 <div className="flex justify-between items-center text-xs text-rose-400 print:text-black">
-                  <span>(-) GASTOS DE CAJA:</span>
+                  <span>(-) GASTOS / SALIDAS DE CAJA:</span>
                   <span className="font-bold font-mono">-${totalExpenses.toFixed(2)} MXN</span>
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-2 mt-1 border-t border-dashed border-white/10 print:border-black/20">
-                <span className="text-sm font-black uppercase text-emerald-300 print:text-black">EFECTIVO NETO:</span>
-                <span className="text-xl font-black text-emerald-400 print:text-black">
-                  ${netCash.toFixed(2)} MXN
+              {/* Exact physical cash in drawer */}
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 print:border-black/40 print:bg-transparent mt-1 space-y-0.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-black uppercase text-emerald-300 print:text-black">
+                    EFECTIVO FÍSICO EN CAJÓN:
+                  </span>
+                  <span className="text-lg font-black font-mono text-emerald-400 print:text-black">
+                    ${efectivoEnCajon.toFixed(2)} MXN
+                  </span>
+                </div>
+                <div className="text-[9px] text-neutral-400 print:text-neutral-600">
+                  (Ventas Efectivo ${paymentBreakdown.efectivo.total.toFixed(0)} - Gastos ${totalExpenses.toFixed(0)})
+                </div>
+              </div>
+
+              {/* Bank and Terminal money */}
+              <div className="flex justify-between items-center text-xs pt-1 text-cyan-300 print:text-black">
+                <span>DINERO EN BANCO / CLIP:</span>
+                <span className="font-bold font-mono text-cyan-400 print:text-black">
+                  ${dineroEnBanco.toFixed(2)} MXN
                 </span>
               </div>
             </div>

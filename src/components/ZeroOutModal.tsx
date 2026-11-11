@@ -39,11 +39,19 @@ export const ZeroOutModal: React.FC<ZeroOutModalProps> = ({
       'Precio Unitario ($)',
       'Total ($)',
       'Costo Insumo ($)',
+      'Forma de Pago',
     ];
 
     const rows = sales.map((s) => {
       const prod = productMap.get(s.productId);
       const total = (s.quantity * s.unitPrice).toFixed(2);
+      const methodLabel =
+        s.paymentMethod === 'tarjeta'
+          ? 'Tarjeta / Clip'
+          : s.paymentMethod === 'transferencia'
+          ? 'Transferencia SPEI'
+          : 'Efectivo';
+
       return [
         s.id,
         new Date(s.timestamp).toLocaleString('es-MX'),
@@ -53,6 +61,7 @@ export const ZeroOutModal: React.FC<ZeroOutModalProps> = ({
         s.unitPrice.toFixed(2),
         total,
         s.unitCost.toFixed(2),
+        `"${methodLabel}"`,
       ].join(',');
     });
 

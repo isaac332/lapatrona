@@ -11,6 +11,8 @@ export interface ProductItem {
   cost: number; // costo de insumos por unidad
 }
 
+export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia';
+
 export interface SaleRecord {
   id: string;
   productId: string;
@@ -18,6 +20,7 @@ export interface SaleRecord {
   quantity: number;
   unitPrice: number;
   unitCost: number;
+  paymentMethod?: PaymentMethod;
 }
 
 export interface ExpenseRecord {
@@ -26,6 +29,13 @@ export interface ExpenseRecord {
   category: string; // 'insumos' | 'servicios' | 'mercado' | 'otro'
   amount: number;
   timestamp: string; // ISO string
+}
+
+export interface PaymentBreakdown {
+  efectivo: { count: number; total: number; percentage: number };
+  tarjeta: { count: number; total: number; percentage: number };
+  transferencia: { count: number; total: number; percentage: number };
+  totalRevenue: number;
 }
 
 export type TimeframeFilter = 'today' | 'week' | 'month' | 'all';
