@@ -29,6 +29,7 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
     { key: 'K', action: 'Abrir Calculadora Rápida de Cambio' },
     { key: 'T', action: 'Ver Turnos Archivados y Reimprimir Tickets' },
     { key: 'H', action: 'Ver Libro de Ventas e Historial' },
+    { key: 'E', action: 'Centro de Exportaciones Contables e Informes SAT' },
     { key: 'P', action: 'Abrir Gestor de Precios y Costeo de Recetas' },
     { key: 'M', action: 'Configurar Membrete y Datos del Negocio' },
     { key: '?', action: 'Abrir / Cerrar esta guía de atajos' },

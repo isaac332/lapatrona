@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store, Users } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store, Users, FileSpreadsheet } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -21,6 +21,7 @@ interface MobileBottomDockProps {
   onOpenStockManager?: () => void;
   onOpenHistorialComandas?: () => void;
   onOpenPantallaCocina?: () => void;
+  onOpenExportesContables?: () => void;
   activeKitchenOrdersCount?: number;
   onOpenConfiguracionNegocio?: () => void;
   lowStockCount?: number;
@@ -44,6 +45,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenStockManager,
   onOpenHistorialComandas,
   onOpenPantallaCocina,
+  onOpenExportesContables,
   activeKitchenOrdersCount = 0,
   onOpenConfiguracionNegocio,
   lowStockCount = 0,
@@ -213,6 +215,18 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             <RotateCcw className="w-4 h-4" />
             <span className="text-[8px] font-bold uppercase mt-0.5">Ceros</span>
           </button>
+
+          {onOpenExportesContables && (
+            <button
+              onClick={onOpenExportesContables}
+              aria-label="Exportar para contador SAT"
+              title="Contador SAT"
+              className="w-10 h-10 rounded-xl bg-sky-500/15 active:bg-sky-500/30 border border-sky-500/30 flex flex-col items-center justify-center text-sky-400 active:scale-95 touch-manipulation select-none shrink-0"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="text-[7.5px] font-bold uppercase mt-0.5">SAT</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenPriceManager}

@@ -42,6 +42,7 @@ import { MesasModal } from '@/components/MesasModal';
 import { MermasModal } from '@/components/MermasModal';
 import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModal';
 import { MiseEnPlaceModal } from '@/components/MiseEnPlaceModal';
+import { ExportesContablesModal } from '@/components/ExportesContablesModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
@@ -204,6 +205,7 @@ export default function SalesCounterPage() {
   const [isHistorialComandasOpen, setIsHistorialComandasOpen] = useState(false);
   const [isPantallaCocinaOpen, setIsPantallaCocinaOpen] = useState(false);
   const [isConfiguracionNegocioOpen, setIsConfiguracionNegocioOpen] = useState(false);
+  const [isExportesModalOpen, setIsExportesModalOpen] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
     if (typeof window === 'undefined') return DEFAULT_BUSINESS_INFO;
     try {
@@ -898,6 +900,7 @@ export default function SalesCounterPage() {
         setIsHistorialComandasOpen(false);
         setIsPantallaCocinaOpen(false);
         setIsConfiguracionNegocioOpen(false);
+        setIsExportesModalOpen(false);
         return;
       }
 
@@ -916,7 +919,8 @@ export default function SalesCounterPage() {
         isMiseEnPlaceOpen ||
         isHistorialComandasOpen ||
         isPantallaCocinaOpen ||
-        isConfiguracionNegocioOpen;
+        isConfiguracionNegocioOpen ||
+        isExportesModalOpen;
 
       if (isAnyModalOpen) return;
 
@@ -979,6 +983,12 @@ export default function SalesCounterPage() {
         return;
       }
 
+      if (e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        setIsExportesModalOpen(true);
+        return;
+      }
+
       if (e.key.toLowerCase() === 't') {
         e.preventDefault();
         setIsHistorialCortesOpen(true);
@@ -1030,6 +1040,7 @@ export default function SalesCounterPage() {
     isHistorialComandasOpen,
     isPantallaCocinaOpen,
     isConfiguracionNegocioOpen,
+    isExportesModalOpen,
   ]);
 
   // Filter sales for the selected timeframe
@@ -1228,6 +1239,7 @@ export default function SalesCounterPage() {
         onOpenPantallaCocina={() => setIsPantallaCocinaOpen(true)}
         activeKitchenOrdersCount={activeKitchenOrdersCount}
         onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
+        onOpenExportesContables={() => setIsExportesModalOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -1531,6 +1543,7 @@ export default function SalesCounterPage() {
         onOpenPantallaCocina={() => setIsPantallaCocinaOpen(true)}
         activeKitchenOrdersCount={activeKitchenOrdersCount}
         onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
+        onOpenExportesContables={() => setIsExportesModalOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -1708,6 +1721,21 @@ export default function SalesCounterPage() {
         onClose={() => setIsConfiguracionNegocioOpen(false)}
         businessInfo={businessInfo}
         onSaveBusinessInfo={handleSaveBusinessInfo}
+      />
+
+      {/* Centro de Exportaciones Contables e Informes SAT */}
+      <ExportesContablesModal
+        isOpen={isExportesModalOpen}
+        onClose={() => setIsExportesModalOpen(false)}
+        sales={sales}
+        products={products}
+        expenses={expenses}
+        wasteRecords={wasteRecords}
+        closedShifts={closedShifts}
+        orders={orders}
+        startingCash={startingCash}
+        businessInfo={businessInfo}
+        currentDate={currentDate || new Date()}
       />
 
       {/* Atajos de Teclado POS Guía Modal */}

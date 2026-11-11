@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize, ChefHat, Store, Users } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize, ChefHat, Store, Users, FileSpreadsheet } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -34,6 +34,7 @@ interface NavbarProps {
   onOpenStockManager?: () => void;
   onOpenHistorialComandas?: () => void;
   onOpenPantallaCocina?: () => void;
+  onOpenExportesContables?: () => void;
   activeKitchenOrdersCount?: number;
   onOpenConfiguracionNegocio?: () => void;
   lowStockCount?: number;
@@ -59,6 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenStockManager,
   onOpenHistorialComandas,
   onOpenPantallaCocina,
+  onOpenExportesContables,
   activeKitchenOrdersCount = 0,
   onOpenConfiguracionNegocio,
   lowStockCount = 0,
@@ -323,6 +325,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <History className="w-3.5 h-3.5 text-neutral-400" />
             <span>Libro Contable</span>
           </button>
+
+          {/* Exportaciones Contables e Informes SAT */}
+          {onOpenExportesContables && (
+            <button
+              onClick={onOpenExportesContables}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 border border-sky-500/30 transition-all shadow-sm active:scale-95"
+              title="Centro de Exportaciones Contables e Informes SAT para el Contador (Atajo: E)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-sky-400" />
+              <span>Contador SAT</span>
+            </button>
+          )}
 
           {/* POS Keyboard Shortcuts Guide Button */}
           {onOpenAtajos && (

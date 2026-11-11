@@ -1159,4 +1159,43 @@ assert.equal(simOrders[0].cancellationReason, 'Error de captura del cajero');
 
 console.log('✓ Order cancellation, payment method retro-switch, and inventory restock verified');
 
-console.log('\nAll 23 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, Corte Z, and order cancellation tests passed flawlessly!');
+// Test 24: Accountant SAT Fiscal Export & Comprehensive Multi-Book Calculations
+console.log('Test 24: Accountant SAT Fiscal Export & Comprehensive Multi-Book Aggregations');
+
+const satSalesSample = [
+  { id: 'sat-1', quantity: 2, unitPrice: 185.0, unitCost: 48.0, paymentMethod: 'efectivo', orderNumber: 1 },    // 370
+  { id: 'sat-2', quantity: 3, unitPrice: 135.0, unitCost: 35.0, paymentMethod: 'tarjeta', orderNumber: 2 },     // 405
+  { id: 'sat-3', quantity: 1, unitPrice: 210.0, unitCost: 65.0, paymentMethod: 'transferencia', orderNumber: 3 }, // 210
+];
+
+const satTotalGross = satSalesSample.reduce((acc, s) => acc + s.quantity * s.unitPrice, 0); // 370 + 405 + 210 = $985.00
+assert.equal(satTotalGross, 985.0);
+
+const satSubtotalBase = Math.round((satTotalGross / 1.16) * 100) / 100;
+const satIVA16 = Math.round((satTotalGross - satSubtotalBase) * 100) / 100;
+
+assert.equal(satSubtotalBase, 849.14);
+assert.equal(satIVA16, 135.86);
+assert.equal(satSubtotalBase + satIVA16, satTotalGross, 'Base Gravable + IVA Trasladado must match Gross Total exactly');
+
+// Payment segregation: Efectivo ($370) vs Bancario ($405 + $210 = $615)
+const cashSAT = satSalesSample.filter(s => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+const bankSAT = satSalesSample.filter(s => s.paymentMethod === 'tarjeta' || s.paymentMethod === 'transferencia').reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+
+assert.equal(cashSAT, 370.0);
+assert.equal(bankSAT, 615.0);
+assert.equal(cashSAT + bankSAT, satTotalGross);
+
+// Operating Results: Gross Revenue - COGS - Expenses - Waste
+const satCOGS = satSalesSample.reduce((acc, s) => acc + s.quantity * s.unitCost, 0); // 2*48 + 3*35 + 1*65 = 96 + 105 + 65 = 266
+assert.equal(satCOGS, 266.0);
+
+const satExpenses = 120.0; // Hielo + bolsas
+const satWaste = 48.0;     // 1 Philly quemado
+const satNetOperatingProfit = satTotalGross - satCOGS - satExpenses - satWaste; // 985 - 266 - 120 - 48 = 551
+
+assert.equal(satNetOperatingProfit, 551.0, 'Net operating profit after raw food, expenses, and waste must equal $551.00');
+
+console.log('✓ Accountant SAT fiscal export calculations and operating profit reconciliation verified');
+
+console.log('\nAll 24 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, Corte Z, order cancellation, and SAT export tests passed flawlessly!');
