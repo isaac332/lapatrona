@@ -199,6 +199,11 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                         <div className="font-semibold text-xs sm:text-sm text-[#f5f0eb] leading-tight">
                           {prod ? prod.name : sale.productId}
                         </div>
+                        {sale.modifiersText && (
+                          <div className="text-[10px] text-[#e59b38] font-semibold mt-0.5">
+                            + {sale.modifiersText}
+                          </div>
+                        )}
                         <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-neutral-400 mt-0.5">
                           {sale.orderNumber && (
                             <>

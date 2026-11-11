@@ -67,6 +67,14 @@ export function generateOrderThermalText(order: CustomerOrder, businessInfo?: Bu
   order.items.forEach((item) => {
     lines.push(pad(`${item.quantity}x ${item.productName}`, `$${item.subtotal.toFixed(2)}`));
     lines.push(`   (${item.variantLabel})`);
+    if (item.modifiers && item.modifiers.length > 0) {
+      item.modifiers.forEach((mod) => {
+        lines.push(`   + ${mod.name}${mod.price > 0 ? ` (+$${mod.price.toFixed(2)})` : ''}`);
+      });
+    }
+    if (item.instructions) {
+      lines.push(`   * Nota: ${item.instructions}`);
+    }
   });
 
   lines.push(line);
@@ -150,6 +158,14 @@ export function generatePreCuentaThermalText(order: CustomerOrder, businessInfo?
       nameStr = nameStr.substring(0, maxNameLen - 1) + '.';
     }
     lines.push(qtyStr + nameStr.padEnd(maxNameLen) + subtotalStr);
+    if (item.modifiers && item.modifiers.length > 0) {
+      for (const mod of item.modifiers) {
+        lines.push(`   + ${mod.name}${mod.price > 0 ? ` (+$${mod.price.toFixed(2)})` : ''}`);
+      }
+    }
+    if (item.instructions) {
+      lines.push(`   * Nota: ${item.instructions}`);
+    }
   }
 
   lines.push(line);

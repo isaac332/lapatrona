@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, ProductStockConfig, SplitPaymentDetail, OrderDiscount } from '@/types/accounting';
+import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, OrderItemModifier, ProductStockConfig, SplitPaymentDetail, OrderDiscount } from '@/types/accounting';
+import { STANDARD_MODIFIERS, QUICK_INSTRUCTIONS, ModifierOption } from '@/data/initialProducts';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   X,
@@ -19,6 +20,9 @@ import {
   Tag,
   Gift,
   Users,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface NuevaOrdenModalProps {
@@ -116,6 +120,33 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   const [customTip, setCustomTip] = useState<string>('');
   const [amountReceived, setAmountReceived] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [customizingProductId, setCustomizingProductId] = useState<string | null>(null);
+
+  const [itemModifiers, setItemModifiers] = useState<Record<string, OrderItemModifier[]>>(() => {
+    if (existingOrder) {
+      const initial: Record<string, OrderItemModifier[]> = {};
+      for (const item of existingOrder.items) {
+        if (item.modifiers && item.modifiers.length > 0) {
+          initial[item.productId] = item.modifiers;
+        }
+      }
+      return initial;
+    }
+    return {};
+  });
+
+  const [itemInstructions, setItemInstructions] = useState<Record<string, string>>(() => {
+    if (existingOrder) {
+      const initial: Record<string, string> = {};
+      for (const item of existingOrder.items) {
+        if (item.instructions) {
+          initial[item.productId] = item.instructions;
+        }
+      }
+      return initial;
+    }
+    return {};
+  });
 
   if (!isOpen) return null;
 
@@ -150,22 +181,70 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
 
   const handleClearCart = () => {
     setCart({});
+    setItemModifiers({});
+    setItemInstructions({});
+    setCustomizingProductId(null);
+  };
+
+  const handleToggleModifier = (productId: string, mod: ModifierOption) => {
+    triggerHaptic('light');
+    setItemModifiers((prev) => {
+      const current = prev[productId] || [];
+      const exists = current.some((m) => m.id === mod.id);
+      if (exists) {
+        return {
+          ...prev,
+          [productId]: current.filter((m) => m.id !== mod.id),
+        };
+      }
+      return {
+        ...prev,
+        [productId]: [
+          ...current,
+          { id: mod.id, name: mod.name, price: mod.price, cost: mod.cost },
+        ],
+      };
+    });
+  };
+
+  const handleToggleInstruction = (productId: string, instruction: string) => {
+    triggerHaptic('light');
+    setItemInstructions((prev) => {
+      const current = prev[productId] || '';
+      if (current === instruction) {
+        const copy = { ...prev };
+        delete copy[productId];
+        return copy;
+      }
+      return { ...prev, [productId]: instruction };
+    });
   };
 
   // Compute order items
   const orderItems: CustomerOrderItem[] = Object.entries(cart)
-    .map(([productId, quantity]) => {
+    .map(([productId, quantity]): CustomerOrderItem | null => {
       const prod = products.find((p) => p.id === productId);
       if (!prod || quantity <= 0) return null;
-      return {
+
+      const mods = itemModifiers[productId] || [];
+      const modsPrice = mods.reduce((sum, m) => sum + m.price, 0);
+      const modsCost = mods.reduce((sum, m) => sum + (m.cost || 0), 0);
+      const effectiveUnitPrice = prod.defaultPrice + modsPrice;
+      const effectiveUnitCost = prod.cost + modsCost;
+      const instructions = itemInstructions[productId];
+
+      const item: CustomerOrderItem = {
         productId,
         productName: prod.name,
         variantLabel: prod.variantLabel,
         quantity,
-        unitPrice: prod.defaultPrice,
-        unitCost: prod.cost,
-        subtotal: quantity * prod.defaultPrice,
+        unitPrice: effectiveUnitPrice,
+        unitCost: effectiveUnitCost,
+        subtotal: quantity * effectiveUnitPrice,
+        modifiers: mods.length > 0 ? mods : undefined,
+        instructions: instructions ? instructions.trim() : undefined,
       };
+      return item;
     })
     .filter((item): item is CustomerOrderItem => item !== null);
 
@@ -422,7 +501,19 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                     {/* Quantity Selector */}
                     <div className="flex items-center gap-1.5 shrink-0">
                       {inCartQty > 0 ? (
-                        <>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setCustomizingProductId(customizingProductId === product.id ? null : product.id)}
+                            className={`w-7 h-8 rounded-lg border text-[10px] font-bold flex items-center justify-center transition-all ${
+                              (itemModifiers[product.id] && itemModifiers[product.id].length > 0) || itemInstructions[product.id] || customizingProductId === product.id
+                                ? 'bg-[#e59b38] text-black border-[#e59b38]'
+                                : 'bg-white/5 border-white/10 text-[#e59b38] hover:bg-white/10'
+                            }`}
+                            title="Agregar extras o notas de cocina"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(product.id)}
@@ -445,7 +536,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                           >
                             <Plus className="w-3.5 h-3.5" />
                           </button>
-                        </>
+                        </div>
                       ) : (
                         <button
                           type="button"
@@ -580,16 +671,130 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                   Toca productos a la izquierda para agregarlos a la comanda.
                 </div>
               ) : (
-                <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
-                  {orderItems.map((item) => (
-                    <div key={item.productId} className="flex justify-between items-center text-xs py-0.5">
-                      <div className="truncate max-w-[65%]">
-                        <span className="font-bold mr-1 text-[#e59b38]">{item.quantity}x</span>
-                        <span className="text-white">{item.productName}</span>
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {orderItems.map((item) => {
+                    const isCustomizing = customizingProductId === item.productId;
+                    const prodCategory = products.find((p) => p.id === item.productId)?.category || 'all';
+                    const applicableModifiers = STANDARD_MODIFIERS.filter(
+                      (m) => m.category === 'all' || m.category === prodCategory
+                    );
+
+                    return (
+                      <div
+                        key={item.productId}
+                        className="p-2 rounded-xl bg-black/40 border border-white/[0.08] text-xs space-y-1.5 transition-all"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="truncate max-w-[65%]">
+                            <span className="font-bold mr-1 text-[#e59b38]">{item.quantity}x</span>
+                            <span className="text-white font-medium">{item.productName}</span>
+                            <span className="text-[10px] text-neutral-400 ml-1">(${item.unitPrice.toFixed(2)})</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setCustomizingProductId(isCustomizing ? null : item.productId)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 border transition-all ${
+                                (item.modifiers && item.modifiers.length > 0) || item.instructions || isCustomizing
+                                  ? 'bg-[#e59b38]/20 text-[#e59b38] border-[#e59b38]/40'
+                                  : 'bg-white/5 text-neutral-400 border-white/10 hover:text-white'
+                              }`}
+                            >
+                              <Sparkles className="w-2.5 h-2.5" />
+                              <span>Extras</span>
+                              {isCustomizing ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+                            </button>
+                            <span className="font-mono font-bold text-white">${item.subtotal.toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        {/* Active Modifiers & Notes Badges */}
+                        {((item.modifiers && item.modifiers.length > 0) || item.instructions) && !isCustomizing && (
+                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                            {item.modifiers?.map((mod, mIdx) => (
+                              <span
+                                key={mIdx}
+                                className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#e59b38]/15 text-[#e59b38] border border-[#e59b38]/25"
+                              >
+                                + {mod.name} (+${mod.price.toFixed(2)})
+                              </span>
+                            ))}
+                            {item.instructions && (
+                              <span className="text-[9.5px] font-semibold italic px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                                * {item.instructions}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Expandable Customizer Drawer */}
+                        {isCustomizing && (
+                          <div className="p-2.5 rounded-lg bg-[#111114] border border-white/[0.08] space-y-2 mt-1 animate-in fade-in">
+                            <div>
+                              <span className="text-[9.5px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                                Extras y Modificadores:
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {applicableModifiers.map((mod) => {
+                                  const isSelected = item.modifiers?.some((m) => m.id === mod.id);
+                                  return (
+                                    <button
+                                      key={mod.id}
+                                      type="button"
+                                      onClick={() => handleToggleModifier(item.productId, mod)}
+                                      className={`px-2 py-1 rounded-md text-[10px] font-semibold border flex items-center gap-1 transition-all ${
+                                        isSelected
+                                          ? 'bg-[#e59b38] text-black border-[#e59b38] font-bold shadow-sm'
+                                          : 'bg-white/5 border-white/10 text-neutral-300 hover:text-white'
+                                      }`}
+                                    >
+                                      <span>{mod.name}</span>
+                                      {mod.price > 0 && <span className="opacity-80">+${mod.price.toFixed(0)}</span>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div>
+                              <span className="text-[9.5px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                                Indicaciones de Cocina:
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {QUICK_INSTRUCTIONS.map((inst) => {
+                                  const isSelected = item.instructions === inst;
+                                  return (
+                                    <button
+                                      key={inst}
+                                      type="button"
+                                      onClick={() => handleToggleInstruction(item.productId, inst)}
+                                      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all ${
+                                        isSelected
+                                          ? 'bg-amber-400 text-black border-amber-400 font-bold'
+                                          : 'bg-white/5 border-white/10 text-neutral-300 hover:text-white'
+                                      }`}
+                                    >
+                                      {inst}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end pt-1">
+                              <button
+                                type="button"
+                                onClick={() => setCustomizingProductId(null)}
+                                className="px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold uppercase tracking-wider"
+                              >
+                                Listo
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <span className="font-mono font-bold text-white">${item.subtotal.toFixed(2)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

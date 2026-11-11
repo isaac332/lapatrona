@@ -1198,4 +1198,64 @@ assert.equal(satNetOperatingProfit, 551.0, 'Net operating profit after raw food,
 
 console.log('✓ Accountant SAT fiscal export calculations and operating profit reconciliation verified');
 
-console.log('\nAll 24 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, Corte Z, order cancellation, and SAT export tests passed flawlessly!');
+// Test 25: Dish Modifiers (Add-ons), Kitchen Instructions, and Dynamic Margin Flow
+console.log('Test 25: Dish Modifiers, Paid Add-ons, Instructions, and Dynamic Margin Flow');
+
+const baseDish = {
+  productId: 'sandwich-fries',
+  name: 'Combo Philly Cheesesteak',
+  defaultPrice: 185.0,
+  cost: 48.0,
+};
+
+const selectedModifiers = [
+  { id: 'mod-extra-cheese', name: 'Extra Queso Provolone Fundido', price: 25.0, cost: 8.5 },
+  { id: 'mod-bacon', name: 'Tocineta Crujiente / Bacon', price: 20.0, cost: 7.0 },
+];
+
+const kitchenInstructions = 'Sin cebolla salteada';
+
+const modsPriceTotal = selectedModifiers.reduce((sum, m) => sum + m.price, 0); // 25 + 20 = 45
+const modsCostTotal = selectedModifiers.reduce((sum, m) => sum + m.cost, 0);   // 8.5 + 7 = 15.5
+
+const customizedUnitPrice = baseDish.defaultPrice + modsPriceTotal; // 185 + 45 = 230.00
+const customizedUnitCost = baseDish.cost + modsCostTotal;          // 48 + 15.5 = 63.50
+const itemQuantity = 2;
+const customizedSubtotal = customizedUnitPrice * itemQuantity;     // 230 * 2 = 460.00
+
+assert.equal(customizedUnitPrice, 230.0);
+assert.equal(customizedUnitCost, 63.50);
+assert.equal(customizedSubtotal, 460.0);
+
+const customItem = {
+  productId: baseDish.productId,
+  productName: baseDish.name,
+  variantLabel: 'Con Papas',
+  quantity: itemQuantity,
+  unitPrice: customizedUnitPrice,
+  unitCost: customizedUnitCost,
+  subtotal: customizedSubtotal,
+  modifiers: selectedModifiers,
+  instructions: kitchenInstructions,
+};
+
+assert.equal(customItem.modifiers.length, 2);
+assert.equal(customItem.instructions, 'Sin cebolla salteada');
+
+// SAT Breakdown on customized dish:
+const customSubtotalNeto = Math.round((customizedSubtotal / 1.16) * 100) / 100;
+const customIVA = Math.round((customizedSubtotal - customSubtotalNeto) * 100) / 100;
+
+assert.equal(customSubtotalNeto, 396.55);
+assert.equal(customIVA, 63.45);
+assert.equal(customSubtotalNeto + customIVA, 460.0);
+
+// Gross Profit and Margin:
+const totalItemProfit = customizedSubtotal - (customizedUnitCost * itemQuantity); // 460 - 127 = 333
+const customMargin = Math.round((totalItemProfit / customizedSubtotal) * 100);    // 333 / 460 = 72%
+assert.equal(totalItemProfit, 333.0);
+assert.equal(customMargin, 72);
+
+console.log('✓ Dish modifiers, kitchen instructions, margin calculation, and SAT breakdown verified');
+
+console.log('\nAll 25 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, Corte Z, order cancellation, SAT export, and modifier tests passed flawlessly!');

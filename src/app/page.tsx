@@ -609,6 +609,7 @@ export default function SalesCounterPage() {
           cardAmount: unitCard,
           orderId: order.id,
           orderNumber: order.orderNumber,
+          modifiersText: item.modifiers?.map((m) => m.name).join(', '),
         });
       }
     }

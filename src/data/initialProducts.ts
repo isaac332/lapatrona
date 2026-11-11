@@ -124,3 +124,32 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     cost: 0,
   },
 ];
+
+export interface ModifierOption {
+  id: string;
+  name: string;
+  price: number;
+  cost: number;
+  category?: 'sandwiches' | 'quesadillas' | 'fries' | 'all';
+}
+
+export const STANDARD_MODIFIERS: ModifierOption[] = [
+  { id: 'mod-extra-cheese', name: 'Extra Queso Provolone Fundido', price: 25.0, cost: 8.5, category: 'sandwiches' },
+  { id: 'mod-extra-ribeye', name: 'Extra Ribeye Marinado (80g)', price: 45.0, cost: 22.0, category: 'all' },
+  { id: 'mod-bacon', name: 'Tocineta Crujiente / Bacon', price: 20.0, cost: 7.0, category: 'all' },
+  { id: 'mod-mushrooms', name: 'Champiñones Salteados al Ajo', price: 18.0, cost: 5.5, category: 'sandwiches' },
+  { id: 'mod-cheese-sauce', name: 'Bañado de Queso Cheddar Fundido', price: 20.0, cost: 6.0, category: 'fries' },
+  { id: 'mod-seasoning-lemon', name: 'Sazón Lemon Pepper', price: 0.0, cost: 0.5, category: 'fries' },
+  { id: 'mod-seasoning-cajun', name: 'Sazón Cajún Picante', price: 0.0, cost: 0.5, category: 'fries' },
+  { id: 'mod-no-onion', name: 'Sin Cebolla Salteada', price: 0.0, cost: 0.0, category: 'all' },
+];
+
+export const QUICK_INSTRUCTIONS: string[] = [
+  'Sin cebolla salteada',
+  'Cebolla extra dorada',
+  'Pan bien tostado',
+  'Salsa aparte',
+  'Carne término 3/4',
+  'Poco queso',
+  'Papas extra crujientes',
+];

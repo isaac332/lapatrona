@@ -26,6 +26,14 @@ export interface SaleRecord {
   orderId?: string;
   orderNumber?: number;
   isCancelled?: boolean;
+  modifiersText?: string;
+}
+
+export interface OrderItemModifier {
+  id: string;
+  name: string;
+  price: number;
+  cost?: number;
 }
 
 export interface CustomerOrderItem {
@@ -36,6 +44,8 @@ export interface CustomerOrderItem {
   unitPrice: number;
   unitCost: number;
   subtotal: number;
+  modifiers?: OrderItemModifier[];
+  instructions?: string;
 }
 
 export interface SplitPaymentDetail {

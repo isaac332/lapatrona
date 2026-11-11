@@ -157,6 +157,16 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
                     <div className="text-[10px] text-neutral-400 print:text-neutral-600">
                       ({item.variantLabel})
                     </div>
+                    {item.modifiers && item.modifiers.length > 0 && (
+                      <div className="text-[10px] text-[#e59b38] print:text-black font-semibold">
+                        {item.modifiers.map((m) => `+ ${m.name}${m.price > 0 ? ` (+$${m.price.toFixed(2)})` : ''}`).join(', ')}
+                      </div>
+                    )}
+                    {item.instructions && (
+                      <div className="text-[10px] italic text-amber-300 print:text-black">
+                        * {item.instructions}
+                      </div>
+                    )}
                   </div>
                   <span className="font-bold font-mono">
                     ${item.subtotal.toFixed(2)}
