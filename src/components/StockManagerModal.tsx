@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProductItem, ProductStockConfig } from '@/types/accounting';
-import { X, Package, RotateCcw, AlertTriangle, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { X, Package, RotateCcw, AlertTriangle, AlertCircle, CheckCircle2, ShieldCheck, ChefHat } from 'lucide-react';
 
 interface StockManagerModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface StockManagerModalProps {
   onAddStock: (productId: string, amount: number) => void;
   onToggleTrackStock: (productId: string) => void;
   onResetAllStock: () => void;
+  onOpenMiseEnPlace?: () => void;
 }
 
 export const StockManagerModal: React.FC<StockManagerModalProps> = ({
@@ -24,6 +25,7 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
   onAddStock,
   onToggleTrackStock,
   onResetAllStock,
+  onOpenMiseEnPlace,
 }) => {
   if (!isOpen) return null;
 
@@ -58,6 +60,17 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenMiseEnPlace && (
+              <button
+                onClick={onOpenMiseEnPlace}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e59b38]/15 hover:bg-[#e59b38]/25 border border-[#e59b38]/30 text-xs font-bold text-[#e59b38] transition-all active:scale-95 shadow-sm"
+                title="Calcular insumos, kilos de carne, panes, papas y quesos para el turno"
+              >
+                <ChefHat className="w-3.5 h-3.5" />
+                <span>Mise en Place</span>
+              </button>
+            )}
+
             <button
               onClick={onResetAllStock}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white transition-all active:scale-95"

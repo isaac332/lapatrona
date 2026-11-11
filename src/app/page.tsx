@@ -37,6 +37,7 @@ import { HistorialComandasModal } from '@/components/HistorialComandasModal';
 import { DailyGoalTracker } from '@/components/DailyGoalTracker';
 import { PantallaCocinaModal } from '@/components/PantallaCocinaModal';
 import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModal';
+import { MiseEnPlaceModal } from '@/components/MiseEnPlaceModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
@@ -181,6 +182,7 @@ export default function SalesCounterPage() {
     }
   });
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [isMiseEnPlaceOpen, setIsMiseEnPlaceOpen] = useState(false);
   const [isHistorialComandasOpen, setIsHistorialComandasOpen] = useState(false);
   const [isPantallaCocinaOpen, setIsPantallaCocinaOpen] = useState(false);
   const [isConfiguracionNegocioOpen, setIsConfiguracionNegocioOpen] = useState(false);
@@ -616,6 +618,7 @@ export default function SalesCounterPage() {
         setIsHistorialCortesOpen(false);
         setIsAtajosModalOpen(false);
         setIsStockModalOpen(false);
+        setIsMiseEnPlaceOpen(false);
         setIsHistorialComandasOpen(false);
         setIsPantallaCocinaOpen(false);
         setIsConfiguracionNegocioOpen(false);
@@ -634,6 +637,7 @@ export default function SalesCounterPage() {
         isHistorialCortesOpen ||
         isAtajosModalOpen ||
         isStockModalOpen ||
+        isMiseEnPlaceOpen ||
         isHistorialComandasOpen ||
         isPantallaCocinaOpen ||
         isConfiguracionNegocioOpen;
@@ -734,6 +738,7 @@ export default function SalesCounterPage() {
     isHistorialCortesOpen,
     isAtajosModalOpen,
     isStockModalOpen,
+    isMiseEnPlaceOpen,
     isHistorialComandasOpen,
     isPantallaCocinaOpen,
     isConfiguracionNegocioOpen,
@@ -1326,6 +1331,14 @@ export default function SalesCounterPage() {
         onAddStock={handleAddStock}
         onToggleTrackStock={handleToggleTrackStock}
         onResetAllStock={handleResetAllStock}
+        onOpenMiseEnPlace={() => setIsMiseEnPlaceOpen(true)}
+      />
+
+      {/* Mise en Place y Prep de Cocina Modal */}
+      <MiseEnPlaceModal
+        isOpen={isMiseEnPlaceOpen}
+        onClose={() => setIsMiseEnPlaceOpen(false)}
+        stockMap={stockMap}
       />
 
       {/* Historial y Reimpresión de Comandas Modal */}

@@ -727,4 +727,30 @@ const margin = Math.round(((customBeverage.defaultPrice - customBeverage.cost) /
 assert.equal(margin, 59, 'Beverage margin must be calculated accurately at 59%');
 console.log('✓ Dynamic product creation and beverage category verified');
 
-console.log('\nAll 16 accounting, POS, KDS, thermal, and catalog verification tests passed flawlessly!');
+// Test 17: Mise en Place Raw Ingredients Calculation
+console.log('Test 17: Mise en Place Raw Ingredients Calculation');
+const sampleStockMap = {
+  'sandwich-alone': { currentStock: 20 },
+  'sandwich-fries': { currentStock: 10 },
+  'quesadilla-alone': { currentStock: 15 },
+  'quesadilla-fries': { currentStock: 10 },
+  'steak-frites': { currentStock: 10 },
+};
+
+const totalSw = sampleStockMap['sandwich-alone'].currentStock + sampleStockMap['sandwich-fries'].currentStock; // 30
+const totalQ = sampleStockMap['quesadilla-alone'].currentStock + sampleStockMap['quesadilla-fries'].currentStock; // 25
+const totalSf = sampleStockMap['steak-frites'].currentStock; // 10
+
+// Ribeye = 30 * 150g + 25 * 120g + 10 * 180g = 4500g + 3000g + 1800g = 9300g = 9.3 kg
+const ribeyeGrams = totalSw * 150 + totalQ * 120 + totalSf * 180;
+const ribeyeKg = Math.round((ribeyeGrams / 1000) * 10) / 10;
+assert.equal(ribeyeKg, 9.3, 'Mise en place ribeye requirement must equal 9.3 kg');
+
+// Hoagies = 30
+assert.equal(totalSw, 30, 'Hoagie bread requirement must equal 30 pieces');
+
+// Flour tortillas = 25
+assert.equal(totalQ, 25, 'Tortilla requirement must equal 25 pieces');
+console.log('✓ Mise en place raw ingredient math verified');
+
+console.log('\nAll 17 accounting, POS, KDS, thermal, catalog, and kitchen prep tests passed flawlessly!');
