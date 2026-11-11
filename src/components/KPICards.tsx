@@ -10,10 +10,12 @@ interface KPICardsProps {
   sales: SaleRecord[];
   products: ProductItem[];
   totalExpenses: number;
+  startingCash?: number;
   onLoadSample: () => void;
   onOpenZeroOut: () => void;
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
+  onOpenCorte?: () => void;
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
@@ -21,10 +23,12 @@ export const KPICards: React.FC<KPICardsProps> = ({
   sales,
   products,
   totalExpenses,
+  startingCash = 0,
   onLoadSample,
   onOpenZeroOut,
   onOpenGastos,
   onOpenCalculadora,
+  onOpenCorte,
 }) => {
   // Aggregate units and revenue
   const totalUnits = sales.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -33,7 +37,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
   const grossProfit = totalRevenue - totalCost;
   const grossMargin = totalRevenue > 0 && totalCost > 0 ? Math.round((grossProfit / totalRevenue) * 100) : null;
   const paymentBreakdown = getPaymentBreakdown(sales);
-  const efectivoEnCajon = paymentBreakdown.efectivo.total - totalExpenses;
+  const cashNetFromSales = paymentBreakdown.efectivo.total - totalExpenses;
+  const totalEfectivoEnCajon = startingCash + cashNetFromSales;
   const dineroEnBanco = paymentBreakdown.tarjeta.total + paymentBreakdown.transferencia.total;
 
   // Top seller
@@ -207,7 +212,10 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
 
         {/* Metric 4: Efectivo Físico en Cajón */}
-        <div className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1a1e1b] to-[#141417] border border-emerald-500/30 p-3 sm:p-5 hover:border-emerald-500/50 transition-all">
+        <div
+          onClick={onOpenCorte}
+          className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1a1e1b] to-[#141417] border border-emerald-500/30 p-3 sm:p-5 hover:border-emerald-500/50 cursor-pointer transition-all group"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs uppercase tracking-wider text-emerald-300 font-bold">
               Efectivo en Cajón
@@ -218,11 +226,15 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
             <span className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-400 truncate">
-              ${efectivoEnCajon.toFixed(2)}
+              ${totalEfectivoEnCajon.toFixed(2)}
             </span>
           </div>
           <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-400 truncate">
-            {dineroEnBanco > 0 ? `+ $${dineroEnBanco.toFixed(0)} en banco/tarjeta` : 'Ventas Ef. - Gastos'}
+            {startingCash > 0
+              ? `Fondo: $${startingCash} + Neto: $${cashNetFromSales.toFixed(0)}`
+              : dineroEnBanco > 0
+              ? `+ $${dineroEnBanco.toFixed(0)} en banco/tarjeta`
+              : 'Ventas Ef. - Gastos'}
           </div>
         </div>
 

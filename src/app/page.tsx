@@ -121,6 +121,15 @@ export default function SalesCounterPage() {
       return 1;
     }
   });
+  const [startingCash, setStartingCash] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1000;
+    try {
+      const saved = localStorage.getItem('philly_fry_starting_cash');
+      return saved !== null ? parseFloat(saved) : 1000;
+    } catch {
+      return 1000;
+    }
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -130,6 +139,16 @@ export default function SalesCounterPage() {
     setTimeout(() => {
       setToastMessage((curr) => (curr === message ? null : curr));
     }, 3500);
+  };
+
+  const handleUpdateStartingCash = (amount: number) => {
+    setStartingCash(amount);
+    try {
+      localStorage.setItem('philly_fry_starting_cash', amount.toString());
+      showToast(`✓ Fondo inicial de caja guardado: $${amount.toFixed(2)} MXN.`);
+    } catch (e) {
+      console.error('Failed to save starting cash', e);
+    }
   };
 
   // Save changes to localStorage
@@ -440,10 +459,12 @@ export default function SalesCounterPage() {
             sales={filteredSales}
             products={products}
             totalExpenses={totalExpensesInTimeframe}
+            startingCash={startingCash}
             onLoadSample={handleLoadSample}
             onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
             onOpenGastos={() => setIsGastosModalOpen(true)}
             onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
+            onOpenCorte={() => setIsCorteModalOpen(true)}
           />
 
           {/* Section 2: Dedicated Granular Timeframe View (Day / Week / Month / Total) */}
@@ -731,6 +752,8 @@ export default function SalesCounterPage() {
         expenses={filteredExpenses}
         timeframe={timeframe}
         hourlyBlocks={hourlyBlocks}
+        startingCash={startingCash}
+        onUpdateStartingCash={handleUpdateStartingCash}
         onConfirmZeroOut={() => {
           setIsCorteModalOpen(false);
           setIsZeroOutModalOpen(true);

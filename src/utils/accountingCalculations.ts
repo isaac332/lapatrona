@@ -451,3 +451,46 @@ export function generateSampleSales(products: ProductItem[], referenceDate?: Dat
 
   return sampleSales.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
+
+// Cash Drawer Shift & Arqueo Calculations
+export function calculateDenominationTotal(counts: {
+  b1000?: number;
+  b500?: number;
+  b200?: number;
+  b100?: number;
+  b50?: number;
+  b20?: number;
+  coins?: number;
+}): number {
+  return (
+    (counts.b1000 || 0) * 1000 +
+    (counts.b500 || 0) * 500 +
+    (counts.b200 || 0) * 200 +
+    (counts.b100 || 0) * 100 +
+    (counts.b50 || 0) * 50 +
+    (counts.b20 || 0) * 20 +
+    (counts.coins || 0)
+  );
+}
+
+export function calculateExpectedDrawerCash(
+  startingCash: number,
+  cashSalesTotal: number,
+  totalExpenses: number
+): number {
+  return Math.max(0, startingCash + cashSalesTotal - totalExpenses);
+}
+
+export function calculateArqueoDifference(
+  countedCash: number,
+  expectedCash: number
+): { difference: number; status: 'cuadrada' | 'sobrante' | 'faltante' } {
+  const diff = Math.round((countedCash - expectedCash) * 100) / 100;
+  if (Math.abs(diff) < 0.01) {
+    return { difference: 0, status: 'cuadrada' };
+  }
+  if (diff > 0) {
+    return { difference: diff, status: 'sobrante' };
+  }
+  return { difference: diff, status: 'faltante' };
+}

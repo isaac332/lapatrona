@@ -523,4 +523,71 @@ assert.equal(batchProfit, 2027);
 assert.equal(batchMargin, 64);
 console.log('✓ Food costing escandallos, gross profit, and margin calculations verified');
 
-console.log('\nAll 10 accounting verification tests passed flawlessly!');
+// Test 11: Cash Drawer Starting Float, Denominations & Arqueo Difference
+console.log('Test 11: Cash Drawer Starting Float, Denomination Breakdown, and Arqueo Reconciliation');
+function calculateDenominationTotal(counts) {
+  return (
+    (counts.b1000 || 0) * 1000 +
+    (counts.b500 || 0) * 500 +
+    (counts.b200 || 0) * 200 +
+    (counts.b100 || 0) * 100 +
+    (counts.b50 || 0) * 50 +
+    (counts.b20 || 0) * 20 +
+    (counts.coins || 0)
+  );
+}
+
+function calculateExpectedDrawerCash(startingCash, cashSalesTotal, totalExpenses) {
+  return Math.max(0, startingCash + cashSalesTotal - totalExpenses);
+}
+
+function calculateArqueoDifference(countedCash, expectedCash) {
+  const diff = Math.round((countedCash - expectedCash) * 100) / 100;
+  if (Math.abs(diff) < 0.01) {
+    return { difference: 0, status: 'cuadrada' };
+  }
+  if (diff > 0) {
+    return { difference: diff, status: 'sobrante' };
+  }
+  return { difference: diff, status: 'faltante' };
+}
+
+// Scenario: Starting cash $1,000, cash sales $2,450, cash expenses $350 (ice & lemons)
+const startingFloat = 1000;
+const cashSales = 2450;
+const cashExpenses = 350;
+const expectedInDrawer = calculateExpectedDrawerCash(startingFloat, cashSales, cashExpenses);
+assert.equal(expectedInDrawer, 3100, 'Expected drawer cash must be $1,000 + $2,450 - $350 = $3,100');
+
+// Denomination count: 1x$1000, 3x$500, 2x$200, 1x$100, 1x$50, 2x$20, $10 in coins
+// Total = 1000 + 1500 + 400 + 100 + 50 + 40 + 10 = 3100
+const denomSample = {
+  b1000: 1,
+  b500: 3,
+  b200: 2,
+  b100: 1,
+  b50: 1,
+  b20: 2,
+  coins: 10,
+};
+const countedTotal = calculateDenominationTotal(denomSample);
+assert.equal(countedTotal, 3100, 'Denomination total must equal exactly $3,100.00');
+
+// Test Cuadrada
+const resCuadrada = calculateArqueoDifference(countedTotal, expectedInDrawer);
+assert.equal(resCuadrada.status, 'cuadrada');
+assert.equal(resCuadrada.difference, 0);
+
+// Test Sobrante ($3,150 counted vs $3,100 expected -> +$50 sobrante)
+const resSobrante = calculateArqueoDifference(3150, expectedInDrawer);
+assert.equal(resSobrante.status, 'sobrante');
+assert.equal(resSobrante.difference, 50);
+
+// Test Faltante ($3,020 counted vs $3,100 expected -> -$80 faltante)
+const resFaltante = calculateArqueoDifference(3020, expectedInDrawer);
+assert.equal(resFaltante.status, 'faltante');
+assert.equal(resFaltante.difference, -80);
+
+console.log('✓ Cash drawer float, denomination tally, and arqueo statuses verified');
+
+console.log('\nAll 11 accounting verification tests passed flawlessly!');

@@ -93,6 +93,24 @@ export interface MonthlyWeekStat {
   percentage: number;
 }
 
+export interface CashDenominationCount {
+  b1000: number;
+  b500: number;
+  b200: number;
+  b100: number;
+  b50: number;
+  b20: number;
+  coins: number;
+}
+
+export interface CashShiftState {
+  startingCash: number; // Fondo inicial para cambio (e.g. $1,000 MXN)
+  openedAt: string;
+  cashierName: string;
+  countedCash?: number; // Arqueo físico ingresado
+  denominations?: CashDenominationCount;
+}
+
 export interface ProductPerformance {
   product: ProductItem;
   units: number;

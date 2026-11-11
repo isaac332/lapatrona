@@ -18,12 +18,12 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Philly & Fry | Mostrador de Ventas y Contabilidad",
-  description: "Contador de ventas y contabilidad diaria, semanal y mensual para Philly & Fry",
+  title: "La Patrona | Mostrador de Ventas y Contabilidad",
+  description: "Punto de venta POS y contabilidad diaria, semanal y mensual para La Patrona (Philly & Fry)",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Philly & Fry",
+    title: "La Patrona POS",
   },
 };
 
