@@ -1,4 +1,4 @@
-export type CategoryType = 'sandwiches' | 'quesadillas' | 'steak-frites' | 'fries';
+export type CategoryType = 'sandwiches' | 'quesadillas' | 'steak-frites' | 'fries' | 'bebidas' | 'extras' | 'postres' | 'otro';
 
 export interface ProductItem {
   id: string;

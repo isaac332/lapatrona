@@ -1029,7 +1029,10 @@ export default function SalesCounterPage() {
                     { id: 'sandwiches', label: 'Sándwiches' },
                     { id: 'quesadillas', label: 'Quesadillas' },
                     { id: 'steak-frites', label: 'Steak Frites' },
-                    { id: 'fries', label: 'Papas y Queso' },
+                    { id: 'fries', label: 'Papas' },
+                    { id: 'bebidas', label: 'Bebidas' },
+                    { id: 'extras', label: 'Extras' },
+                    { id: 'postres', label: 'Postres' },
                   ].map((cat) => (
                     <button
                       key={cat.id}

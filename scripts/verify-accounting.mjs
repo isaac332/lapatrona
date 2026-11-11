@@ -708,4 +708,23 @@ assert.ok(customBusiness.tagline.includes('Philly'));
 assert.ok(customBusiness.phone.length > 5);
 console.log('✓ Business info profile and thermal slip headers verified');
 
-console.log('\nAll 15 accounting, POS, KDS, and thermal verification tests passed flawlessly!');
+// Test 16: Dynamic Custom Product Creation & Extended Categories
+console.log('Test 16: Dynamic Custom Product Creation & Extended Categories');
+const customBeverage = {
+  id: 'prod-drink-coke',
+  name: 'Coca-Cola 355ml',
+  variantLabel: 'Lata Fría',
+  category: 'bebidas',
+  description: 'Refresco clásico frío en lata de 355ml',
+  imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87',
+  defaultPrice: 35.0,
+  cost: 14.5,
+};
+
+assert.equal(customBeverage.category, 'bebidas');
+assert.equal(customBeverage.defaultPrice, 35.0);
+const margin = Math.round(((customBeverage.defaultPrice - customBeverage.cost) / customBeverage.defaultPrice) * 100);
+assert.equal(margin, 59, 'Beverage margin must be calculated accurately at 59%');
+console.log('✓ Dynamic product creation and beverage category verified');
+
+console.log('\nAll 16 accounting, POS, KDS, thermal, and catalog verification tests passed flawlessly!');

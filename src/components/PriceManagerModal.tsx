@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ProductItem } from '@/types/accounting';
-import { X, DollarSign, Save, Info, Sparkles, ChevronDown, ChevronUp, Calculator } from 'lucide-react';
+import { ProductItem, CategoryType } from '@/types/accounting';
+import { X, DollarSign, Save, Info, Sparkles, ChevronDown, ChevronUp, Calculator, Plus, Trash2 } from 'lucide-react';
 
 export interface RawIngredientCosts {
   ribeyeKg: number;
@@ -147,6 +147,15 @@ function PriceManagerModalDialog({
   const [formData, setFormData] = useState<ProductItem[]>(products);
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [showRawCosts, setShowRawCosts] = useState(false);
+  const [showNewProductForm, setShowNewProductForm] = useState(false);
+
+  // New product form fields
+  const [newProdName, setNewProdName] = useState('');
+  const [newProdVariant, setNewProdVariant] = useState('');
+  const [newProdCategory, setNewProdCategory] = useState<CategoryType>('bebidas');
+  const [newProdPrice, setNewProdPrice] = useState<number>(35);
+  const [newProdCost, setNewProdCost] = useState<number>(15);
+  const [newProdDescription, setNewProdDescription] = useState('');
 
   const [rawCosts, setRawCosts] = useState<RawIngredientCosts>(() => {
     if (typeof window === 'undefined') return DEFAULT_RAW_COSTS;
@@ -186,6 +195,44 @@ function PriceManagerModalDialog({
         return recipe ? { ...item, cost: recipe.cost } : item;
       })
     );
+  };
+
+  const handleAddNewProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProdName.trim()) return;
+
+    const newId = `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const defaultImages: Record<CategoryType, string> = {
+      sandwiches: 'https://images.unsplash.com/photo-1549611016-3a70d82b5040?auto=format&fit=crop&w=800&q=80',
+      quesadillas: 'https://images.unsplash.com/photo-1618040996337-56904b7850b9?auto=format&fit=crop&w=800&q=80',
+      'steak-frites': 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+      fries: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=800&q=80',
+      bebidas: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80',
+      extras: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=80',
+      postres: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=800&q=80',
+      otro: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
+    };
+
+    const newProduct: ProductItem = {
+      id: newId,
+      name: newProdName.trim(),
+      variantLabel: newProdVariant.trim() || 'Estándar',
+      category: newProdCategory,
+      description: newProdDescription.trim() || `${newProdName.trim()} preparado al momento.`,
+      imageUrl: defaultImages[newProdCategory] || defaultImages.otro,
+      defaultPrice: Number(newProdPrice) || 0,
+      cost: Number(newProdCost) || 0,
+    };
+
+    setFormData((prev) => [...prev, newProduct]);
+    setNewProdName('');
+    setNewProdVariant('');
+    setNewProdDescription('');
+    setShowNewProductForm(false);
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    setFormData((prev) => prev.filter((p) => p.id !== id));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -235,11 +282,19 @@ function PriceManagerModalDialog({
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <button
               type="button"
+              onClick={() => setShowNewProductForm((prev) => !prev)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-semibold text-[11px] transition-all shadow-sm active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{showNewProductForm ? 'Ocultar Creador' : '+ Nuevo Platillo / Bebida'}</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setShowRawCosts((prev) => !prev)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-[11px] transition-all shadow-sm active:scale-95"
             >
               <Calculator className="w-3.5 h-3.5 text-[#e59b38]" />
-              <span>{showRawCosts ? 'Ocultar Insumos' : 'Precios de Proveedor'}</span>
+              <span>{showRawCosts ? 'Ocultar Insumos' : 'Precios Proveedor'}</span>
             </button>
             <button
               type="button"
@@ -252,6 +307,97 @@ function PriceManagerModalDialog({
             </button>
           </div>
         </div>
+
+        {/* Dynamic New Product Creator Form */}
+        {showNewProductForm && (
+          <div className="p-4 bg-[#16161c] border-b border-white/[0.08] text-xs space-y-3 shrink-0 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <Plus className="w-4 h-4 text-emerald-400" />
+                <span>Agregar Nuevo Platillo o Bebida al Menú</span>
+              </span>
+              <span className="text-[10px] text-neutral-400">Se agregará al punto de venta y comanda</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+              <div className="sm:col-span-2">
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Nombre del Producto</label>
+                <input
+                  type="text"
+                  required
+                  value={newProdName}
+                  onChange={(e) => setNewProdName(e.target.value)}
+                  placeholder="Ej. Refresco Lata 355ml"
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Variante / Tamaño</label>
+                <input
+                  type="text"
+                  value={newProdVariant}
+                  onChange={(e) => setNewProdVariant(e.target.value)}
+                  placeholder="Ej. 355ml / Frío"
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Categoría</label>
+                <select
+                  value={newProdCategory}
+                  onChange={(e) => setNewProdCategory(e.target.value as CategoryType)}
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                >
+                  <option value="sandwiches">Sándwiches</option>
+                  <option value="quesadillas">Quesadillas</option>
+                  <option value="steak-frites">Steak Frites</option>
+                  <option value="fries">Papas y Acompañamientos</option>
+                  <option value="bebidas">Bebidas y Refrescos</option>
+                  <option value="extras">Extras e Ingredientes</option>
+                  <option value="postres">Postres</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Precio de Venta ($ MXN)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={newProdPrice}
+                  onChange={(e) => setNewProdPrice(parseFloat(e.target.value) || 0)}
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Costo Unitario ($ MXN)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={newProdCost}
+                  onChange={(e) => setNewProdCost(parseFloat(e.target.value) || 0)}
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                />
+              </div>
+
+              <div className="sm:col-span-2 flex items-end">
+                <button
+                  type="button"
+                  onClick={handleAddNewProduct}
+                  className="w-full py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Agregar al Catálogo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Dynamic Raw Ingredients Costing Accordion */}
         {showRawCosts && (
@@ -377,6 +523,15 @@ function PriceManagerModalDialog({
           </div>
 
           {formData.map((item) => {
+            const isBaseProduct = [
+              'sandwich-alone',
+              'sandwich-fries',
+              'quesadilla-alone',
+              'quesadilla-fries',
+              'steak-frites',
+              'fries-alone',
+              'fries-cheese',
+            ].includes(item.id);
             const margin =
               item.defaultPrice > 0 && item.cost > 0
                 ? Math.round(((item.defaultPrice - item.cost) / item.defaultPrice) * 100)
@@ -392,8 +547,20 @@ function PriceManagerModalDialog({
                 <div className="grid grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 sm:p-3">
                   {/* Product Name & Variant */}
                   <div className="col-span-6 sm:col-span-6">
-                    <div className="font-semibold text-xs sm:text-sm text-[#f5f0eb] leading-tight truncate">
-                      {item.name}
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-xs sm:text-sm text-[#f5f0eb] leading-tight truncate">
+                        {item.name}
+                      </div>
+                      {!isBaseProduct && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProduct(item.id)}
+                          className="text-neutral-500 hover:text-red-400 p-0.5 rounded transition-colors shrink-0"
+                          title="Eliminar producto del catálogo"
+                        >
+                          <Trash2 className="w-3 h-3 text-red-400" />
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[10px] sm:text-[11px] text-[#e59b38] font-mono truncate">
