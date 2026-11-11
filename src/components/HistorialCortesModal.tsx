@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ClosedShiftRecord } from '@/types/accounting';
-import { X, Receipt, Printer, CheckCircle2, AlertTriangle, AlertCircle, Calendar } from 'lucide-react';
+import { X, Receipt, Printer, CheckCircle2, AlertTriangle, AlertCircle, Calendar, Share2 } from 'lucide-react';
 
 interface HistorialCortesModalProps {
   isOpen: boolean;
@@ -23,6 +23,37 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleShareWhatsApp = (shift: ClosedShiftRecord) => {
+    const statusStr = shift.differenceStatus === 'cuadrada'
+      ? '✓ CAJA CUADRADA ($0.00)'
+      : shift.differenceStatus === 'sobrante'
+      ? `▲ SOBRANTE: +$${shift.difference?.toFixed(2)}`
+      : shift.differenceStatus === 'faltante'
+      ? `▼ FALTANTE: -$${Math.abs(shift.difference || 0).toFixed(2)}`
+      : 'Sin arqueo físico';
+
+    const text = `*CORTE DE CAJA • LA PATRONA* 🍔🍟\n` +
+      `*Turno #${shift.shiftNumber}* — ${new Date(shift.closedAt).toLocaleString('es-MX')}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💰 *Venta Bruta Total:* $${shift.totalGrossRevenue.toFixed(2)} MXN\n` +
+      `(+) *Fondo Inicial:* $${shift.startingCash.toFixed(2)} MXN\n` +
+      `(+) *Ventas Efectivo:* $${shift.cashSalesTotal.toFixed(2)} MXN\n` +
+      (shift.totalExpenses > 0 ? `(-) *Salidas / Gastos:* -$${shift.totalExpenses.toFixed(2)} MXN\n` : '') +
+      (shift.totalTipsCollected && shift.totalTipsCollected > 0 ? `(+) *Propinas Personal:* +$${shift.totalTipsCollected.toFixed(2)} MXN\n` : '') +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💵 *Efectivo Esperado:* $${shift.expectedCashInDrawer.toFixed(2)} MXN\n` +
+      (shift.countedCash !== undefined ? `🔎 *Efectivo Contado:* $${shift.countedCash.toFixed(2)} MXN\n` : '') +
+      `⚖️ *Resultado Arqueo:* ${statusStr}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💳 *Tarjetas Clip:* $${shift.cardSalesTotal.toFixed(2)} MXN\n` +
+      `📲 *Transferencias SPEI:* $${shift.transferSalesTotal.toFixed(2)} MXN\n` +
+      `📦 *Unidades Vendidas:* ${shift.totalUnits} piezas\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `*La Patrona • Philly & Fry POS*`;
+
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   return (
@@ -135,14 +166,26 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
                   <span className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
                     Detalle del Ticket • Turno #{selectedShift.shiftNumber}
                   </span>
-                  <button
-                    type="button"
-                    onClick={handlePrint}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white transition-all active:scale-95"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-[#e59b38]" />
-                    <span>Reimprimir Ticket</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleShareWhatsApp(selectedShift)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-all active:scale-95"
+                      title="Compartir ticket por WhatsApp"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handlePrint}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white transition-all active:scale-95"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-[#e59b38]" />
+                      <span>Reimprimir Ticket</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Printable Ticket Card */}

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useSyncExternalStore } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -66,6 +66,26 @@ export const Navbar: React.FC<NavbarProps> = ({
       });
     }
   }, []);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const handleToggleFullscreen = () => {
+    if (typeof window === 'undefined') return;
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   const timeframeLabels: Record<TimeframeFilter, string> = {
     today: 'Hoy',
@@ -267,6 +287,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {/* Fullscreen Kiosk Mode Toggle */}
+          <button
+            onClick={handleToggleFullscreen}
+            className="p-2 rounded-full border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-all active:scale-95"
+            title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa / Modo Terminal POS'}
+          >
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+          </button>
+
           {/* Units Counter Badge Button */}
           <button
             onClick={onOpenHistory}
@@ -294,6 +323,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
             </button>
           )}
+
+          <button
+            onClick={handleToggleFullscreen}
+            className="p-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] text-neutral-400"
+            title="Pantalla completa"
+          >
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+          </button>
 
           <button
             onClick={onOpenNuevaOrden}

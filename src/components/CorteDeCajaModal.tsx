@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord, CashDenominationCount, ClosedShiftRecord } from '@/types/accounting';
 import { getPaymentBreakdown, calculateDenominationTotal, calculateExpectedDrawerCash, calculateArqueoDifference } from '@/utils/accountingCalculations';
-import { X, Printer, RotateCcw, Receipt, CheckCircle2, AlertTriangle, AlertCircle, Coins, Banknote } from 'lucide-react';
+import { X, Printer, RotateCcw, Receipt, CheckCircle2, AlertTriangle, AlertCircle, Coins, Banknote, Share2 } from 'lucide-react';
 
 interface CorteDeCajaModalProps {
   isOpen: boolean;
@@ -118,6 +118,37 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleShareWhatsApp = () => {
+    const statusStr = arqueoResult
+      ? arqueoResult.status === 'cuadrada'
+        ? '✓ CAJA CUADRADA ($0.00)'
+        : arqueoResult.status === 'sobrante'
+        ? `▲ SOBRANTE: +$${arqueoResult.difference.toFixed(2)}`
+        : `▼ FALTANTE: -$${Math.abs(arqueoResult.difference).toFixed(2)}`
+      : 'Sin arqueo físico';
+
+    const text = `*CORTE DE CAJA • LA PATRONA* 🍔🍟\n` +
+      `*Turno #${shiftCounter}* — ${new Date().toLocaleString('es-MX')}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💰 *Venta Bruta Total:* $${totalRevenue.toFixed(2)} MXN\n` +
+      `(+) *Fondo Inicial:* $${startingCash.toFixed(2)} MXN\n` +
+      `(+) *Ventas Efectivo:* $${paymentBreakdown.efectivo.total.toFixed(2)} MXN\n` +
+      (totalExpenses > 0 ? `(-) *Salidas / Gastos:* -$${totalExpenses.toFixed(2)} MXN\n` : '') +
+      (totalTipsCollected > 0 ? `(+) *Propinas Personal:* +$${totalTipsCollected.toFixed(2)} MXN\n` : '') +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💵 *Efectivo Esperado:* $${expectedCashInDrawer.toFixed(2)} MXN\n` +
+      (countedCash !== null ? `🔎 *Efectivo Contado:* $${countedCash.toFixed(2)} MXN\n` : '') +
+      `⚖️ *Resultado Arqueo:* ${statusStr}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💳 *Tarjetas Clip:* $${paymentBreakdown.tarjeta.total.toFixed(2)} MXN\n` +
+      `📲 *Transferencias SPEI:* $${paymentBreakdown.transferencia.total.toFixed(2)} MXN\n` +
+      `📦 *Unidades Vendidas:* ${totalUnits} piezas\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `*La Patrona • Philly & Fry POS*`;
+
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const timeframeLabels: Record<TimeframeFilter, string> = {
@@ -606,14 +637,26 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
         {/* Footer Actions - Screen only */}
         <div className="print:hidden p-4 sm:p-5 border-t border-white/[0.08] bg-[#19191d] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all active:scale-95 touch-manipulation"
-          >
-            <Printer className="w-4 h-4 text-[#e59b38]" />
-            <span>Imprimir Ticket / PDF</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-xl transition-all active:scale-95 touch-manipulation"
+            >
+              <Printer className="w-4 h-4 text-[#e59b38]" />
+              <span>Imprimir</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-xl transition-all shadow-md active:scale-95 touch-manipulation"
+              title="Compartir resumen del corte por WhatsApp"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>WhatsApp</span>
+            </button>
+          </div>
 
           <button
             type="button"

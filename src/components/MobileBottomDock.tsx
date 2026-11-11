@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -171,6 +171,22 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             <DollarSign className="w-4 h-4 text-[#e59b38]" />
             <span className="text-[8px] uppercase mt-0.5">Costos</span>
           </button>
+
+          {onToggleSound && (
+            <button
+              onClick={onToggleSound}
+              aria-label="Sonido de cobro"
+              title={soundEnabled ? 'Sonido activo' : 'Silenciado'}
+              className={`w-10 h-10 rounded-xl border flex flex-col items-center justify-center active:scale-95 touch-manipulation select-none shrink-0 ${
+                soundEnabled
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : 'bg-white/[0.04] border-white/[0.08] text-neutral-500'
+              }`}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              <span className="text-[7.5px] uppercase mt-0.5">Audio</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenHistory}
