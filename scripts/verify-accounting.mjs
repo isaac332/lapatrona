@@ -753,4 +753,42 @@ assert.equal(totalSw, 30, 'Hoagie bread requirement must equal 30 pieces');
 assert.equal(totalQ, 25, 'Tortilla requirement must equal 25 pieces');
 console.log('✓ Mise en place raw ingredient math verified');
 
-console.log('\nAll 17 accounting, POS, KDS, thermal, catalog, and kitchen prep tests passed flawlessly!');
+// Test 18: Split Payment (Pago Mixto - Efectivo + Tarjeta) Reconciliation
+console.log('Test 18: Split Payment (Pago Mixto - Efectivo + Tarjeta) Reconciliation');
+const splitOrder = {
+  total: 500,
+  splitPayment: { cash: 200, card: 300 },
+  items: [
+    { productId: 'sandwich-fries', quantity: 2, unitPrice: 185 }, // $370
+    { productId: 'fries-cheese', quantity: 2, unitPrice: 65 },    // $130
+  ],
+};
+
+const cashFraction = splitOrder.splitPayment.cash / splitOrder.total; // 0.4
+const cardFraction = splitOrder.splitPayment.card / splitOrder.total; // 0.6
+assert.equal(cashFraction + cardFraction, 1.0, 'Fractions must sum to 1.0');
+
+let tallyCash = 0;
+let tallyCard = 0;
+
+for (const it of splitOrder.items) {
+  for (let i = 0; i < it.quantity; i++) {
+    const unitCash = Math.round(it.unitPrice * cashFraction * 100) / 100;
+    const unitCard = Math.round((it.unitPrice - unitCash) * 100) / 100;
+    assert.equal(unitCash + unitCard, it.unitPrice);
+    tallyCash += unitCash;
+    tallyCard += unitCard;
+  }
+}
+
+assert.equal(Math.round(tallyCash), 200, 'Cash tally must match $200.00 cash portion');
+assert.equal(Math.round(tallyCard), 300, 'Card tally must match $300.00 card portion');
+assert.equal(tallyCash + tallyCard, 500, 'Total sum of split portions must exactly equal order total of $500.00');
+
+// Change from $500 bill on the $200 cash portion
+const receivedCashBill = 500;
+const splitCashChange = receivedCashBill - splitOrder.splitPayment.cash;
+assert.equal(splitCashChange, 300, 'Change from $500 bill on $200 cash portion must be $300');
+console.log('✓ Split payment reconciliation and cash drawer allocations verified');
+
+console.log('\nAll 18 accounting, POS, KDS, thermal, catalog, prep, and split payment tests passed flawlessly!');

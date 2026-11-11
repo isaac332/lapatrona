@@ -51,6 +51,7 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
     efectivo: 'EFECTIVO',
     tarjeta: 'TARJETA / CLIP',
     transferencia: 'TRANSFERENCIA SPEI',
+    mixto: 'PAGO MIXTO (EFECTIVO + TARJETA)',
   };
 
   return (
@@ -186,6 +187,31 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
                   {paymentLabels[order.paymentMethod] || order.paymentMethod.toUpperCase()}
                 </span>
               </div>
+
+              {order.paymentMethod === 'mixto' && order.splitPayment && (
+                <div className="text-[11px] space-y-0.5 text-neutral-400 print:text-black bg-white/[0.02] p-2 rounded-lg border border-white/5 my-1">
+                  <div className="flex justify-between">
+                    <span>• Efectivo:</span>
+                    <span className="font-mono text-white print:text-black">${order.splitPayment.cash.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Tarjeta / Clip:</span>
+                    <span className="font-mono text-white print:text-black">${order.splitPayment.card.toFixed(2)}</span>
+                  </div>
+                  {typeof order.amountReceived === 'number' && order.amountReceived > 0 && (
+                    <>
+                      <div className="flex justify-between pt-1 border-t border-white/5">
+                        <span>Recibido en efectivo:</span>
+                        <span className="font-mono">${order.amountReceived.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-black text-emerald-400 print:text-black pt-0.5">
+                        <span>CAMBIO EFECTIVO:</span>
+                        <span className="font-mono">${(order.change || 0).toFixed(2)} MXN</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {order.paymentMethod === 'efectivo' && typeof order.amountReceived === 'number' && order.amountReceived > 0 && (
                 <>

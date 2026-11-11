@@ -157,7 +157,12 @@ export function getPaymentBreakdown(sales: SaleRecord[]): PaymentBreakdown {
   for (const s of sales) {
     const method = s.paymentMethod || 'efectivo';
     const amount = s.quantity * s.unitPrice;
-    if (method === 'tarjeta') {
+    if (method === 'mixto' && s.cashAmount !== undefined && s.cardAmount !== undefined) {
+      efectivoTotal += s.cashAmount;
+      tarjetaTotal += s.cardAmount;
+      efectivoCount += 1;
+      tarjetaCount += 1;
+    } else if (method === 'tarjeta') {
       tarjetaTotal += amount;
       tarjetaCount += s.quantity;
     } else if (method === 'transferencia') {

@@ -58,11 +58,21 @@ export function generateOrderThermalText(order: CustomerOrder, businessInfo?: Bu
     lines.push(pad('(+) Propina:', `$${order.tip.toFixed(2)}`));
   }
   lines.push(pad('TOTAL A PAGAR:', `$${order.total.toFixed(2)} MXN`));
-  lines.push(pad('Forma de Pago:', order.paymentMethod.toUpperCase()));
 
-  if (order.paymentMethod === 'efectivo' && typeof order.amountReceived === 'number' && order.amountReceived > 0) {
-    lines.push(pad('Recibido:', `$${order.amountReceived.toFixed(2)}`));
-    lines.push(pad('CAMBIO:', `$${(order.change || 0).toFixed(2)} MXN`));
+  if (order.paymentMethod === 'mixto' && order.splitPayment) {
+    lines.push(pad('Forma de Pago:', 'PAGO MIXTO'));
+    lines.push(pad(' - Efectivo:', `$${order.splitPayment.cash.toFixed(2)}`));
+    lines.push(pad(' - Tarjeta/Clip:', `$${order.splitPayment.card.toFixed(2)}`));
+    if (typeof order.amountReceived === 'number' && order.amountReceived > 0) {
+      lines.push(pad('Recibido Efectivo:', `$${order.amountReceived.toFixed(2)}`));
+      lines.push(pad('CAMBIO EFECTIVO:', `$${(order.change || 0).toFixed(2)} MXN`));
+    }
+  } else {
+    lines.push(pad('Forma de Pago:', order.paymentMethod.toUpperCase()));
+    if (order.paymentMethod === 'efectivo' && typeof order.amountReceived === 'number' && order.amountReceived > 0) {
+      lines.push(pad('Recibido:', `$${order.amountReceived.toFixed(2)}`));
+      lines.push(pad('CAMBIO:', `$${(order.change || 0).toFixed(2)} MXN`));
+    }
   }
 
   lines.push(line);

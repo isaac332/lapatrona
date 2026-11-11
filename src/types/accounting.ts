@@ -11,7 +11,7 @@ export interface ProductItem {
   cost: number; // costo de insumos por unidad
 }
 
-export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia';
+export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto';
 
 export interface SaleRecord {
   id: string;
@@ -21,6 +21,8 @@ export interface SaleRecord {
   unitPrice: number;
   unitCost: number;
   paymentMethod?: PaymentMethod;
+  cashAmount?: number;
+  cardAmount?: number;
   orderId?: string;
   orderNumber?: number;
 }
@@ -35,6 +37,11 @@ export interface CustomerOrderItem {
   subtotal: number;
 }
 
+export interface SplitPaymentDetail {
+  cash: number;
+  card: number;
+}
+
 export interface CustomerOrder {
   id: string;
   orderNumber: number;
@@ -46,6 +53,7 @@ export interface CustomerOrder {
   total: number;
   tip?: number;
   paymentMethod: PaymentMethod;
+  splitPayment?: SplitPaymentDetail;
   amountReceived?: number;
   change?: number;
   status?: 'pendiente' | 'preparando' | 'listo' | 'entregado';

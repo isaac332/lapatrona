@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, ProductStockConfig } from '@/types/accounting';
+import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, ProductStockConfig, SplitPaymentDetail } from '@/types/accounting';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   X,
@@ -13,6 +13,7 @@ import {
   Banknote,
   CreditCard,
   Smartphone,
+  Split,
   Trash2,
   CheckCircle2,
 } from 'lucide-react';
@@ -36,7 +37,8 @@ function createNewOrder(
   paymentMethod: PaymentMethod,
   amountReceived?: number,
   change?: number,
-  tip?: number
+  tip?: number,
+  splitPayment?: SplitPaymentDetail
 ): CustomerOrder {
   return {
     id: `order-${nextOrderNumber}-${Date.now()}`,
@@ -49,6 +51,7 @@ function createNewOrder(
     total,
     tip,
     paymentMethod,
+    splitPayment,
     amountReceived,
     change,
   };
@@ -67,6 +70,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   const [notes, setNotes] = useState('');
   const [cart, setCart] = useState<Record<string, number>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
+  const [splitCashInput, setSplitCashInput] = useState<string>('');
   const [tipPercent, setTipPercent] = useState<number | 'custom'>(0);
   const [customTip, setCustomTip] = useState<string>('');
   const [amountReceived, setAmountReceived] = useState('');
@@ -132,8 +136,22 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
       : Math.round((foodSubtotal * (tipPercent as number)) / 100);
   const finalTotal = foodSubtotal + tipAmount;
 
+  const rawCashPortion = parseFloat(splitCashInput);
+  const cashPortion =
+    paymentMethod === 'mixto'
+      ? isNaN(rawCashPortion)
+        ? Math.round(finalTotal / 2)
+        : Math.min(finalTotal, Math.max(0, rawCashPortion))
+      : 0;
+  const cardPortion = paymentMethod === 'mixto' ? Math.max(0, Math.round((finalTotal - cashPortion) * 100) / 100) : 0;
+
   const receivedNum = parseFloat(amountReceived) || 0;
-  const change = paymentMethod === 'efectivo' && receivedNum > 0 ? Math.max(0, receivedNum - finalTotal) : 0;
+  const change =
+    paymentMethod === 'efectivo' && receivedNum > 0
+      ? Math.max(0, receivedNum - finalTotal)
+      : paymentMethod === 'mixto' && receivedNum > 0
+      ? Math.max(0, receivedNum - cashPortion)
+      : 0;
 
   const billetes = [50, 100, 200, 500, 1000];
 
@@ -151,9 +169,10 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
       orderItems,
       finalTotal,
       paymentMethod,
-      paymentMethod === 'efectivo' && receivedNum > 0 ? receivedNum : undefined,
-      paymentMethod === 'efectivo' && receivedNum > 0 ? change : undefined,
-      tipAmount > 0 ? tipAmount : undefined
+      (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? receivedNum : undefined,
+      (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? change : undefined,
+      tipAmount > 0 ? tipAmount : undefined,
+      paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined
     );
 
     onCompleteOrder(newOrder);
@@ -417,11 +436,12 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
               <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
                 Forma de Cobro
               </label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-4 gap-1.5">
                 {[
                   { id: 'efectivo', label: 'Efectivo', icon: Banknote },
                   { id: 'tarjeta', label: 'Tarjeta', icon: CreditCard },
                   { id: 'transferencia', label: 'Transf.', icon: Smartphone },
+                  { id: 'mixto', label: 'Mixto', icon: Split },
                 ].map((m) => {
                   const Icon = m.icon;
                   const isActive = paymentMethod === m.id;
@@ -443,6 +463,64 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                 })}
               </div>
             </div>
+
+            {/* Split Payment (Pago Mixto) Configuration */}
+            {paymentMethod === 'mixto' && finalTotal > 0 && (
+              <div className="space-y-2 bg-[#121215] p-2.5 rounded-xl border border-[#e59b38]/30 animate-fade-in">
+                <div className="flex items-center justify-between text-[10px] text-[#e59b38] font-bold uppercase tracking-wider">
+                  <span>Desglose de Cobro Mixto:</span>
+                  <span className="font-mono">${finalTotal.toFixed(2)} total</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 block mb-0.5">Monto Efectivo ($)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={finalTotal}
+                      step="any"
+                      placeholder={`Ej. ${Math.round(finalTotal / 2)}`}
+                      value={splitCashInput}
+                      onChange={(e) => setSplitCashInput(e.target.value)}
+                      className="w-full bg-[#1b1b20] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-neutral-400 block mb-0.5">Monto Tarjeta / Clip ($)</label>
+                    <div className="w-full bg-[#18181d] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-[#e59b38] font-bold text-xs">
+                      ${cardPortion.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick 50/50 Button */}
+                <div className="flex gap-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSplitCashInput((finalTotal / 2).toFixed(0))}
+                    className="flex-1 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] text-neutral-300 font-semibold border border-white/5"
+                  >
+                    Dividir 50/50
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitCashInput(Math.min(finalTotal, 200).toString())}
+                    className="py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-[10px] text-neutral-300 font-semibold border border-white/5"
+                  >
+                    $200 efec.
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitCashInput(Math.min(finalTotal, 500).toString())}
+                    className="py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-[10px] text-neutral-300 font-semibold border border-white/5"
+                  >
+                    $500 efec.
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Propina (Tip) Selector */}
             {foodSubtotal > 0 && (
@@ -497,10 +575,14 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
             )}
 
             {/* Cash Payment Bill Helper */}
-            {paymentMethod === 'efectivo' && finalTotal > 0 && (
-              <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10">
+            {(paymentMethod === 'efectivo' || (paymentMethod === 'mixto' && cashPortion > 0)) && finalTotal > 0 && (
+              <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10 animate-fade-in">
                 <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold uppercase">
-                  <span>Paga con billete de:</span>
+                  <span>
+                    {paymentMethod === 'mixto'
+                      ? `Paga los $${cashPortion.toFixed(2)} de efectivo con:`
+                      : 'Paga con billete de:'}
+                  </span>
                   {receivedNum > 0 && (
                     <span className="text-emerald-400 font-mono font-bold">
                       Cambio: ${change.toFixed(2)}

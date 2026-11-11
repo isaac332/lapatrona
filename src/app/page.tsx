@@ -448,6 +448,7 @@ export default function SalesCounterPage() {
       efectivo: 'Efectivo',
       tarjeta: 'Tarjeta / Clip',
       transferencia: 'Transferencia SPEI',
+      mixto: 'Pago Mixto',
     };
     showToast(`✓ Método de pago cambiado a ${methodNames[newMethod]}.`);
   };
@@ -505,8 +506,14 @@ export default function SalesCounterPage() {
   const handleCompleteOrder = (order: CustomerOrder) => {
     const newSales: SaleRecord[] = [];
     const now = new Date().toISOString();
+    const isMixto = order.paymentMethod === 'mixto' && order.splitPayment;
+    const cashFraction = isMixto && order.total > 0 ? order.splitPayment!.cash / order.total : 0;
+
     for (const item of order.items) {
       for (let i = 0; i < item.quantity; i++) {
+        const unitCash = isMixto ? Math.round(item.unitPrice * cashFraction * 100) / 100 : undefined;
+        const unitCard = isMixto ? Math.round((item.unitPrice - (unitCash || 0)) * 100) / 100 : undefined;
+
         newSales.push({
           id: `sale-${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${item.productId}-${i}`,
           productId: item.productId,
@@ -515,6 +522,8 @@ export default function SalesCounterPage() {
           unitPrice: item.unitPrice,
           unitCost: item.unitCost,
           paymentMethod: order.paymentMethod,
+          cashAmount: unitCash,
+          cardAmount: unitCard,
           orderId: order.id,
           orderNumber: order.orderNumber,
         });
