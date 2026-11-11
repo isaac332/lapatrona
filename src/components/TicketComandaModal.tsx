@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { CustomerOrder } from '@/types/accounting';
-import { X, Printer, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { X, Printer, CheckCircle2, ShoppingBag, Copy, Check } from 'lucide-react';
+import { generateOrderThermalText } from '@/utils/escpos';
 
 interface TicketComandaModalProps {
   isOpen: boolean;
@@ -18,11 +19,20 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
   onNewOrder,
 }) => {
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
 
   if (!isOpen || !order) return null;
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleCopyRaw = () => {
+    const text = generateOrderThermalText(order);
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
   };
 
   const formattedDate = new Date(order.timestamp).toLocaleString('es-MX', {
@@ -194,6 +204,23 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
           )}
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyRaw}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2.5 rounded-full bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all active:scale-95"
+              title="Copiar texto formateado para impresoras Bluetooth térmicas (RawBT, ESC/POS)"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">¡Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>Copiar Texto Térmico</span>
+                </>
+              )}
+            </button>
             <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
