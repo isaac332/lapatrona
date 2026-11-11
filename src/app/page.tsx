@@ -1497,6 +1497,8 @@ export default function SalesCounterPage() {
         onArchiveShift={handleArchiveShift}
         shiftCounter={shiftCounter}
         totalTipsCollected={totalTipsInTimeframe}
+        orders={filteredOrders}
+        totalWasteCost={totalWasteInTimeframe}
         onConfirmZeroOut={() => {
           setIsCorteModalOpen(false);
           setIsZeroOutModalOpen(true);

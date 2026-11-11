@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord, CashDenominationCount, ClosedShiftRecord } from '@/types/accounting';
+import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord, CashDenominationCount, ClosedShiftRecord, CustomerOrder } from '@/types/accounting';
 import { getPaymentBreakdown, calculateDenominationTotal, calculateExpectedDrawerCash, calculateArqueoDifference } from '@/utils/accountingCalculations';
-import { X, Printer, RotateCcw, Receipt, CheckCircle2, AlertTriangle, AlertCircle, Coins, Banknote, Share2 } from 'lucide-react';
+import { X, Printer, RotateCcw, Receipt, CheckCircle2, AlertTriangle, AlertCircle, Coins, Banknote, Share2, ShieldCheck } from 'lucide-react';
 
 interface CorteDeCajaModalProps {
   isOpen: boolean;
@@ -19,6 +19,8 @@ interface CorteDeCajaModalProps {
   onArchiveShift?: (record: ClosedShiftRecord) => void;
   shiftCounter?: number;
   totalTipsCollected?: number;
+  orders?: CustomerOrder[];
+  totalWasteCost?: number;
 }
 
 export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
@@ -35,8 +37,11 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   onArchiveShift,
   shiftCounter = 1,
   totalTipsCollected = 0,
+  orders = [],
+  totalWasteCost = 0,
 }) => {
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const [corteType, setCorteType] = useState<'x' | 'z'>('x');
   const [isEditingStartingCash, setIsEditingStartingCash] = useState(false);
   const [startingCashInput, setStartingCashInput] = useState(startingCash.toString());
   const [arqueoMode, setArqueoMode] = useState<'directo' | 'desglose'>('directo');
@@ -116,6 +121,15 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   const totalCombos = sandwichFries + quesadillaFries;
   const comboRate = totalMains > 0 ? Math.round((totalCombos / totalMains) * 100) : 0;
 
+  const isCorteZ = corteType === 'z';
+  const subtotalSinIVA = totalRevenue / 1.16;
+  const iva16 = totalRevenue - subtotalSinIVA;
+  const totalDiscounts = orders.reduce((sum, o) => sum + (o.discount?.amount || 0), 0);
+  const orderNumbers = orders.map((o) => o.orderNumber);
+  const orderRangeText = orderNumbers.length > 0
+    ? `#${String(Math.min(...orderNumbers)).padStart(3, '0')} a #${String(Math.max(...orderNumbers)).padStart(3, '0')} (${orderNumbers.length} comandas)`
+    : undefined;
+
   const handlePrint = () => {
     window.print();
   };
@@ -129,10 +143,34 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
         : `▼ FALTANTE: -$${Math.abs(arqueoResult.difference).toFixed(2)}`
       : 'Sin arqueo físico';
 
-    const text = `*CORTE DE CAJA • LA PATRONA* 🍔🍟\n` +
-      `*Turno #${shiftCounter}* — ${new Date().toLocaleString('es-MX')}\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n` +
-      `💰 *Venta Bruta Total:* $${totalRevenue.toFixed(2)} MXN\n` +
+    const headerTitle = isCorteZ
+      ? `📋 *CORTE Z (CIERRE DEFINITIVO DIARIO) • LA PATRONA*`
+      : `🍔 *TICKET DE CORTE #${shiftCounter} • LA PATRONA*`;
+
+    let text = `${headerTitle}\n` +
+      `📅 Cierre: ${new Date().toLocaleString('es-MX')}\n`;
+
+    if (orderRangeText) {
+      text += `🔢 *Rango de Comandas:* ${orderRangeText}\n`;
+    }
+
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+
+    if (isCorteZ) {
+      text += `🧾 *Venta Neta (Subtotal sin IVA):* $${subtotalSinIVA.toFixed(2)} MXN\n` +
+        `🏛️ *IVA Trasladado (16% SAT):* $${iva16.toFixed(2)} MXN\n`;
+    }
+
+    text += `💰 *Venta Bruta Total:* $${totalRevenue.toFixed(2)} MXN\n`;
+
+    if (totalDiscounts > 0) {
+      text += `🏷️ *Descuentos Otorgados:* -$${totalDiscounts.toFixed(2)} MXN\n`;
+    }
+    if (totalWasteCost > 0) {
+      text += `📉 *Mermas de Cocina:* -$${totalWasteCost.toFixed(2)} MXN\n`;
+    }
+
+    text += `━━━━━━━━━━━━━━━━━━━━\n` +
       `(+) *Fondo Inicial:* $${startingCash.toFixed(2)} MXN\n` +
       `(+) *Ventas Efectivo:* $${paymentBreakdown.efectivo.total.toFixed(2)} MXN\n` +
       (totalExpenses > 0 ? `(-) *Salidas / Gastos:* -$${totalExpenses.toFixed(2)} MXN\n` : '') +
@@ -146,7 +184,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
       `📲 *Transferencias SPEI:* $${paymentBreakdown.transferencia.total.toFixed(2)} MXN\n` +
       `📦 *Unidades Vendidas:* ${totalUnits} piezas\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `*La Patrona • Philly & Fry POS*`;
+      `*La Patrona • Sistema POS*`;
 
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -186,7 +224,36 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
         </div>
 
         {/* Scrollable Receipt Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+
+          {/* Screen Only: Corte X vs Corte Z Selector */}
+          <div className="print:hidden grid grid-cols-2 gap-2 bg-[#101013] p-1.5 rounded-2xl border border-white/10">
+            <button
+              type="button"
+              onClick={() => setCorteType('x')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                corteType === 'x'
+                  ? 'bg-[#e59b38] text-black shadow-md font-black'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Corte X (Parcial)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCorteType('z')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                corteType === 'z'
+                  ? 'bg-rose-600 text-white shadow-md font-black'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Corte Z (Cierre Diario SAT)</span>
+            </button>
+          </div>
 
           {/* Screen Only: Interactive Fondo Inicial & Arqueo Físico Controller */}
           <div className="print:hidden rounded-2xl bg-[#18181c] border border-white/[0.08] p-4 sm:p-5 space-y-4 shadow-lg">
@@ -435,8 +502,18 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                 PHILLY & FRY
               </div>
               <div className="text-[11px] text-[#e59b38] print:text-black uppercase tracking-wider font-semibold">
-                Mostrador de Ventas y Contabilidad
+                {isCorteZ ? '*** CORTE Z - CIERRE DEFINITIVO ***' : 'Mostrador de Ventas y Contabilidad'}
               </div>
+              {isCorteZ && (
+                <div className="text-[10px] text-rose-400 print:text-black font-bold uppercase font-mono">
+                  Auditoría Fiscal y Cierre Diario
+                </div>
+              )}
+              {orderRangeText && (
+                <div className="text-[10px] text-neutral-400 print:text-neutral-600 font-mono">
+                  Folios Comandas: {orderRangeText}
+                </div>
+              )}
               <div className="text-[10px] text-neutral-400 print:text-neutral-600 mt-1">
                 {timeframeLabels[timeframe]}
               </div>
@@ -472,10 +549,37 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
             {/* Financial Summary & Cash Drawer Reconciliation */}
             <div className="space-y-1.5 py-2 border-b border-dashed border-white/20 print:border-black/30">
+              {isCorteZ && (
+                <div className="space-y-1 pb-1.5 mb-1.5 border-b border-dashed border-white/10 print:border-black/20 text-xs">
+                  <div className="flex justify-between items-center text-neutral-300 print:text-black">
+                    <span>VENTA NETA (SUBTOTAL):</span>
+                    <span className="font-mono font-bold text-white print:text-black">${subtotalSinIVA.toFixed(2)} MXN</span>
+                  </div>
+                  <div className="flex justify-between items-center text-cyan-300 print:text-black">
+                    <span>IVA TRASLADADO (16% SAT):</span>
+                    <span className="font-mono font-bold text-cyan-400 print:text-black">${iva16.toFixed(2)} MXN</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400 print:text-black">VENTA BRUTA TOTAL:</span>
                 <span className="font-bold text-white print:text-black">${totalRevenue.toFixed(2)} MXN</span>
               </div>
+
+              {totalDiscounts > 0 && (
+                <div className="flex justify-between items-center text-xs text-emerald-400 print:text-black">
+                  <span>(-) DESCUENTOS Y CORTESÍAS:</span>
+                  <span className="font-bold font-mono">-${totalDiscounts.toFixed(2)} MXN</span>
+                </div>
+              )}
+
+              {totalWasteCost > 0 && (
+                <div className="flex justify-between items-center text-xs text-rose-400 print:text-black">
+                  <span>(-) MERMAS DE COCINA:</span>
+                  <span className="font-bold font-mono">-${totalWasteCost.toFixed(2)} MXN</span>
+                </div>
+              )}
 
               {/* Fondo Inicial de Apertura */}
               <div className="flex justify-between items-center text-xs text-[#e59b38] print:text-black">
@@ -663,12 +767,18 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
             onClick={() => {
               if (onArchiveShift) {
                 const shiftRecord: ClosedShiftRecord = {
-                  id: `shift-${Date.now()}`,
+                  id: `shift-${shiftCounter}-${Date.now()}`,
                   shiftNumber: shiftCounter,
+                  reportType: isCorteZ ? 'corte_z' : 'corte_x',
                   openedAt: sales.length > 0 ? sales[sales.length - 1].timestamp : new Date().toISOString(),
                   closedAt: new Date().toISOString(),
                   startingCash,
                   totalGrossRevenue: totalRevenue,
+                  subtotalSinIVA: isCorteZ ? Math.round(subtotalSinIVA * 100) / 100 : undefined,
+                  iva16: isCorteZ ? Math.round(iva16 * 100) / 100 : undefined,
+                  totalDiscounts: totalDiscounts > 0 ? totalDiscounts : undefined,
+                  totalWasteCost: totalWasteCost > 0 ? totalWasteCost : undefined,
+                  orderRange: orderRangeText,
                   cashSalesTotal: paymentBreakdown.efectivo.total,
                   cardSalesTotal: paymentBreakdown.tarjeta.total,
                   transferSalesTotal: paymentBreakdown.transferencia.total,
@@ -688,7 +798,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95 touch-manipulation"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Cerrar Turno #{shiftCounter} y Poner en Ceros</span>
+            <span>{isCorteZ ? `Cerrar Día y Archivar Corte Z #${shiftCounter}` : `Cerrar Turno #${shiftCounter} y Poner en Ceros`}</span>
           </button>
         </div>
 

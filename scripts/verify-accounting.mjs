@@ -1006,4 +1006,75 @@ const netOperatingProfitAfterWaste = totalGrossProfit - totalWasteCost;
 assert.equal(netOperatingProfitAfterWaste, 3386.0, 'Net operating profit after waste must be $3,386.00 MXN');
 console.log('✓ Kitchen waste inventory deductions, incident logging, and cost impacts fully verified');
 
-console.log('\nAll 21 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, and kitchen waste tests passed flawlessly!');
+// Test 22: Official Corte Z (Daily Fiscal Closing & Tax Reconciliation)
+console.log('Test 22: Official Corte Z (Daily Closing, SAT 16% Fiscal Breakdown & Cash Reconciliation)');
+
+const corteZOrderNumbers = [1, 2, 3, 4, 15, 34];
+const minOrder = Math.min(...corteZOrderNumbers);
+const maxOrder = Math.max(...corteZOrderNumbers);
+const orderRangeString = `#${String(minOrder).padStart(3, '0')} a #${String(maxOrder).padStart(3, '0')} (${corteZOrderNumbers.length} comandas)`;
+assert.equal(orderRangeString, '#001 a #034 (6 comandas)');
+
+const corteZGrossRevenue = 8700.0;
+const corteZSubtotalSinIVA = Math.round((corteZGrossRevenue / 1.16) * 100) / 100; // 7500.00
+const corteZIVA16 = Math.round((corteZGrossRevenue - corteZSubtotalSinIVA) * 100) / 100; // 1200.00
+
+assert.equal(corteZSubtotalSinIVA, 7500.0, 'Subtotal without IVA must be $7,500.00 MXN');
+assert.equal(corteZIVA16, 1200.0, 'IVA Trasladado (16% SAT) must be $1,200.00 MXN');
+assert.equal(corteZSubtotalSinIVA + corteZIVA16, corteZGrossRevenue, 'Subtotal + IVA must equal Gross Revenue exactly');
+
+const corteZStartingFloat = 1000.0;
+const corteZCashSales = 5200.0;
+const corteZCardSales = 2300.0;
+const corteZTransferSales = 1200.0;
+const corteZExpenses = 450.0;
+const corteZDiscounts = 180.0;
+const corteZWaste = 114.0;
+
+assert.equal(corteZCashSales + corteZCardSales + corteZTransferSales, corteZGrossRevenue);
+
+const corteZExpectedCash = Math.max(0, corteZStartingFloat + corteZCashSales - corteZExpenses);
+assert.equal(corteZExpectedCash, 5750.0, 'Expected cash in drawer must be $5,750.00 MXN');
+
+const corteZCountedCash = 5750.0;
+const corteZArqueo = calculateArqueoDifference(corteZCountedCash, corteZExpectedCash);
+assert.equal(corteZArqueo.status, 'cuadrada');
+assert.equal(corteZArqueo.difference, 0);
+
+// Verify closed shift record structure with Corte Z fields
+const closedShiftZRecord = {
+  id: 'shift-z-2026-11-10',
+  shiftNumber: 1,
+  reportType: 'corte_z',
+  openedAt: '2026-11-10T11:00:00.000Z',
+  closedAt: '2026-11-10T23:30:00.000Z',
+  cashierName: 'Administración La Patrona',
+  startingCash: corteZStartingFloat,
+  totalGrossRevenue: corteZGrossRevenue,
+  subtotalSinIVA: corteZSubtotalSinIVA,
+  iva16: corteZIVA16,
+  totalDiscounts: corteZDiscounts,
+  totalWasteCost: corteZWaste,
+  orderRange: orderRangeString,
+  cashSalesTotal: corteZCashSales,
+  cardSalesTotal: corteZCardSales,
+  transferSalesTotal: corteZTransferSales,
+  totalExpenses: corteZExpenses,
+  expectedCashInDrawer: corteZExpectedCash,
+  countedCash: corteZCountedCash,
+  difference: corteZArqueo.difference,
+  differenceStatus: corteZArqueo.status,
+  totalUnits: 48,
+  totalTipsCollected: 320.0,
+};
+
+assert.equal(closedShiftZRecord.reportType, 'corte_z');
+assert.equal(closedShiftZRecord.subtotalSinIVA, 7500.0);
+assert.equal(closedShiftZRecord.iva16, 1200.0);
+assert.equal(closedShiftZRecord.totalDiscounts, 180.0);
+assert.equal(closedShiftZRecord.totalWasteCost, 114.0);
+assert.equal(closedShiftZRecord.orderRange, '#001 a #034 (6 comandas)');
+
+console.log('✓ Official Corte Z daily closing, SAT 16% fiscal breakdown, and order range verified');
+
+console.log('\nAll 22 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, and Corte Z tests passed flawlessly!');

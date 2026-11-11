@@ -159,11 +159,17 @@ export interface CashShiftState {
 export interface ClosedShiftRecord {
   id: string;
   shiftNumber: number;
+  reportType?: 'corte_x' | 'corte_z';
   openedAt: string;
   closedAt: string;
   cashierName?: string;
   startingCash: number;
   totalGrossRevenue: number;
+  subtotalSinIVA?: number;
+  iva16?: number;
+  totalDiscounts?: number;
+  totalWasteCost?: number;
+  orderRange?: string;
   cashSalesTotal: number;
   cardSalesTotal: number;
   transferSalesTotal: number;

@@ -163,17 +163,40 @@ export function generatePreCuentaThermalText(order: CustomerOrder, businessInfo?
 export function generateShiftThermalText(shift: ClosedShiftRecord, businessInfo?: BusinessInfo): string {
   const info = businessInfo || DEFAULT_BUSINESS_INFO;
   const line = '--------------------------------';
+  const doubleLine = '================================';
+  const isCorteZ = shift.reportType === 'corte_z';
+
   const lines: string[] = [
+    doubleLine,
     center(info.name.toUpperCase()),
-    center(`${info.tagline} - POS`),
-    center(`Ticket de Corte #${shift.shiftNumber}`),
-    line,
+    center(isCorteZ ? '*** CORTE Z (CIERRE DIARIO) ***' : `TICKET DE CORTE #${shift.shiftNumber}`),
+    doubleLine,
     `Cierre: ${new Date(shift.closedAt).toLocaleString('es-MX')}`,
-    line,
-    pad('VENTA BRUTA TOTAL:', `$${shift.totalGrossRevenue.toFixed(2)}`),
-    pad('(+) Fondo Apertura:', `$${shift.startingCash.toFixed(2)}`),
-    pad('(+) Ventas Efectivo:', `$${shift.cashSalesTotal.toFixed(2)}`),
   ];
+
+  if (shift.orderRange) {
+    lines.push(pad('RANGO DE COMANDAS:', shift.orderRange));
+  }
+  lines.push(line);
+
+  if (isCorteZ && shift.subtotalSinIVA !== undefined && shift.iva16 !== undefined) {
+    lines.push(pad('VENTA NETA (SUBTOTAL):', `$${shift.subtotalSinIVA.toFixed(2)}`));
+    lines.push(pad('IVA TRASLADADO (16%):', `$${shift.iva16.toFixed(2)}`));
+    lines.push(line);
+  }
+
+  lines.push(pad('VENTA BRUTA TOTAL:', `$${shift.totalGrossRevenue.toFixed(2)}`));
+
+  if (shift.totalDiscounts && shift.totalDiscounts > 0) {
+    lines.push(pad('(-) Descuentos / Promos:', `-$${shift.totalDiscounts.toFixed(2)}`));
+  }
+  if (shift.totalWasteCost && shift.totalWasteCost > 0) {
+    lines.push(pad('(-) Mermas de Cocina:', `-$${shift.totalWasteCost.toFixed(2)}`));
+  }
+
+  lines.push(line);
+  lines.push(pad('(+) Fondo Apertura:', `$${shift.startingCash.toFixed(2)}`));
+  lines.push(pad('(+) Ventas Efectivo:', `$${shift.cashSalesTotal.toFixed(2)}`));
 
   if (shift.totalExpenses > 0) {
     lines.push(pad('(-) Gastos de Caja:', `-$${shift.totalExpenses.toFixed(2)}`));
@@ -209,7 +232,7 @@ export function generateShiftThermalText(shift: ClosedShiftRecord, businessInfo?
   }
 
   lines.push(line);
-  lines.push(center('FIN DE TURNO CONCILIADO'));
+  lines.push(center(isCorteZ ? 'CIERRE OFICIAL DEL DÍA' : 'CORTE PARCIAL DE TURNO'));
   lines.push(center(`${info.name} • Auditoría`));
   lines.push('');
 
