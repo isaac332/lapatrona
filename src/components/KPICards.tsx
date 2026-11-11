@@ -29,6 +29,9 @@ export const KPICards: React.FC<KPICardsProps> = ({
   // Aggregate units and revenue
   const totalUnits = sales.reduce((acc, curr) => acc + curr.quantity, 0);
   const totalRevenue = sales.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0);
+  const totalCost = sales.reduce((acc, curr) => acc + curr.quantity * curr.unitCost, 0);
+  const grossProfit = totalRevenue - totalCost;
+  const grossMargin = totalRevenue > 0 && totalCost > 0 ? Math.round((grossProfit / totalRevenue) * 100) : null;
   const paymentBreakdown = getPaymentBreakdown(sales);
   const efectivoEnCajon = paymentBreakdown.efectivo.total - totalExpenses;
   const dineroEnBanco = paymentBreakdown.tarjeta.total + paymentBreakdown.transferencia.total;
@@ -169,8 +172,14 @@ export const KPICards: React.FC<KPICardsProps> = ({
               ${totalRevenue.toFixed(2)}
             </span>
           </div>
-          <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-500 truncate">
-            Ingreso total acumulado
+          <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-400 truncate">
+            {grossMargin !== null ? (
+              <span className="text-emerald-400 font-semibold font-mono">
+                Utilidad: ${grossProfit.toFixed(0)} ({grossMargin}% mg.)
+              </span>
+            ) : (
+              'Ingreso total acumulado'
+            )}
           </div>
         </div>
 

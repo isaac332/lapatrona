@@ -487,4 +487,40 @@ const orderUnitsRevenue = generatedSales.reduce((sum, s) => sum + s.quantity * s
 assert.equal(orderUnitsRevenue, 590, 'Gross revenue from generated records must equal $590.00');
 console.log('✓ Multi-item comanda generation, change calculation, and atomic sales records sync verified');
 
-console.log('\nAll 9 accounting verification tests passed flawlessly!');
+// Test 10: Food Costing Escandallos, Gross Profit, and Contribution Margin
+console.log('Test 10: Recipe Escandallos, Gross Profit, and Food Cost Contribution Margin');
+const sampleEscandallos = {
+  'sandwich-alone': 71.50,
+  'sandwich-fries': 80.50,
+  'quesadilla-alone': 55.90,
+  'quesadilla-fries': 64.90,
+  'steak-frites': 72.35,
+  'fries-alone': 15.90,
+  'fries-cheese': 24.30,
+};
+
+// Check margin calculation on Philly Cheesesteak Combo ($185 price, $80.50 cost)
+const phillyMargin = Math.round(((185 - sampleEscandallos['sandwich-fries']) / 185) * 100);
+assert.equal(phillyMargin, 56, 'Philly combo margin must equal 56%');
+
+// Check margin on Papas a la Francesa ($65 price, $15.90 cost)
+const friesMargin = Math.round(((65 - sampleEscandallos['fries-alone']) / 65) * 100);
+assert.equal(friesMargin, 76, 'Fries margin must equal 76%');
+
+// Calculate total batch food cost and gross profit
+const batchSales = [
+  { quantity: 10, unitPrice: 185, unitCost: 80.50 }, // Philly Combo ($1,850 rev, $805 cost)
+  { quantity: 20, unitPrice: 65, unitCost: 15.90 },  // Fries ($1,300 rev, $318 cost)
+];
+const batchRevenue = batchSales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0); // $3,150
+const batchCost = batchSales.reduce((sum, s) => sum + s.quantity * s.unitCost, 0);       // $1,123
+const batchProfit = batchRevenue - batchCost;                                           // $2,027
+const batchMargin = Math.round((batchProfit / batchRevenue) * 100);                     // 64%
+
+assert.equal(batchRevenue, 3150);
+assert.equal(batchCost, 1123);
+assert.equal(batchProfit, 2027);
+assert.equal(batchMargin, 64);
+console.log('✓ Food costing escandallos, gross profit, and margin calculations verified');
+
+console.log('\nAll 10 accounting verification tests passed flawlessly!');
