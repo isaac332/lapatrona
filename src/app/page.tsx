@@ -13,6 +13,7 @@ import {
   getProductPerformanceRanking,
 } from '@/utils/accountingCalculations';
 import { Navbar } from '@/components/Navbar';
+import { MobileBottomDock } from '@/components/MobileBottomDock';
 import { HeroBanner } from '@/components/HeroBanner';
 import { KPICards } from '@/components/KPICards';
 import { GranularTimeframeView } from '@/components/GranularTimeframeView';
@@ -20,7 +21,6 @@ import { ProductCard } from '@/components/ProductCard';
 import { PriceManagerModal } from '@/components/PriceManagerModal';
 import { SalesHistoryModal } from '@/components/SalesHistoryModal';
 import { ZeroOutModal } from '@/components/ZeroOutModal';
-import { MobileBottomDock } from '@/components/MobileBottomDock';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -270,9 +270,9 @@ export default function SalesCounterPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0d0d0f] text-[#f5f0eb]">
-      {/* Toast Alert Feedback */}
+      {/* Toast Alert Feedback - Mobile centered / Desktop top-right */}
       {toastMessage && (
-        <div className="fixed top-24 right-6 z-50 flex items-center gap-2.5 bg-[#19191d] border border-[#e59b38]/50 text-white px-4 py-3 rounded-xl shadow-2xl animate-fade-in backdrop-blur-md">
+        <div className="fixed top-16 inset-x-4 sm:inset-x-auto sm:right-6 sm:top-24 max-w-sm mx-auto z-50 flex items-center gap-2.5 bg-[#19191d] border border-[#e59b38]/50 text-white px-4 py-3 rounded-xl shadow-2xl animate-fade-in backdrop-blur-md">
           <CheckCircle2 className="w-4 h-4 text-[#e59b38] shrink-0" />
           <span className="text-xs font-medium">{toastMessage}</span>
         </div>
@@ -299,8 +299,8 @@ export default function SalesCounterPage() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 bg-vertical-grid py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+      <main className="flex-1 bg-vertical-grid py-6 sm:py-10">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-6 sm:space-y-10">
           
           {/* Section 1: KPI & Aggregate Performance Overview */}
           <KPICards
@@ -323,27 +323,27 @@ export default function SalesCounterPage() {
           />
 
           {/* Section 3: Products & Sales Counter Grid */}
-          <div ref={productsSectionRef} className="pt-6 space-y-6">
+          <div ref={productsSectionRef} className="pt-2 sm:pt-6 space-y-4 sm:space-y-6">
             
             {/* Header with Category Filter Chips */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/[0.08] pb-5">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 border-b border-white/[0.08] pb-3 sm:pb-5">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-[#e59b38]">
+                <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-[#e59b38]">
                   Registro Rápido al Mostrador
                 </div>
-                <h2 className="font-serif text-3xl font-bold tracking-tight text-white mt-1">
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-white mt-0.5 sm:mt-1">
                   Mostrador de Ventas y Comandas
                 </h2>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Presiona <span className="text-[#e59b38] font-bold">+1 Venta</span> cada vez que se ordene un producto. Haz clic sobre el <span className="text-white underline decoration-[#e59b38] underline-offset-2">precio en la tarjeta</span> para cambiarlo al vuelo en cualquier momento.
+                <p className="text-[11px] sm:text-xs text-neutral-400 mt-1">
+                  Toca <span className="text-[#e59b38] font-bold">+1 Venta</span> para registrar pedidos al vuelo. Toca el <span className="text-white underline decoration-[#e59b38] underline-offset-2">precio en la tarjeta</span> para ajustarlo.
                 </p>
               </div>
 
-              {/* Category Filter Pills in Mexican Spanish */}
-              <div className="flex flex-wrap items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06]">
+              {/* Category Filter Pills in Mexican Spanish - Mobile Swipeable */}
+              <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06] overflow-x-auto no-scrollbar">
                 {[
-                  { id: 'all', label: 'Todos los Platillos' },
-                  { id: 'sandwiches', label: 'Sándwiches Philly' },
+                  { id: 'all', label: 'Todos' },
+                  { id: 'sandwiches', label: 'Sándwiches' },
                   { id: 'quesadillas', label: 'Quesadillas' },
                   { id: 'steak-frites', label: 'Steak Frites' },
                   { id: 'fries', label: 'Papas y Queso' },
@@ -351,7 +351,7 @@ export default function SalesCounterPage() {
                   <button
                     key={cat.id}
                     onClick={() => setActiveCategoryFilter(cat.id)}
-                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium ${
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium whitespace-nowrap shrink-0 touch-manipulation select-none active:scale-95 ${
                       activeCategoryFilter === cat.id
                         ? 'bg-[#e59b38] text-black font-semibold'
                         : 'text-neutral-400 hover:text-white'
@@ -364,7 +364,7 @@ export default function SalesCounterPage() {
             </div>
 
             {/* Product Cards Grid with On-The-Fly Price Editing */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6">
               {filteredProducts.map((product) => {
                 const counts = productCountMap[product.id] || { today: 0, week: 0, month: 0, all: 0 };
                 return (
@@ -384,27 +384,27 @@ export default function SalesCounterPage() {
           </div>
 
           {/* Section 4: Summary Breakdown by Menu Category */}
-          <div className="mt-12 rounded-2xl bg-[#141417] border border-white/[0.08] p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+          <div className="mt-8 sm:mt-12 rounded-2xl bg-[#141417] border border-white/[0.08] p-3.5 sm:p-6 space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-3 gap-2">
               <div>
-                <h3 className="font-serif text-lg font-bold text-white">
-                  Desglose por Categoría de Menú ({timeframe === 'today' ? 'HOY' : timeframe === 'week' ? 'ESTA SEMANA' : timeframe === 'month' ? 'ESTE MES' : 'HISTÓRICO'})
+                <h3 className="font-serif text-base sm:text-lg font-bold text-white leading-tight">
+                  Desglose por Categoría ({timeframe === 'today' ? 'HOY' : timeframe === 'week' ? 'ESTA SEMANA' : timeframe === 'month' ? 'ESTE MES' : 'HISTÓRICO'})
                 </h3>
-                <span className="text-xs text-neutral-400">
+                <span className="text-[11px] sm:text-xs text-neutral-400">
                   Volumen e ingresos acumulados en este periodo
                 </span>
               </div>
-              <span className="text-xs text-[#e59b38] font-mono font-bold bg-[#e59b38]/10 px-3 py-1 rounded-full border border-[#e59b38]/20">
+              <span className="text-xs text-[#e59b38] font-mono font-bold bg-[#e59b38]/10 px-2.5 py-0.5 rounded-full border border-[#e59b38]/20 self-start sm:self-auto">
                 {totalUnitsInTimeframe} piezas totales
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1 sm:pt-2">
               {[
-                { label: 'Sándwiches Philly', cat: 'sandwiches', desc: 'Sencillo y en combo con papas' },
-                { label: 'Quesadillas de Ribeye', cat: 'quesadillas', desc: 'Sencilla y en combo con papas' },
-                { label: 'Steak Frites', cat: 'steak-frites', desc: 'Papas con carne y verduras' },
-                { label: 'Papas Gourmet', cat: 'fries', desc: 'Clásicas y con queso fundido' },
+                { label: 'Sándwiches Philly', cat: 'sandwiches', desc: 'Sencillo y combo' },
+                { label: 'Quesadillas', cat: 'quesadillas', desc: 'Sencilla y combo' },
+                { label: 'Steak Frites', cat: 'steak-frites', desc: 'Carne y papas' },
+                { label: 'Papas Gourmet', cat: 'fries', desc: 'Clásicas y queso' },
               ].map((categoryItem) => {
                 const catProducts = products.filter((p) => p.category === categoryItem.cat);
                 const catSales = filteredSales.filter((s) => catProducts.some((p) => p.id === s.productId));
@@ -413,33 +413,37 @@ export default function SalesCounterPage() {
                 const percentage = totalUnitsInTimeframe > 0 ? Math.round((catUnits / totalUnitsInTimeframe) * 100) : 0;
 
                 return (
-                  <div key={categoryItem.cat} className="p-4 rounded-xl bg-black/30 border border-white/[0.04]">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-sm font-semibold text-white">{categoryItem.label}</div>
-                        <div className="text-[11px] text-neutral-400">{categoryItem.desc}</div>
+                  <div key={categoryItem.cat} className="p-3 sm:p-4 rounded-xl bg-black/30 border border-white/[0.04] flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start gap-1">
+                        <div>
+                          <div className="text-xs sm:text-sm font-semibold text-white leading-tight truncate">{categoryItem.label}</div>
+                          <div className="text-[10px] text-neutral-400 truncate">{categoryItem.desc}</div>
+                        </div>
+                        <span className="font-mono text-[10px] sm:text-xs font-bold text-[#e59b38] bg-[#e59b38]/10 px-1.5 py-0.5 rounded-full border border-[#e59b38]/20 shrink-0">
+                          {percentage}%
+                        </span>
                       </div>
-                      <span className="font-mono text-xs font-bold text-[#e59b38] bg-[#e59b38]/10 px-2 py-0.5 rounded-full border border-[#e59b38]/20">
-                        {percentage}%
-                      </span>
                     </div>
 
-                    <div className="mt-3 flex items-baseline justify-between">
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-serif text-2xl font-bold text-white">{catUnits}</span>
-                        <span className="text-[10px] text-neutral-500 font-mono">piezas</span>
+                    <div className="mt-2.5 sm:mt-3">
+                      <div className="flex items-baseline justify-between">
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-serif text-lg sm:text-2xl font-bold text-white">{catUnits}</span>
+                          <span className="text-[9px] text-neutral-500 font-mono">piezas</span>
+                        </div>
+                        <span className="text-[11px] sm:text-xs font-mono text-neutral-300 font-semibold">
+                          ${catRevenue.toFixed(0)}
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-neutral-300 font-semibold">
-                        ${catRevenue.toFixed(2)}
-                      </span>
-                    </div>
 
-                    {/* Progress bar */}
-                    <div className="mt-2 w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#e59b38] rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
+                      {/* Progress bar */}
+                      <div className="mt-1.5 w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#e59b38] rounded-full transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 );
