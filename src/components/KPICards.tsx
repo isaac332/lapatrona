@@ -3,7 +3,7 @@
 import React from 'react';
 import { TimeframeFilter, ProductItem, SaleRecord } from '@/types/accounting';
 import { getPaymentBreakdown } from '@/utils/accountingCalculations';
-import { ShoppingBag, DollarSign, Award, Sparkles, RotateCcw, Wallet, Calculator } from 'lucide-react';
+import { ShoppingBag, DollarSign, Award, Sparkles, RotateCcw, Wallet, Calculator, Download } from 'lucide-react';
 
 interface KPICardsProps {
   timeframe: TimeframeFilter;
@@ -16,6 +16,7 @@ interface KPICardsProps {
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
   onOpenCorte?: () => void;
+  onExportCSV?: () => void;
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
@@ -29,6 +30,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
   onOpenGastos,
   onOpenCalculadora,
   onOpenCorte,
+  onExportCSV,
 }) => {
   // Aggregate units and revenue
   const totalUnits = sales.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -107,6 +109,18 @@ export const KPICards: React.FC<KPICardsProps> = ({
             <Wallet className="w-3.5 h-3.5" />
             <span>Registrar Gasto</span>
           </button>
+
+          {/* Export Report CSV Button */}
+          {onExportCSV && sales.length > 0 && (
+            <button
+              onClick={onExportCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 transition-colors touch-manipulation active:scale-95"
+              title="Descargar reporte contable del periodo en Excel/CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Exportar CSV</span>
+            </button>
+          )}
 
           {sales.length > 0 && (
             <button

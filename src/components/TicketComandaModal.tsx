@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { CustomerOrder } from '@/types/accounting';
+import { CustomerOrder, BusinessInfo } from '@/types/accounting';
 import { X, Printer, CheckCircle2, ShoppingBag, Copy, Check } from 'lucide-react';
 import { generateOrderThermalText } from '@/utils/escpos';
+import { DEFAULT_BUSINESS_INFO } from '@/data/initialBusinessInfo';
 
 interface TicketComandaModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: CustomerOrder | null;
   onNewOrder?: () => void;
+  businessInfo?: BusinessInfo;
 }
 
 export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
@@ -17,7 +19,9 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
   onClose,
   order,
   onNewOrder,
+  businessInfo,
 }) => {
+  const info = businessInfo || DEFAULT_BUSINESS_INFO;
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -28,7 +32,7 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
   };
 
   const handleCopyRaw = () => {
-    const text = generateOrderThermalText(order);
+    const text = generateOrderThermalText(order, info);
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
@@ -85,11 +89,21 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
             {/* Header */}
             <div className="text-center space-y-0.5 pb-2 border-b border-dashed border-white/20 print:border-black/30">
               <div className="text-base font-black tracking-widest uppercase">
-                PHILLY & FRY
+                {info.name}
               </div>
               <div className="text-[10px] text-[#e59b38] print:text-black uppercase font-bold tracking-wider">
-                • LA PATRONA •
+                {info.tagline}
               </div>
+              {info.address && (
+                <div className="text-[9px] text-neutral-400 print:text-neutral-600">
+                  {info.address}
+                </div>
+              )}
+              {info.phone && (
+                <div className="text-[9px] text-neutral-400 print:text-neutral-600">
+                  Tel: {info.phone}
+                </div>
+              )}
               <div className="text-[9px] text-neutral-400 print:text-neutral-600 mt-1">
                 Comanda de Mostrador y Cocina
               </div>
@@ -189,7 +203,7 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
 
             {/* Footer Message */}
             <div className="pt-3 border-t border-dashed border-white/20 print:border-black/30 text-center space-y-0.5">
-              <div className="font-bold text-[11px]">¡GRACIAS POR SU PREFERENCIA!</div>
+              <div className="font-bold text-[11px]">{info.footerNote.toUpperCase()}</div>
               <div className="text-[9px] text-neutral-500 print:text-neutral-600">
                 Conservar este comprobante para recoger su orden
               </div>

@@ -1,4 +1,5 @@
-import { CustomerOrder, ClosedShiftRecord } from '@/types/accounting';
+import { CustomerOrder, ClosedShiftRecord, BusinessInfo } from '@/types/accounting';
+import { DEFAULT_BUSINESS_INFO } from '@/data/initialBusinessInfo';
 
 const LINE_WIDTH = 32;
 
@@ -12,16 +13,28 @@ function center(text: string, width = LINE_WIDTH): string {
   return ' '.repeat(space) + text;
 }
 
-export function generateOrderThermalText(order: CustomerOrder): string {
+export function generateOrderThermalText(order: CustomerOrder, businessInfo?: BusinessInfo): string {
+  const info = businessInfo || DEFAULT_BUSINESS_INFO;
   const line = '--------------------------------';
   const lines: string[] = [
-    center('PHILLY & FRY'),
-    center('• LA PATRONA •'),
-    center('Comanda de Cocina / Mostrador'),
-    line,
-    pad(`FOLIO: #${String(order.orderNumber).padStart(3, '0')}`, order.orderType === 'llevar' ? '[LLEVAR]' : '[AQUÍ]'),
-    `Fecha: ${new Date(order.timestamp).toLocaleString('es-MX')}`,
+    center(info.name.toUpperCase()),
+    center(info.tagline),
   ];
+
+  if (info.address) {
+    lines.push(center(info.address));
+  }
+  if (info.phone) {
+    lines.push(center(`Tel: ${info.phone}`));
+  }
+  if (info.rfc) {
+    lines.push(center(`RFC: ${info.rfc.toUpperCase()}`));
+  }
+
+  lines.push(center('Comanda de Cocina / Mostrador'));
+  lines.push(line);
+  lines.push(pad(`FOLIO: #${String(order.orderNumber).padStart(3, '0')}`, order.orderType === 'llevar' ? '[LLEVAR]' : '[AQUÍ]'));
+  lines.push(`Fecha: ${new Date(order.timestamp).toLocaleString('es-MX')}`);
 
   if (order.customerName) {
     lines.push(`Cliente/Mesa: ${order.customerName}`);
@@ -53,8 +66,8 @@ export function generateOrderThermalText(order: CustomerOrder): string {
   }
 
   lines.push(line);
-  lines.push(center('¡GRACIAS POR SU PREFERENCIA!'));
-  lines.push(center('La Patrona • Philly & Fry'));
+  lines.push(center(info.footerNote.toUpperCase()));
+  lines.push(center(`${info.name} • Sistema POS`));
   lines.push('');
 
   return lines.join('\n');
@@ -66,11 +79,12 @@ export function formatCurrencyMXN(val: number): string {
 
 export const generateEscPosComandaTicket = generateOrderThermalText;
 
-export function generateShiftThermalText(shift: ClosedShiftRecord): string {
+export function generateShiftThermalText(shift: ClosedShiftRecord, businessInfo?: BusinessInfo): string {
+  const info = businessInfo || DEFAULT_BUSINESS_INFO;
   const line = '--------------------------------';
   const lines: string[] = [
-    center('LA PATRONA'),
-    center('Philly & Fry POS'),
+    center(info.name.toUpperCase()),
+    center(`${info.tagline} - POS`),
     center(`Ticket de Corte #${shift.shiftNumber}`),
     line,
     `Cierre: ${new Date(shift.closedAt).toLocaleString('es-MX')}`,
@@ -99,11 +113,23 @@ export function generateShiftThermalText(shift: ClosedShiftRecord): string {
   }
 
   lines.push(line);
-  lines.push(pad('Tarjetas / Clip:', `$${shift.cardSalesTotal.toFixed(2)}`));
-  lines.push(pad('Transferencias SPEI:', `$${shift.transferSalesTotal.toFixed(2)}`));
+  lines.push(pad('Ventas Tarjeta:', `$${shift.cardSalesTotal.toFixed(2)}`));
+  lines.push(pad('Ventas SPEI:', `$${shift.transferSalesTotal.toFixed(2)}`));
+  if (shift.totalTipsCollected && shift.totalTipsCollected > 0) {
+    lines.push(pad('Propinas Personal:', `$${shift.totalTipsCollected.toFixed(2)}`));
+  }
   lines.push(pad('Piezas Vendidas:', `${shift.totalUnits} uds`));
+
+  if (shift.cashierName) {
+    lines.push(pad('Cajero / Turno:', shift.cashierName));
+  }
+  if (shift.notes) {
+    lines.push(`Notas: ${shift.notes}`);
+  }
+
   lines.push(line);
-  lines.push(center('*** FIN AUDITORÍA DE TURNO ***'));
+  lines.push(center('FIN DE TURNO CONCILIADO'));
+  lines.push(center(`${info.name} • Auditoría`));
   lines.push('');
 
   return lines.join('\n');

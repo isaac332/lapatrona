@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize, ChefHat, Store } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -31,6 +31,9 @@ interface NavbarProps {
   onOpenAtajos?: () => void;
   onOpenStockManager?: () => void;
   onOpenHistorialComandas?: () => void;
+  onOpenPantallaCocina?: () => void;
+  activeKitchenOrdersCount?: number;
+  onOpenConfiguracionNegocio?: () => void;
   lowStockCount?: number;
   totalUnitsInTimeframe: number;
   soundEnabled?: boolean;
@@ -51,6 +54,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAtajos,
   onOpenStockManager,
   onOpenHistorialComandas,
+  onOpenPantallaCocina,
+  activeKitchenOrdersCount = 0,
+  onOpenConfiguracionNegocio,
   lowStockCount = 0,
   totalUnitsInTimeframe,
   soundEnabled = true,
@@ -155,6 +161,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>+ Armar Comanda</span>
           </button>
 
+          {/* PANTALLA DE COCINA / KDS BUTTON */}
+          {onOpenPantallaCocina && (
+            <button
+              onClick={onOpenPantallaCocina}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-all shadow-sm active:scale-95 ${
+                activeKitchenOrdersCount > 0
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25'
+                  : 'text-neutral-300 hover:text-white hover:bg-white/[0.06] border-white/[0.08]'
+              }`}
+              title="Pantalla de Cocina / KDS en vivo para comandas en parrilla"
+            >
+              <ChefHat className="w-3.5 h-3.5 text-[#e59b38]" />
+              <span>Cocina KDS</span>
+              {activeKitchenOrdersCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center font-mono animate-pulse">
+                  {activeKitchenOrdersCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* HISTORIAL Y BUSCADOR DE COMANDAS BUTTON */}
           {onOpenHistorialComandas && (
             <button
@@ -249,6 +276,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <DollarSign className="w-3.5 h-3.5 text-[#e59b38]" />
             <span>Precios y Costos</span>
           </button>
+
+          {/* Business Profile & Ticket Header Settings */}
+          {onOpenConfiguracionNegocio && (
+            <button
+              onClick={onOpenConfiguracionNegocio}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium text-neutral-300 hover:text-[#f5f0eb] hover:bg-white/[0.06] border border-white/[0.08] transition-colors"
+              title="Personalizar membrete de tickets, datos del negocio y mensaje al pie"
+            >
+              <Store className="w-3.5 h-3.5 text-[#e59b38]" />
+              <span>Membrete</span>
+            </button>
+          )}
 
           {/* History / Audit Log */}
           <button

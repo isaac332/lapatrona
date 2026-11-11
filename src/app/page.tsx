@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore, useCallback, useEffect } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig } from '@/types/accounting';
+import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig, BusinessInfo } from '@/types/accounting';
 import { INITIAL_PRODUCTS, INITIAL_STOCK } from '@/data/initialProducts';
+import { DEFAULT_BUSINESS_INFO } from '@/data/initialBusinessInfo';
 import {
   filterSalesByTimeframe,
   filterExpensesByTimeframe,
@@ -14,6 +15,7 @@ import {
   getMonthlyWeeklyBreakdown,
   getProductPerformanceRanking,
 } from '@/utils/accountingCalculations';
+import { exportAccountingReportCSV } from '@/utils/csvExport';
 import { Navbar } from '@/components/Navbar';
 import { MobileBottomDock } from '@/components/MobileBottomDock';
 import { HeroBanner } from '@/components/HeroBanner';
@@ -33,6 +35,8 @@ import { AtajosTecladoModal } from '@/components/AtajosTecladoModal';
 import { StockManagerModal } from '@/components/StockManagerModal';
 import { HistorialComandasModal } from '@/components/HistorialComandasModal';
 import { DailyGoalTracker } from '@/components/DailyGoalTracker';
+import { PantallaCocinaModal } from '@/components/PantallaCocinaModal';
+import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
@@ -178,6 +182,17 @@ export default function SalesCounterPage() {
   });
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isHistorialComandasOpen, setIsHistorialComandasOpen] = useState(false);
+  const [isPantallaCocinaOpen, setIsPantallaCocinaOpen] = useState(false);
+  const [isConfiguracionNegocioOpen, setIsConfiguracionNegocioOpen] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
+    if (typeof window === 'undefined') return DEFAULT_BUSINESS_INFO;
+    try {
+      const saved = localStorage.getItem('philly_fry_business_info');
+      return saved !== null ? JSON.parse(saved) : DEFAULT_BUSINESS_INFO;
+    } catch {
+      return DEFAULT_BUSINESS_INFO;
+    }
+  });
   const [dailyGoal, setDailyGoal] = useState<number>(() => {
     if (typeof window === 'undefined') return 8000;
     try {
@@ -254,6 +269,35 @@ export default function SalesCounterPage() {
     } catch (e) {
       console.error('Failed to save starting cash', e);
     }
+  };
+
+  const handleSaveBusinessInfo = (newInfo: BusinessInfo) => {
+    setBusinessInfo(newInfo);
+    try {
+      localStorage.setItem('philly_fry_business_info', JSON.stringify(newInfo));
+      showToast('✓ Datos del negocio y membrete actualizados.');
+    } catch (e) {
+      console.error('Failed to save business info', e);
+    }
+  };
+
+  const handleUpdateOrderStatus = (orderId: string, newStatus: 'pendiente' | 'preparando' | 'listo' | 'entregado') => {
+    setOrders((prev) => {
+      const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
+      try {
+        localStorage.setItem('philly_fry_orders', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to update order status', e);
+      }
+      return updated;
+    });
+    const statusLabels = {
+      pendiente: 'marcada como pendiente',
+      preparando: 'puesta en parrilla',
+      listo: 'marcada como lista',
+      entregado: 'entregada al cliente',
+    };
+    showToast(`✓ Comanda ${statusLabels[newStatus]}.`);
   };
 
   // Save changes to localStorage
@@ -573,6 +617,8 @@ export default function SalesCounterPage() {
         setIsAtajosModalOpen(false);
         setIsStockModalOpen(false);
         setIsHistorialComandasOpen(false);
+        setIsPantallaCocinaOpen(false);
+        setIsConfiguracionNegocioOpen(false);
         return;
       }
 
@@ -588,7 +634,9 @@ export default function SalesCounterPage() {
         isHistorialCortesOpen ||
         isAtajosModalOpen ||
         isStockModalOpen ||
-        isHistorialComandasOpen;
+        isHistorialComandasOpen ||
+        isPantallaCocinaOpen ||
+        isConfiguracionNegocioOpen;
 
       if (isAnyModalOpen) return;
 
@@ -656,6 +704,18 @@ export default function SalesCounterPage() {
         setIsPriceModalOpen(true);
         return;
       }
+
+      if (e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setIsPantallaCocinaOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        setIsConfiguracionNegocioOpen(true);
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -675,6 +735,8 @@ export default function SalesCounterPage() {
     isAtajosModalOpen,
     isStockModalOpen,
     isHistorialComandasOpen,
+    isPantallaCocinaOpen,
+    isConfiguracionNegocioOpen,
   ]);
 
   // Filter sales for the selected timeframe
@@ -783,6 +845,22 @@ export default function SalesCounterPage() {
     return getProductPerformanceRanking(monthSales, products);
   }, [monthSales, products]);
 
+  const activeKitchenOrdersCount = useMemo(() => {
+    return orders.filter((o) => (o.status || 'pendiente') !== 'entregado').length;
+  }, [orders]);
+
+  const handleExportPeriodCSV = () => {
+    exportAccountingReportCSV({
+      timeframe,
+      sales: filteredSales,
+      products,
+      expenses: filteredExpenses,
+      startingCash,
+      businessName: businessInfo.name,
+    });
+    showToast('✓ Reporte contable exportado a Excel/CSV exitosamente.');
+  };
+
   // Map product counts (Today, Week, Month, All)
   const productCountMap = useMemo(() => {
     const map: Record<string, { today: number; week: number; month: number; all: number }> = {};
@@ -838,6 +916,9 @@ export default function SalesCounterPage() {
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
         onOpenStockManager={() => setIsStockModalOpen(true)}
         onOpenHistorialComandas={() => setIsHistorialComandasOpen(true)}
+        onOpenPantallaCocina={() => setIsPantallaCocinaOpen(true)}
+        activeKitchenOrdersCount={activeKitchenOrdersCount}
+        onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -870,6 +951,7 @@ export default function SalesCounterPage() {
             onOpenGastos={() => setIsGastosModalOpen(true)}
             onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
             onOpenCorte={() => setIsCorteModalOpen(true)}
+            onExportCSV={handleExportPeriodCSV}
           />
 
           {/* Daily Sales Target Goal Progress Bar */}
@@ -1130,6 +1212,9 @@ export default function SalesCounterPage() {
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
         onOpenStockManager={() => setIsStockModalOpen(true)}
         onOpenHistorialComandas={() => setIsHistorialComandasOpen(true)}
+        onOpenPantallaCocina={() => setIsPantallaCocinaOpen(true)}
+        activeKitchenOrdersCount={activeKitchenOrdersCount}
+        onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -1224,6 +1309,7 @@ export default function SalesCounterPage() {
         isOpen={isTicketComandaOpen}
         onClose={() => setIsTicketComandaOpen(false)}
         order={activeTicketOrder}
+        businessInfo={businessInfo}
         onNewOrder={() => setIsNuevaOrdenOpen(true)}
       />
 
@@ -1244,6 +1330,22 @@ export default function SalesCounterPage() {
         isOpen={isHistorialComandasOpen}
         onClose={() => setIsHistorialComandasOpen(false)}
         orders={orders}
+      />
+
+      {/* Pantalla de Cocina / KDS en Vivo */}
+      <PantallaCocinaModal
+        isOpen={isPantallaCocinaOpen}
+        onClose={() => setIsPantallaCocinaOpen(false)}
+        orders={orders}
+        onUpdateOrderStatus={handleUpdateOrderStatus}
+      />
+
+      {/* Membrete y Datos del Negocio Modal */}
+      <ConfiguracionNegocioModal
+        isOpen={isConfiguracionNegocioOpen}
+        onClose={() => setIsConfiguracionNegocioOpen(false)}
+        businessInfo={businessInfo}
+        onSaveBusinessInfo={handleSaveBusinessInfo}
       />
 
       {/* Atajos de Teclado POS Guía Modal */}

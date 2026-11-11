@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -18,6 +18,9 @@ interface MobileBottomDockProps {
   onOpenAtajos?: () => void;
   onOpenStockManager?: () => void;
   onOpenHistorialComandas?: () => void;
+  onOpenPantallaCocina?: () => void;
+  activeKitchenOrdersCount?: number;
+  onOpenConfiguracionNegocio?: () => void;
   lowStockCount?: number;
   totalUnitsInTimeframe: number;
   soundEnabled?: boolean;
@@ -36,6 +39,9 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenNuevaOrden,
   onOpenStockManager,
   onOpenHistorialComandas,
+  onOpenPantallaCocina,
+  activeKitchenOrdersCount = 0,
+  onOpenConfiguracionNegocio,
   lowStockCount = 0,
   totalUnitsInTimeframe,
   soundEnabled = true,
@@ -98,6 +104,27 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             >
               <FileSearch className="w-4 h-4 text-[#e59b38]" />
               <span className="text-[7.5px] uppercase mt-0.5">Notas</span>
+            </button>
+          )}
+
+          {onOpenPantallaCocina && (
+            <button
+              onClick={onOpenPantallaCocina}
+              aria-label="Pantalla de Cocina / KDS"
+              title="Pantalla de Cocina KDS"
+              className={`w-10 h-10 rounded-xl border flex flex-col items-center justify-center active:scale-95 touch-manipulation select-none shrink-0 relative ${
+                activeKitchenOrdersCount > 0
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                  : 'bg-white/[0.04] active:bg-white/[0.1] border-white/[0.08] text-neutral-300'
+              }`}
+            >
+              <ChefHat className="w-4 h-4 text-[#e59b38]" />
+              <span className="text-[7.5px] uppercase mt-0.5">Cocina</span>
+              {activeKitchenOrdersCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center font-mono animate-pulse">
+                  {activeKitchenOrdersCount}
+                </span>
+              )}
             </button>
           )}
 
@@ -171,6 +198,18 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             <DollarSign className="w-4 h-4 text-[#e59b38]" />
             <span className="text-[8px] uppercase mt-0.5">Costos</span>
           </button>
+
+          {onOpenConfiguracionNegocio && (
+            <button
+              onClick={onOpenConfiguracionNegocio}
+              aria-label="Datos del negocio y membrete"
+              title="Membrete de Tickets"
+              className="w-10 h-10 rounded-xl bg-white/[0.04] active:bg-white/[0.1] border border-white/[0.08] flex flex-col items-center justify-center text-neutral-300 active:scale-95 touch-manipulation select-none shrink-0"
+            >
+              <Store className="w-4 h-4 text-[#e59b38]" />
+              <span className="text-[8px] uppercase mt-0.5">Ticket</span>
+            </button>
+          )}
 
           {onToggleSound && (
             <button

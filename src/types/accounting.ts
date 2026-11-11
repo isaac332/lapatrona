@@ -48,6 +48,7 @@ export interface CustomerOrder {
   paymentMethod: PaymentMethod;
   amountReceived?: number;
   change?: number;
+  status?: 'pendiente' | 'preparando' | 'listo' | 'entregado';
 }
 
 export interface ExpenseRecord {
@@ -147,4 +148,13 @@ export interface ProductStockConfig {
   initialStock: number;
   lowStockThreshold: number;
   trackStock: boolean;
+}
+
+export interface BusinessInfo {
+  name: string;
+  tagline: string;
+  address: string;
+  phone: string;
+  rfc?: string;
+  footerNote: string;
 }
