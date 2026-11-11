@@ -15,6 +15,7 @@ interface ProductCardProps {
     all: number;
   };
   timeframe: TimeframeFilter;
+  shortcutKey?: string;
   onIncrement: (productId: string, amount: number) => void;
   onDecrement: (productId: string, amount: number) => void;
   onUpdatePrice: (productId: string, newPrice: number) => void;
@@ -24,6 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   counts,
   timeframe,
+  shortcutKey,
   onIncrement,
   onDecrement,
   onUpdatePrice,
@@ -141,7 +143,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#141417] via-[#141417]/40 to-black/40" />
 
-        {/* Variant Tag */}
+        {/* Variant Tag and Optional Keyboard Shortcut */}
         <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 flex items-center gap-1.5 z-10">
           <span
             className={`text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border backdrop-blur-md ${getVariantBadgeColor(
@@ -150,6 +152,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           >
             {product.variantLabel}
           </span>
+          {shortcutKey && (
+            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-black text-black bg-[#e59b38] rounded-full shadow border border-black/20" title={`Presiona ${shortcutKey} para registrar venta rápida`}>
+              {shortcutKey}
+            </kbd>
+          )}
         </div>
 
         {/* ON-THE-FLY EDITABLE PRICE TAG - Mobile Optimized Touch Target */}

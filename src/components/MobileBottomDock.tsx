@@ -15,6 +15,7 @@ interface MobileBottomDockProps {
   onOpenCalculadora: () => void;
   onOpenNuevaOrden: () => void;
   onOpenHistorialCortes?: () => void;
+  onOpenAtajos?: () => void;
   totalUnitsInTimeframe: number;
 }
 

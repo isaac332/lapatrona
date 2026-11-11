@@ -2,7 +2,7 @@
 
 import React, { useEffect, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -28,6 +28,7 @@ interface NavbarProps {
   onOpenCalculadora: () => void;
   onOpenNuevaOrden: () => void;
   onOpenHistorialCortes?: () => void;
+  onOpenAtajos?: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -42,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCalculadora,
   onOpenNuevaOrden,
   onOpenHistorialCortes,
+  onOpenAtajos,
   totalUnitsInTimeframe,
 }) => {
   const isOnline = useSyncExternalStore(subscribeOnline, getOnlineSnapshot, getOnlineServerSnapshot);
@@ -194,6 +196,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <History className="w-3.5 h-3.5 text-neutral-400" />
             <span>Libro Contable</span>
           </button>
+
+          {/* POS Keyboard Shortcuts Guide Button */}
+          {onOpenAtajos && (
+            <button
+              onClick={onOpenAtajos}
+              className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-neutral-400 hover:text-white hover:bg-white/[0.06] border border-white/[0.08] transition-all shadow-sm active:scale-95"
+              title="Atajos de teclado POS (Presiona ?)"
+            >
+              <Keyboard className="w-3.5 h-3.5 text-[#e59b38]" />
+              <span className="font-mono text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-neutral-300">?</span>
+            </button>
+          )}
 
           {/* Units Counter Badge Button */}
           <button

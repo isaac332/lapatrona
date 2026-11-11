@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useSyncExternalStore } from 'react';
+import React, { useState, useMemo, useRef, useSyncExternalStore, useCallback, useEffect } from 'react';
 import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord } from '@/types/accounting';
 import { INITIAL_PRODUCTS } from '@/data/initialProducts';
 import {
@@ -29,6 +29,7 @@ import { CalculadoraCambioModal } from '@/components/CalculadoraCambioModal';
 import { NuevaOrdenModal } from '@/components/NuevaOrdenModal';
 import { TicketComandaModal } from '@/components/TicketComandaModal';
 import { HistorialCortesModal } from '@/components/HistorialCortesModal';
+import { AtajosTecladoModal } from '@/components/AtajosTecladoModal';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -150,6 +151,7 @@ export default function SalesCounterPage() {
     }
   });
   const [isHistorialCortesOpen, setIsHistorialCortesOpen] = useState(false);
+  const [isAtajosModalOpen, setIsAtajosModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -231,7 +233,7 @@ export default function SalesCounterPage() {
   };
 
   // Increment product sales tally
-  const handleIncrement = (productId: string, amount: number = 1) => {
+  const handleIncrement = useCallback((productId: string, amount: number = 1) => {
     const targetProduct = products.find((p) => p.id === productId);
     if (!targetProduct) return;
 
@@ -250,9 +252,16 @@ export default function SalesCounterPage() {
       });
     }
 
-    const updated = [...newRecords, ...sales];
-    handleSaveSales(updated);
-  };
+    setSales((prevSales) => {
+      const updated = [...newRecords, ...prevSales];
+      try {
+        localStorage.setItem('philly_fry_sales', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save sales to localStorage', e);
+      }
+      return updated;
+    });
+  }, [products, selectedPaymentMethod]);
 
   // Update payment method of a past sale (from audit ledger)
   const handleUpdateSalePaymentMethod = (saleId: string, newMethod: PaymentMethod) => {
@@ -367,6 +376,119 @@ export default function SalesCounterPage() {
     handleSaveExpenses(sampleExp);
     showToast('✓ Datos de prueba cargados en el sistema.');
   };
+
+  // Keyboard Shortcuts (Hotkeys) for Fast Counter Service
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName || '';
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag)) return;
+
+      if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        setIsAtajosModalOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        setIsPriceModalOpen(false);
+        setIsHistoryModalOpen(false);
+        setIsZeroOutModalOpen(false);
+        setIsCorteModalOpen(false);
+        setIsGastosModalOpen(false);
+        setIsCalculadoraModalOpen(false);
+        setIsNuevaOrdenOpen(false);
+        setIsTicketComandaOpen(false);
+        setIsHistorialCortesOpen(false);
+        setIsAtajosModalOpen(false);
+        return;
+      }
+
+      const isAnyModalOpen =
+        isPriceModalOpen ||
+        isHistoryModalOpen ||
+        isZeroOutModalOpen ||
+        isCorteModalOpen ||
+        isGastosModalOpen ||
+        isCalculadoraModalOpen ||
+        isNuevaOrdenOpen ||
+        isTicketComandaOpen ||
+        isHistorialCortesOpen ||
+        isAtajosModalOpen;
+
+      if (isAnyModalOpen) return;
+
+      const num = parseInt(e.key, 10);
+      if (!isNaN(num) && num >= 1 && num <= products.length) {
+        e.preventDefault();
+        const targetProd = products[num - 1];
+        if (targetProd) {
+          handleIncrement(targetProd.id, 1);
+          showToast(`+1 ${targetProd.name} (${targetProd.variantLabel})`);
+        }
+        return;
+      }
+
+      if (e.key === ' ' || e.key.toLowerCase() === 'o' || e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setIsNuevaOrdenOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setIsCorteModalOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        setIsGastosModalOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCalculadoraModalOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        setIsHistoryModalOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setIsHistorialCortesOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setIsPriceModalOpen(true);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    products,
+    handleIncrement,
+    isPriceModalOpen,
+    isHistoryModalOpen,
+    isZeroOutModalOpen,
+    isCorteModalOpen,
+    isGastosModalOpen,
+    isCalculadoraModalOpen,
+    isNuevaOrdenOpen,
+    isTicketComandaOpen,
+    isHistorialCortesOpen,
+    isAtajosModalOpen,
+  ]);
 
   // Filter sales for the selected timeframe
   const filteredSales = useMemo(() => {
@@ -483,6 +605,7 @@ export default function SalesCounterPage() {
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
+        onOpenAtajos={() => setIsAtajosModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -609,12 +732,14 @@ export default function SalesCounterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6">
               {filteredProducts.map((product) => {
                 const counts = productCountMap[product.id] || { today: 0, week: 0, month: 0, all: 0 };
+                const shortcutIndex = products.findIndex((p) => p.id === product.id);
                 return (
                   <ProductCard
                     key={product.id}
                     product={product}
                     counts={counts}
                     timeframe={timeframe}
+                    shortcutKey={shortcutIndex !== -1 && shortcutIndex < 9 ? String(shortcutIndex + 1) : undefined}
                     onIncrement={handleIncrement}
                     onDecrement={handleDecrement}
                     onUpdatePrice={handleUpdateProductPrice}
@@ -759,6 +884,7 @@ export default function SalesCounterPage() {
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
+        onOpenAtajos={() => setIsAtajosModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -849,6 +975,13 @@ export default function SalesCounterPage() {
         onClose={() => setIsTicketComandaOpen(false)}
         order={activeTicketOrder}
         onNewOrder={() => setIsNuevaOrdenOpen(true)}
+      />
+
+      {/* Atajos de Teclado POS Guía Modal */}
+      <AtajosTecladoModal
+        isOpen={isAtajosModalOpen}
+        onClose={() => setIsAtajosModalOpen(false)}
+        products={products}
       />
     </div>
   );
