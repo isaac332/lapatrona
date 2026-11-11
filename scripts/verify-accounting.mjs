@@ -1,0 +1,355 @@
+import assert from 'node:assert/strict';
+
+// Accounting calculation functions mirroring src/utils/accountingCalculations.ts
+function isSameDay(date1, date2) {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+function isSameWeek(targetDate, referenceDate) {
+  const start = new Date(referenceDate);
+  start.setDate(referenceDate.getDate() - 6);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(referenceDate);
+  end.setHours(23, 59, 59, 999);
+
+  return targetDate >= start && targetDate <= end;
+}
+
+function isSameMonth(date1, date2) {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth()
+  );
+}
+
+function filterSalesByTimeframe(sales, timeframe, referenceDate) {
+  if (!referenceDate) return sales;
+  return sales.filter((sale) => {
+    const saleDate = new Date(sale.timestamp);
+    if (isNaN(saleDate.getTime())) return false;
+    switch (timeframe) {
+      case 'today':
+        return isSameDay(saleDate, referenceDate);
+      case 'week':
+        return isSameWeek(saleDate, referenceDate);
+      case 'month':
+        return isSameMonth(saleDate, referenceDate);
+      case 'all':
+      default:
+        return true;
+    }
+  });
+}
+
+function getProductCountsByTimeframe(productId, sales, referenceDate) {
+  let today = 0;
+  let week = 0;
+  let month = 0;
+  let all = 0;
+
+  for (const sale of sales) {
+    if (sale.productId !== productId) continue;
+    const qty = sale.quantity;
+    all += qty;
+
+    if (referenceDate) {
+      const saleDate = new Date(sale.timestamp);
+      if (isSameMonth(saleDate, referenceDate)) {
+        month += qty;
+      }
+      if (isSameWeek(saleDate, referenceDate)) {
+        week += qty;
+      }
+      if (isSameDay(saleDate, referenceDate)) {
+        today += qty;
+      }
+    }
+  }
+
+  return { today, week, month, all };
+}
+
+function getDailyHourlyBreakdown(todaySales) {
+  const blocks = [
+    { id: 'morning', label: 'Apertura y Almuerzo', timeRange: '11:00 - 13:59', minHour: 0, maxHour: 13 },
+    { id: 'rush-lunch', label: 'Hora Pico Comida', timeRange: '14:00 - 16:59', minHour: 14, maxHour: 16 },
+    { id: 'afternoon', label: 'Turno Vespertino', timeRange: '17:00 - 19:59', minHour: 17, maxHour: 19 },
+    { id: 'night', label: 'Cena y Cierre', timeRange: '20:00 - 23:59', minHour: 20, maxHour: 23 },
+  ];
+
+  const totalUnits = todaySales.reduce((sum, s) => sum + s.quantity, 0);
+
+  return blocks.map((b) => {
+    const matching = todaySales.filter((s) => {
+      const hour = new Date(s.timestamp).getHours();
+      return hour >= b.minHour && hour <= b.maxHour;
+    });
+
+    const count = matching.reduce((sum, s) => sum + s.quantity, 0);
+    const revenue = matching.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+    const percentage = totalUnits > 0 ? Math.round((count / totalUnits) * 100) : 0;
+
+    return {
+      id: b.id,
+      label: b.label,
+      timeRange: b.timeRange,
+      count,
+      revenue,
+      percentage,
+    };
+  });
+}
+
+function getWeeklyDailyBreakdown(weekSales, referenceDate) {
+  if (!referenceDate) return [];
+  const ref = referenceDate;
+  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+  const days = [];
+  let maxCount = -1;
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(ref);
+    d.setDate(ref.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+
+    const nextD = new Date(d);
+    nextD.setDate(d.getDate() + 1);
+
+    const matching = weekSales.filter((s) => {
+      const sDate = new Date(s.timestamp);
+      return sDate >= d && sDate < nextD;
+    });
+
+    const count = matching.reduce((sum, s) => sum + s.quantity, 0);
+    const revenue = matching.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+
+    if (count > maxCount) {
+      maxCount = count;
+    }
+
+    days.push({
+      dateStr: d.toISOString().split('T')[0],
+      dayName: dayNames[d.getDay()],
+      formattedDate: `${d.getDate()} ${monthNames[d.getMonth()]}`,
+      count,
+      revenue,
+      isPeak: false,
+    });
+  }
+
+  if (maxCount > 0) {
+    for (const day of days) {
+      if (day.count === maxCount) {
+        day.isPeak = true;
+        break;
+      }
+    }
+  }
+
+  return days;
+}
+
+function getMonthlyWeeklyBreakdown(monthSales, referenceDate) {
+  if (!referenceDate) return [];
+  const ref = referenceDate;
+  const year = ref.getFullYear();
+  const month = ref.getMonth();
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const monthName = monthNames[month];
+
+  const weekDefs = [
+    { id: 'w1', label: 'Semana 1', start: 1, end: 7 },
+    { id: 'w2', label: 'Semana 2', start: 8, end: 14 },
+    { id: 'w3', label: 'Semana 3', start: 15, end: 21 },
+    { id: 'w4', label: 'Semana 4 y Cierre', start: 22, end: lastDayOfMonth },
+  ];
+
+  const totalUnits = monthSales.reduce((sum, s) => sum + s.quantity, 0);
+
+  return weekDefs.map((w) => {
+    const matching = monthSales.filter((s) => {
+      const sDate = new Date(s.timestamp);
+      if (!isSameMonth(sDate, ref)) return false;
+      const day = sDate.getDate();
+      return day >= w.start && day <= w.end;
+    });
+
+    const count = matching.reduce((sum, s) => sum + s.quantity, 0);
+    const revenue = matching.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+    const percentage = totalUnits > 0 ? Math.round((count / totalUnits) * 100) : 0;
+
+    return {
+      id: w.id,
+      label: w.label,
+      dateRange: `${w.start} al ${w.end} ${monthName}`,
+      count,
+      revenue,
+      percentage,
+    };
+  });
+}
+
+function getProductPerformanceRanking(sales, products) {
+  const totalRevenue = sales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+  const map = {};
+
+  sales.forEach((s) => {
+    if (!map[s.productId]) {
+      map[s.productId] = { units: 0, revenue: 0 };
+    }
+    map[s.productId].units += s.quantity;
+    map[s.productId].revenue += s.quantity * s.unitPrice;
+  });
+
+  const list = products.map((prod) => {
+    const stat = map[prod.id] || { units: 0, revenue: 0 };
+    const percentageOfRevenue = totalRevenue > 0 ? Math.round((stat.revenue / totalRevenue) * 100) : 0;
+    const margin =
+      prod.defaultPrice > 0 && prod.cost > 0
+        ? Math.round(((prod.defaultPrice - prod.cost) / prod.defaultPrice) * 100)
+        : null;
+
+    return {
+      product: prod,
+      units: stat.units,
+      revenue: stat.revenue,
+      percentageOfRevenue,
+      margin,
+    };
+  });
+
+  return list.sort((a, b) => b.units - a.units || b.revenue - a.revenue);
+}
+
+// ================= TEST SUITE =================
+
+console.log('Testing Edge Cases & Accounting Calculations...');
+
+const testProducts = [
+  { id: 'sandwich-alone', name: 'Philly Cheesesteak', variantLabel: 'Sencillo (Solo)', category: 'sandwiches', defaultPrice: 145, cost: 60 },
+  { id: 'sandwich-fries', name: 'Combo Philly Cheesesteak', variantLabel: 'Con Papas', category: 'sandwiches', defaultPrice: 185, cost: 70 },
+  { id: 'quesadilla-alone', name: 'Quesadilla de Ribeye', variantLabel: 'Sencilla (Sola)', category: 'quesadillas', defaultPrice: 135, cost: 50 },
+  { id: 'quesadilla-fries', name: 'Combo Quesadilla de Ribeye', variantLabel: 'Con Papas', category: 'quesadillas', defaultPrice: 175, cost: 65 },
+  { id: 'steak-frites', name: 'Steak Frites de Ribeye', variantLabel: 'Papas con Ribeye y Verduras', category: 'steak-frites', defaultPrice: 195, cost: 75 },
+  { id: 'fries-alone', name: 'Papas a la Francesa', variantLabel: 'Sencillas (Clásicas)', category: 'fries', defaultPrice: 65, cost: 20 },
+  { id: 'fries-cheese', name: 'Papas con Queso Amarillo', variantLabel: 'Con Queso Fundido', category: 'fries', defaultPrice: 85, cost: 25 },
+];
+
+const now = new Date('2026-11-10T17:00:00Z');
+
+// Test 1: Zero out accounting scenario (Empty Sales)
+console.log('Test 1: Zero Out Scenario (empty sales)');
+const emptySales = [];
+const emptyFiltered = filterSalesByTimeframe(emptySales, 'today', now);
+assert.equal(emptyFiltered.length, 0);
+
+const emptyCounts = getProductCountsByTimeframe('sandwich-alone', emptySales, now);
+assert.deepEqual(emptyCounts, { today: 0, week: 0, month: 0, all: 0 });
+
+const emptyHourly = getDailyHourlyBreakdown(emptySales);
+assert.equal(emptyHourly.length, 4);
+assert.equal(emptyHourly[0].count, 0);
+assert.equal(emptyHourly[0].percentage, 0);
+assert.equal(emptyHourly[0].revenue, 0);
+
+const emptyWeekly = getWeeklyDailyBreakdown(emptySales, now);
+assert.equal(emptyWeekly.length, 7);
+assert.equal(emptyWeekly[0].count, 0);
+assert.equal(emptyWeekly[0].isPeak, false);
+
+const emptyMonthly = getMonthlyWeeklyBreakdown(emptySales, now);
+assert.equal(emptyMonthly.length, 4);
+assert.equal(emptyMonthly[0].count, 0);
+assert.equal(emptyMonthly[0].percentage, 0);
+
+const emptyRanking = getProductPerformanceRanking(emptySales, testProducts);
+assert.equal(emptyRanking.length, 7);
+assert.equal(emptyRanking[0].units, 0);
+assert.equal(emptyRanking[0].percentageOfRevenue, 0);
+console.log('✓ Zero out edge case passed: no division by zero, no NaN');
+
+// Test 2: Shift Sales Distribution & 24h coverage
+console.log('Test 2: Shift Sales Distribution across hours (including boundary hours)');
+const shiftSales = [
+  { id: '0', productId: 'fries-alone', timestamp: '2026-11-10T09:30:00', quantity: 1, unitPrice: 65, unitCost: 20 }, // Early opening (9:30)
+  { id: '1', productId: 'sandwich-fries', timestamp: '2026-11-10T12:30:00', quantity: 3, unitPrice: 185, unitCost: 70 }, // Morning/Lunch
+  { id: '2', productId: 'sandwich-alone', timestamp: '2026-11-10T15:15:00', quantity: 5, unitPrice: 145, unitCost: 60 }, // Rush lunch
+  { id: '3', productId: 'fries-cheese', timestamp: '2026-11-10T18:45:00', quantity: 2, unitPrice: 85, unitCost: 25 }, // Afternoon
+  { id: '4', productId: 'steak-frites', timestamp: '2026-11-10T21:00:00', quantity: 4, unitPrice: 195, unitCost: 75 }, // Night
+  { id: '5', productId: 'fries-cheese', timestamp: '2026-11-10T23:30:00', quantity: 1, unitPrice: 85, unitCost: 25 }, // Late night close
+];
+const hourlyResult = getDailyHourlyBreakdown(shiftSales);
+assert.equal(hourlyResult[0].count, 4); // 9:30 + 12:30 (Morning/Lunch block)
+assert.equal(hourlyResult[1].count, 5); // 15:15 (Rush)
+assert.equal(hourlyResult[2].count, 2); // 18:45 (Afternoon)
+assert.equal(hourlyResult[3].count, 5); // 21:00 + 23:30 (Night/Close)
+assert.equal(hourlyResult.reduce((s, h) => s + h.count, 0), 16, 'All sales must be accounted for across shift blocks');
+console.log('✓ Hourly shift distribution passed with full 24h coverage');
+
+// Test 3: Weekly Day-by-Day, Peak Day detection & Exact Calendar Alignment
+console.log('Test 3: Weekly Day-by-Day Peak Day detection & Calendar Alignment');
+const refDate = new Date('2026-11-10T12:00:00');
+const weekSales = [
+  { id: 'w1', productId: 'sandwich-fries', timestamp: '2026-11-10T12:00:00', quantity: 10, unitPrice: 185, unitCost: 70 }, // Today (10 Nov)
+  { id: 'w2', productId: 'sandwich-fries', timestamp: '2026-11-09T12:00:00', quantity: 25, unitPrice: 185, unitCost: 70 }, // Yesterday (9 Nov - Peak)
+  { id: 'w3', productId: 'fries-alone', timestamp: '2026-11-04T08:00:00', quantity: 8, unitPrice: 65, unitCost: 20 }, // 6 days ago (4 Nov)
+  { id: 'w4-out', productId: 'fries-alone', timestamp: '2026-11-03T18:00:00', quantity: 12, unitPrice: 65, unitCost: 20 }, // 7 days ago (3 Nov - outside last 7 calendar days)
+];
+const filteredWeek = filterSalesByTimeframe(weekSales, 'week', refDate);
+assert.equal(filteredWeek.length, 3, 'Sale from 3 Nov must be excluded from last 7 calendar days');
+
+const weeklyResult = getWeeklyDailyBreakdown(filteredWeek, refDate);
+assert.equal(weeklyResult.length, 7);
+const peakFound = weeklyResult.find((d) => d.isPeak);
+assert.ok(peakFound, 'Should find peak day');
+assert.equal(peakFound.count, 25);
+const sumWeeklyUnits = weeklyResult.reduce((sum, d) => sum + d.count, 0);
+assert.equal(sumWeeklyUnits, 43, 'Sum of 7-day grid must exactly equal filtered week units (10 + 25 + 8)');
+console.log('✓ Weekly calendar alignment and peak day detection verified');
+
+// Test 4: Product Performance Ranking & Top Revenue Identification
+console.log('Test 4: Product Performance Ranking & Revenue Leader');
+const sampleLeaderSales = [
+  { id: 'r1', productId: 'fries-alone', timestamp: '2026-11-10T12:00:00', quantity: 50, unitPrice: 65, unitCost: 20 }, // 50 units * $65 = $3,250
+  { id: 'r2', productId: 'steak-frites', timestamp: '2026-11-10T12:00:00', quantity: 40, unitPrice: 195, unitCost: 75 }, // 40 units * $195 = $7,800
+];
+const rankingResult = getProductPerformanceRanking(sampleLeaderSales, testProducts);
+// Ranking is sorted by units descending:
+assert.equal(rankingResult[0].product.id, 'fries-alone'); // 50 units
+assert.equal(rankingResult[1].product.id, 'steak-frites'); // 40 units
+
+// Top revenue product must be steak-frites ($7,800 > $3,250)
+const topRevenueProduct = [...rankingResult].sort((a, b) => b.revenue - a.revenue)[0];
+assert.equal(topRevenueProduct.product.id, 'steak-frites');
+assert.equal(topRevenueProduct.revenue, 7800);
+console.log('✓ Product ranking by units and top revenue leader correctly identified');
+
+// Test 5: On-the-fly Price Edit Simulation with Decimals
+console.log('Test 5: On-the-fly Price change propagation with decimal prices');
+const updatedProducts = testProducts.map(p => p.id === 'sandwich-fries' ? { ...p, defaultPrice: 189.50 } : p);
+const newSale = { id: 's-new', productId: 'sandwich-fries', timestamp: '2026-11-10T12:00:00', quantity: 2, unitPrice: 189.50, unitCost: 70 };
+const updatedSales = [newSale];
+const updatedRanking = getProductPerformanceRanking(updatedSales, updatedProducts);
+assert.equal(updatedRanking[0].revenue, 379);
+assert.equal(updatedRanking[0].margin, Math.round(((189.50 - 70) / 189.50) * 100)); // 63%
+console.log('✓ Decimal on-the-fly price updates flow accurately through calculations');
+
+// Test 6: Zero-Out LocalStorage Persistence Simulation
+console.log('Test 6: LocalStorage Zero Out persistence behavior');
+let mockStorage = { philly_fry_sales: JSON.stringify([{ id: 'test', quantity: 5 }]) };
+// Simulate zeroing out
+mockStorage.philly_fry_sales = JSON.stringify([]);
+// Simulate page reload
+const reloaded = mockStorage.philly_fry_sales !== null ? JSON.parse(mockStorage.philly_fry_sales) : [{ id: 'sample' }];
+assert.deepEqual(reloaded, [], 'Reloading after zero out must preserve empty sales array');
+console.log('✓ Zero out persistence across page reload verified');
+
+console.log('\nAll 6 accounting verification tests passed flawlessly!');

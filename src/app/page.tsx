@@ -7,13 +7,20 @@ import {
   filterSalesByTimeframe,
   getProductCountsByTimeframe,
   generateSampleSales,
+  getDailyHourlyBreakdown,
+  getWeeklyDailyBreakdown,
+  getMonthlyWeeklyBreakdown,
+  getProductPerformanceRanking,
 } from '@/utils/accountingCalculations';
 import { Navbar } from '@/components/Navbar';
 import { HeroBanner } from '@/components/HeroBanner';
 import { KPICards } from '@/components/KPICards';
+import { GranularTimeframeView } from '@/components/GranularTimeframeView';
 import { ProductCard } from '@/components/ProductCard';
 import { PriceManagerModal } from '@/components/PriceManagerModal';
 import { SalesHistoryModal } from '@/components/SalesHistoryModal';
+import { ZeroOutModal } from '@/components/ZeroOutModal';
+import { CheckCircle2, RotateCcw } from 'lucide-react';
 
 const subscribe = () => () => {};
 
@@ -24,11 +31,34 @@ export default function SalesCounterPage() {
     () => false
   );
 
+  const clientTimestamp = useSyncExternalStore(
+    subscribe,
+    () => Date.now(),
+    () => null
+  );
+
+  const currentDate = useMemo(() => {
+    return clientTimestamp ? new Date(clientTimestamp) : undefined;
+  }, [clientTimestamp]);
+
+  // Sync products with Mexican Spanish texts while preserving user-configured prices/costs
   const [products, setProducts] = useState<ProductItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_PRODUCTS;
     try {
       const saved = localStorage.getItem('philly_fry_products');
-      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      if (!saved) return INITIAL_PRODUCTS;
+      const parsed: ProductItem[] = JSON.parse(saved);
+      return INITIAL_PRODUCTS.map((init) => {
+        const found = parsed.find((p) => p.id === init.id);
+        if (found) {
+          return {
+            ...init,
+            defaultPrice: typeof found.defaultPrice === 'number' ? found.defaultPrice : init.defaultPrice,
+            cost: typeof found.cost === 'number' ? found.cost : init.cost,
+          };
+        }
+        return init;
+      });
     } catch {
       return INITIAL_PRODUCTS;
     }
@@ -38,8 +68,8 @@ export default function SalesCounterPage() {
     if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem('philly_fry_sales');
-      if (saved) return JSON.parse(saved);
-      const sample = generateSampleSales(INITIAL_PRODUCTS, new Date());
+      if (saved !== null) return JSON.parse(saved);
+      const sample = generateSampleSales(INITIAL_PRODUCTS);
       localStorage.setItem('philly_fry_sales', JSON.stringify(sample));
       return sample;
     } catch {
@@ -51,16 +81,39 @@ export default function SalesCounterPage() {
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isZeroOutModalOpen, setIsZeroOutModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === message ? null : curr));
+    }, 3500);
+  };
 
   // Save changes to localStorage
   const handleSaveProducts = (updatedProducts: ProductItem[]) => {
     setProducts(updatedProducts);
     try {
       localStorage.setItem('philly_fry_products', JSON.stringify(updatedProducts));
+      showToast('✓ Precios y costos guardados correctamente.');
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
+    }
+  };
+
+  // On-the-fly individual product price edit from the card
+  const handleUpdateProductPrice = (productId: string, newPrice: number) => {
+    const updated = products.map((p) => (p.id === productId ? { ...p, defaultPrice: newPrice } : p));
+    setProducts(updated);
+    try {
+      localStorage.setItem('philly_fry_products', JSON.stringify(updated));
+      const target = updated.find((p) => p.id === productId);
+      showToast(`✓ Precio de ${target?.name} actualizado a $${newPrice.toFixed(2)}.`);
+    } catch (e) {
+      console.error('Failed to save updated price', e);
     }
   };
 
@@ -116,21 +169,18 @@ export default function SalesCounterPage() {
     handleSaveSales(updated);
   };
 
-  // Clear all sales
-  const handleClearAllSales = () => {
+  // ZERO OUT THE WHOLE ACCOUNTING
+  const handleConfirmZeroOut = () => {
     handleSaveSales([]);
+    showToast('✓ Contabilidad reiniciada en ceros exitosamente.');
   };
 
   // Load sample demo shift
   const handleLoadSample = () => {
     const sample = generateSampleSales(products, new Date());
     handleSaveSales(sample);
+    showToast('✓ Datos de prueba cargados en el sistema.');
   };
-
-  // Client-safe current date for filtering
-  const currentDate = useMemo(() => {
-    return isHydrated ? new Date() : undefined;
-  }, [isHydrated]);
 
   // Filter sales for the selected timeframe
   const filteredSales = useMemo(() => {
@@ -138,10 +188,22 @@ export default function SalesCounterPage() {
     return filterSalesByTimeframe(sales, timeframe, currentDate);
   }, [sales, timeframe, currentDate]);
 
-  // Overall counts for Today (used in Hero banner)
+  // Overall counts for Today (used in Hero banner and Daily Granular view)
   const todaySales = useMemo(() => {
     if (!currentDate) return [];
     return filterSalesByTimeframe(sales, 'today', currentDate);
+  }, [sales, currentDate]);
+
+  // Overall counts for Week (used in Weekly Granular view)
+  const weekSales = useMemo(() => {
+    if (!currentDate) return [];
+    return filterSalesByTimeframe(sales, 'week', currentDate);
+  }, [sales, currentDate]);
+
+  // Overall counts for Month (used in Monthly Granular view)
+  const monthSales = useMemo(() => {
+    if (!currentDate) return [];
+    return filterSalesByTimeframe(sales, 'month', currentDate);
   }, [sales, currentDate]);
 
   const todayCount = useMemo(() => {
@@ -155,6 +217,23 @@ export default function SalesCounterPage() {
   const totalUnitsInTimeframe = useMemo(() => {
     return filteredSales.reduce((acc, curr) => acc + curr.quantity, 0);
   }, [filteredSales]);
+
+  // Granular computations
+  const hourlyBlocks = useMemo(() => {
+    return getDailyHourlyBreakdown(todaySales);
+  }, [todaySales]);
+
+  const dailyStats = useMemo(() => {
+    return getWeeklyDailyBreakdown(weekSales, currentDate);
+  }, [weekSales, currentDate]);
+
+  const monthlyWeekStats = useMemo(() => {
+    return getMonthlyWeeklyBreakdown(monthSales, currentDate);
+  }, [monthSales, currentDate]);
+
+  const productRanking = useMemo(() => {
+    return getProductPerformanceRanking(monthSales, products);
+  }, [monthSales, products]);
 
   // Map product counts (Today, Week, Month, All)
   const productCountMap = useMemo(() => {
@@ -180,7 +259,7 @@ export default function SalesCounterPage() {
       <div className="min-h-screen bg-[#0d0d0f] flex flex-col items-center justify-center text-neutral-400 font-sans space-y-3">
         <div className="w-6 h-6 border-2 border-[#e59b38] border-t-transparent rounded-full animate-spin" />
         <span className="font-serif tracking-widest uppercase text-xs text-neutral-300">
-          Philly & Fry Sales Counter
+          Philly & Fry • Mostrador de Ventas
         </span>
       </div>
     );
@@ -188,25 +267,35 @@ export default function SalesCounterPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0d0d0f] text-[#f5f0eb]">
+      {/* Toast Alert Feedback */}
+      {toastMessage && (
+        <div className="fixed top-24 right-6 z-50 flex items-center gap-2.5 bg-[#19191d] border border-[#e59b38]/50 text-white px-4 py-3 rounded-xl shadow-2xl animate-fade-in backdrop-blur-md">
+          <CheckCircle2 className="w-4 h-4 text-[#e59b38] shrink-0" />
+          <span className="text-xs font-medium">{toastMessage}</span>
+        </div>
+      )}
+
       {/* Top Navbar */}
       <Navbar
         timeframe={timeframe}
         onTimeframeChange={setTimeframe}
         onOpenPriceManager={() => setIsPriceModalOpen(true)}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
+        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
-      {/* Hero Banner matching the reference image's layout and font */}
+      {/* Hero Banner */}
       <HeroBanner
         timeframe={timeframe}
         onScrollToProducts={scrollToProducts}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
+        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
         todayCount={todayCount}
         todayRevenue={todayRevenue}
       />
 
-      {/* Main Content Area with subtle background grid */}
+      {/* Main Content Area */}
       <main className="flex-1 bg-vertical-grid py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           
@@ -216,33 +305,45 @@ export default function SalesCounterPage() {
             sales={filteredSales}
             products={products}
             onLoadSample={handleLoadSample}
+            onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
           />
 
-          {/* Section 2: Products & Counter Grid */}
+          {/* Section 2: Dedicated Granular Timeframe View (Day / Week / Month / Total) */}
+          <GranularTimeframeView
+            timeframe={timeframe}
+            onTimeframeChange={setTimeframe}
+            sales={filteredSales}
+            hourlyBlocks={hourlyBlocks}
+            dailyStats={dailyStats}
+            monthlyWeekStats={monthlyWeekStats}
+            productRanking={productRanking}
+          />
+
+          {/* Section 3: Products & Sales Counter Grid */}
           <div ref={productsSectionRef} className="pt-6 space-y-6">
             
             {/* Header with Category Filter Chips */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/[0.08] pb-5">
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-widest text-[#e59b38]">
-                  Tap to Tally Sales
+                  Registro Rápido al Mostrador
                 </div>
                 <h2 className="font-serif text-3xl font-bold tracking-tight text-white mt-1">
-                  Product Sales Counter
+                  Mostrador de Ventas y Comandas
                 </h2>
                 <p className="text-xs text-neutral-400 mt-1">
-                  Click <span className="text-[#e59b38] font-bold">+1 Count</span> each time an item is ordered to update the daily, weekly, and monthly totals instantly.
+                  Presiona <span className="text-[#e59b38] font-bold">+1 Venta</span> cada vez que se ordene un producto. Haz clic sobre el <span className="text-white underline decoration-[#e59b38] underline-offset-2">precio en la tarjeta</span> para cambiarlo al vuelo en cualquier momento.
                 </p>
               </div>
 
-              {/* Category Filter Pills */}
+              {/* Category Filter Pills in Mexican Spanish */}
               <div className="flex flex-wrap items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06]">
                 {[
-                  { id: 'all', label: 'All Items' },
-                  { id: 'sandwiches', label: 'Sandwiches' },
+                  { id: 'all', label: 'Todos los Platillos' },
+                  { id: 'sandwiches', label: 'Sándwiches Philly' },
                   { id: 'quesadillas', label: 'Quesadillas' },
                   { id: 'steak-frites', label: 'Steak Frites' },
-                  { id: 'fries', label: 'Fries & Cheese' },
+                  { id: 'fries', label: 'Papas y Queso' },
                 ].map((cat) => (
                   <button
                     key={cat.id}
@@ -259,7 +360,7 @@ export default function SalesCounterPage() {
               </div>
             </div>
 
-            {/* Product Cards Grid */}
+            {/* Product Cards Grid with On-The-Fly Price Editing */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredProducts.map((product) => {
                 const counts = productCountMap[product.id] || { today: 0, week: 0, month: 0, all: 0 };
@@ -271,6 +372,7 @@ export default function SalesCounterPage() {
                     timeframe={timeframe}
                     onIncrement={handleIncrement}
                     onDecrement={handleDecrement}
+                    onUpdatePrice={handleUpdateProductPrice}
                   />
                 );
               })}
@@ -278,33 +380,33 @@ export default function SalesCounterPage() {
 
           </div>
 
-          {/* Section 3: Summary Breakdown by Menu Category */}
+          {/* Section 4: Summary Breakdown by Menu Category */}
           <div className="mt-12 rounded-2xl bg-[#141417] border border-white/[0.08] p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-              <h3 className="font-serif text-lg font-bold text-white">
-                Category Volume Breakdown ({timeframe.toUpperCase()})
-              </h3>
-              <span className="text-xs text-neutral-400 font-mono">
-                {totalUnitsInTimeframe} total units
+              <div>
+                <h3 className="font-serif text-lg font-bold text-white">
+                  Desglose por Categoría de Menú ({timeframe === 'today' ? 'HOY' : timeframe === 'week' ? 'ESTA SEMANA' : timeframe === 'month' ? 'ESTE MES' : 'HISTÓRICO'})
+                </h3>
+                <span className="text-xs text-neutral-400">
+                  Volumen e ingresos acumulados en este periodo
+                </span>
+              </div>
+              <span className="text-xs text-[#e59b38] font-mono font-bold bg-[#e59b38]/10 px-3 py-1 rounded-full border border-[#e59b38]/20">
+                {totalUnitsInTimeframe} piezas totales
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
               {[
-                { label: 'Sandwiches', cat: 'sandwiches', desc: 'Alone & With Fries' },
-                { label: 'Quesadillas', cat: 'quesadillas', desc: 'Alone & With Fries' },
-                { label: 'Steak Frites', cat: 'steak-frites', desc: 'Steak, Fries & Veggies' },
-                { label: 'Gourmet Fries', cat: 'fries', desc: 'Classic & Melted Cheese' },
+                { label: 'Sándwiches Philly', cat: 'sandwiches', desc: 'Sencillo y en combo con papas' },
+                { label: 'Quesadillas de Ribeye', cat: 'quesadillas', desc: 'Sencilla y en combo con papas' },
+                { label: 'Steak Frites', cat: 'steak-frites', desc: 'Papas con carne y verduras' },
+                { label: 'Papas Gourmet', cat: 'fries', desc: 'Clásicas y con queso fundido' },
               ].map((categoryItem) => {
                 const catProducts = products.filter((p) => p.category === categoryItem.cat);
-                const catUnits = catProducts.reduce((sum, p) => {
-                  const counts = productCountMap[p.id];
-                  return sum + (counts ? counts[timeframe] : 0);
-                }, 0);
-                const catRevenue = catProducts.reduce((sum, p) => {
-                  const counts = productCountMap[p.id];
-                  return sum + (counts ? counts[timeframe] * p.defaultPrice : 0);
-                }, 0);
+                const catSales = filteredSales.filter((s) => catProducts.some((p) => p.id === s.productId));
+                const catUnits = catSales.reduce((sum, s) => sum + s.quantity, 0);
+                const catRevenue = catSales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
                 const percentage = totalUnitsInTimeframe > 0 ? Math.round((catUnits / totalUnitsInTimeframe) * 100) : 0;
 
                 return (
@@ -320,8 +422,11 @@ export default function SalesCounterPage() {
                     </div>
 
                     <div className="mt-3 flex items-baseline justify-between">
-                      <span className="font-serif text-2xl font-bold text-white">{catUnits}</span>
-                      <span className="text-xs font-mono text-neutral-400">
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-2xl font-bold text-white">{catUnits}</span>
+                        <span className="text-[10px] text-neutral-500 font-mono">piezas</span>
+                      </div>
+                      <span className="text-xs font-mono text-neutral-300 font-semibold">
                         ${catRevenue.toFixed(2)}
                       </span>
                     </div>
@@ -342,7 +447,7 @@ export default function SalesCounterPage() {
         </div>
       </main>
 
-      {/* Footer matching the dark editorial mood */}
+      {/* Footer in Mexican Spanish */}
       <footer className="border-t border-white/[0.08] bg-[#0d0d0f] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
           <div className="flex items-center gap-3">
@@ -350,29 +455,37 @@ export default function SalesCounterPage() {
               PHILLY & FRY
             </span>
             <span>•</span>
-            <span>Business Sales Counter & Ledger</span>
+            <span>Mostrador de Ventas y Contabilidad de Restaurante</span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px]">
+          <div className="flex flex-wrap items-center gap-4 text-[11px]">
             <button
               onClick={() => setIsPriceModalOpen(true)}
               className="hover:text-white transition-colors"
             >
-              Configure Prices & Costs
+              Configurar Precios y Costos
             </button>
             <span>•</span>
             <button
               onClick={() => setIsHistoryModalOpen(true)}
               className="hover:text-white transition-colors"
             >
-              Export CSV Ledger
+              Exportar Registro en CSV
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => setIsZeroOutModalOpen(true)}
+              className="text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Poner en Ceros</span>
             </button>
             <span>•</span>
             <button
               onClick={handleLoadSample}
               className="hover:text-[#e59b38] transition-colors"
             >
-              Reload Sample Data
+              Recargar Datos de Muestra
             </button>
           </div>
         </div>
@@ -394,7 +507,16 @@ export default function SalesCounterPage() {
         products={products}
         timeframe={timeframe}
         onDeleteSale={handleDeleteSale}
-        onClearAllSales={handleClearAllSales}
+        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
+      />
+
+      {/* 0 Out Accounting Confirmation Modal */}
+      <ZeroOutModal
+        isOpen={isZeroOutModalOpen}
+        onClose={() => setIsZeroOutModalOpen(false)}
+        onConfirmZeroOut={handleConfirmZeroOut}
+        sales={sales}
+        products={products}
       />
     </div>
   );

@@ -17,9 +17,29 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
   products,
   onSaveProducts,
 }) => {
-  const [formData, setFormData] = useState<ProductItem[]>(products);
-
   if (!isOpen) return null;
+
+  return (
+    <PriceManagerModalDialog
+      onClose={onClose}
+      products={products}
+      onSaveProducts={onSaveProducts}
+    />
+  );
+};
+
+interface PriceManagerModalDialogProps {
+  onClose: () => void;
+  products: ProductItem[];
+  onSaveProducts: (updatedProducts: ProductItem[]) => void;
+}
+
+function PriceManagerModalDialog({
+  onClose,
+  products,
+  onSaveProducts,
+}: PriceManagerModalDialogProps) {
+  const [formData, setFormData] = useState<ProductItem[]>(products);
 
   const handlePriceChange = (id: string, price: number) => {
     setFormData((prev) =>
@@ -51,10 +71,10 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
             </div>
             <div>
               <h2 className="font-serif text-xl font-bold text-white">
-                Product Pricing & Food Cost Desk
+                Catálogo de Precios y Costeo de Alimentos
               </h2>
               <p className="text-xs text-neutral-400">
-                Update selling prices and food costs. You can add or adjust costs anytime.
+                Ajusta los precios de venta y costos unitarios de insumos en cualquier momento.
               </p>
             </div>
           </div>
@@ -70,16 +90,16 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
         <div className="px-6 py-3 bg-[#e59b38]/10 border-b border-[#e59b38]/20 flex items-center gap-2.5 text-xs text-[#f5f0eb]">
           <Info className="w-4 h-4 text-[#e59b38] flex-shrink-0" />
           <span>
-            Enter your selling prices below. When you have your unit food costs ready, enter them to calculate gross profit margin.
+            Ingresa los precios al público. Si agregas el costo unitario de tus ingredientes, el sistema calculará automáticamente tu margen de ganancia bruta.
           </span>
         </div>
 
         {/* Scrollable Form Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           <div className="grid grid-cols-12 gap-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-400 border-b border-white/[0.06]">
-            <div className="col-span-5 sm:col-span-6">Product & Variant</div>
-            <div className="col-span-3 sm:col-span-3 text-right">Selling Price ($)</div>
-            <div className="col-span-4 sm:col-span-3 text-right">Unit Food Cost ($)</div>
+            <div className="col-span-5 sm:col-span-6">Producto y Variante</div>
+            <div className="col-span-3 sm:col-span-3 text-right">Precio Venta ($)</div>
+            <div className="col-span-4 sm:col-span-3 text-right">Costo Insumo ($)</div>
           </div>
 
           {formData.map((item) => {
@@ -102,7 +122,7 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
                     </span>
                     {margin !== null && (
                       <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 rounded">
-                        {margin}% margin
+                        {margin}% margen
                       </span>
                     )}
                   </div>
@@ -111,12 +131,12 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
                 {/* Selling Price Input */}
                 <div className="col-span-3 sm:col-span-3">
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-mono">
                       $
                     </span>
                     <input
                       type="number"
-                      step="0.01"
+                      step="any"
                       min="0"
                       value={item.defaultPrice || ''}
                       onChange={(e) =>
@@ -131,18 +151,18 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
                 {/* Unit Cost Input */}
                 <div className="col-span-4 sm:col-span-3">
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-mono">
                       $
                     </span>
                     <input
                       type="number"
-                      step="0.01"
+                      step="any"
                       min="0"
                       value={item.cost || ''}
                       onChange={(e) =>
                         handleCostChange(item.id, parseFloat(e.target.value) || 0)
                       }
-                      placeholder="Pending"
+                      placeholder="Pendiente"
                       className="w-full bg-[#1e1e23] border border-white/10 rounded-lg pl-7 pr-3 py-2 text-sm text-right font-mono text-neutral-200 focus:outline-none focus:border-[#e59b38]"
                     />
                   </div>
@@ -159,7 +179,7 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
             onClick={onClose}
             className="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-neutral-300 hover:text-white transition-colors"
           >
-            Cancel
+            Cancelar
           </button>
           <button
             type="button"
@@ -167,11 +187,11 @@ export const PriceManagerModal: React.FC<PriceManagerModalProps> = ({
             className="flex items-center gap-2 bg-[#e59b38] hover:bg-[#d48b28] text-black font-bold text-xs uppercase tracking-wider px-6 py-2.5 rounded-full transition-all shadow-md active:scale-95"
           >
             <Save className="w-4 h-4" />
-            <span>Save Pricing Updates</span>
+            <span>Guardar Precios</span>
           </button>
         </div>
 
       </div>
     </div>
   );
-};
+}

@@ -8,7 +8,7 @@ export interface ProductItem {
   description: string;
   imageUrl: string;
   defaultPrice: number;
-  cost: number; // cost of goods sold per unit (to be provided later)
+  cost: number; // costo de insumos por unidad
 }
 
 export interface SaleRecord {
@@ -21,3 +21,38 @@ export interface SaleRecord {
 }
 
 export type TimeframeFilter = 'today' | 'week' | 'month' | 'all';
+
+export interface HourlyBlock {
+  id: string;
+  label: string;
+  timeRange: string;
+  count: number;
+  revenue: number;
+  percentage: number;
+}
+
+export interface DailyStat {
+  dateStr: string;
+  dayName: string;
+  formattedDate: string;
+  count: number;
+  revenue: number;
+  isPeak: boolean;
+}
+
+export interface MonthlyWeekStat {
+  id: string;
+  label: string;
+  dateRange: string;
+  count: number;
+  revenue: number;
+  percentage: number;
+}
+
+export interface ProductPerformance {
+  product: ProductItem;
+  units: number;
+  revenue: number;
+  percentageOfRevenue: number;
+  margin: number | null;
+}

@@ -2,13 +2,14 @@
 
 import React from 'react';
 import { TimeframeFilter, ProductItem, SaleRecord } from '@/types/accounting';
-import { ShoppingBag, DollarSign, Award, Layers, Sparkles } from 'lucide-react';
+import { ShoppingBag, DollarSign, Award, Layers, Sparkles, RotateCcw } from 'lucide-react';
 
 interface KPICardsProps {
   timeframe: TimeframeFilter;
   sales: SaleRecord[];
   products: ProductItem[];
   onLoadSample: () => void;
+  onOpenZeroOut: () => void;
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
@@ -16,6 +17,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
   sales,
   products,
   onLoadSample,
+  onOpenZeroOut,
 }) => {
   // Aggregate units and revenue
   const totalUnits = sales.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -48,40 +50,51 @@ export const KPICards: React.FC<KPICardsProps> = ({
   const comboRate = totalMains > 0 ? Math.round((totalFriesCombos / totalMains) * 100) : 0;
 
   const timeframeLabels: Record<TimeframeFilter, string> = {
-    today: 'Today',
-    week: 'This Week',
-    month: 'This Month',
-    all: 'All-Time',
+    today: 'Hoy',
+    week: 'Esta Semana',
+    month: 'Este Mes',
+    all: 'Histórico Total',
   };
 
   return (
     <div className="space-y-4">
-      {/* Top Bar with Filter Context and Sample Loader */}
+      {/* Top Bar with Filter Context, Zero-Out action and Sample Loader */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-white/[0.06]">
         <div>
           <h2 className="text-sm font-semibold tracking-wider text-neutral-300 uppercase">
-            Performance Overview — {timeframeLabels[timeframe]}
+            Resumen de Rendimiento — {timeframeLabels[timeframe]}
           </h2>
           <p className="text-xs text-neutral-500">
-            Real-time calculations based on {sales.length} logged sales events.
+            Cálculos en tiempo real basados en {sales.length} transacciones registradas.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {sales.length > 0 && (
+            <button
+              onClick={onOpenZeroOut}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+              title="Poner en ceros toda la contabilidad"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Poner en Ceros</span>
+            </button>
+          )}
+
           {sales.length === 0 ? (
             <button
               onClick={onLoadSample}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-[#e59b38]/10 text-[#e59b38] border border-[#e59b38]/30 hover:bg-[#e59b38]/20 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Load Sample Shift Data</span>
+              <span>Cargar Datos de Prueba</span>
             </button>
           ) : (
             <button
               onClick={onLoadSample}
               className="text-xs text-neutral-400 hover:text-neutral-200 underline underline-offset-4 decoration-neutral-600 hover:decoration-white transition-colors"
             >
-              Reload Sample Data
+              Recargar Muestra
             </button>
           )}
         </div>
@@ -94,7 +107,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         <div className="relative overflow-hidden rounded-2xl bg-[#141417] border border-white/[0.08] p-5 hover:border-white/[0.15] transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
-              Total Units Sold
+              Piezas / Unidades Vendidas
             </span>
             <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/[0.08]">
               <ShoppingBag className="w-4 h-4 text-[#e59b38]" />
@@ -104,10 +117,10 @@ export const KPICards: React.FC<KPICardsProps> = ({
             <span className="font-serif text-3xl sm:text-4xl font-bold text-[#f5f0eb]">
               {totalUnits}
             </span>
-            <span className="text-xs text-neutral-400 font-mono">items</span>
+            <span className="text-xs text-neutral-400 font-mono">piezas</span>
           </div>
           <div className="mt-2 text-[11px] text-neutral-500">
-            Across 4 categories & variants
+            En 4 categorías y 7 variantes
           </div>
         </div>
 
@@ -115,7 +128,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         <div className="relative overflow-hidden rounded-2xl bg-[#141417] border border-white/[0.08] p-5 hover:border-white/[0.15] transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
-              Gross Sales (Est.)
+              Venta Bruta (Estimada)
             </span>
             <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/[0.08]">
               <DollarSign className="w-4 h-4 text-emerald-400" />
@@ -127,7 +140,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
             </span>
           </div>
           <div className="mt-2 text-[11px] text-neutral-500">
-            Based on configured unit prices
+            Con base en los precios vigentes
           </div>
         </div>
 
@@ -135,7 +148,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         <div className="relative overflow-hidden rounded-2xl bg-[#141417] border border-white/[0.08] p-5 hover:border-white/[0.15] transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
-              Top Selling Item
+              Producto Más Vendido
             </span>
             <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/[0.08]">
               <Award className="w-4 h-4 text-[#e59b38]" />
@@ -143,14 +156,14 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
           <div className="mt-3">
             <div className="text-sm font-semibold text-[#f5f0eb] truncate">
-              {topProduct ? `${topProduct.name}` : 'No sales yet'}
+              {topProduct ? `${topProduct.name}` : 'Sin ventas aún'}
             </div>
             <div className="text-xs text-[#e59b38] font-mono mt-0.5">
-              {topProduct ? `${topProduct.variantLabel} (${topCount} sold)` : 'Log a sale below'}
+              {topProduct ? `${topProduct.variantLabel} (${topCount} vendidas)` : 'Registra ventas abajo'}
             </div>
           </div>
           <div className="mt-2 text-[11px] text-neutral-500">
-            Highest volume item in {timeframeLabels[timeframe]}
+            Mayor volumen en {timeframeLabels[timeframe]}
           </div>
         </div>
 
@@ -158,7 +171,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         <div className="relative overflow-hidden rounded-2xl bg-[#141417] border border-white/[0.08] p-5 hover:border-white/[0.15] transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
-              Combo Attachment
+              Tasa de Combos con Papas
             </span>
             <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/[0.08]">
               <Layers className="w-4 h-4 text-amber-300" />
@@ -168,10 +181,10 @@ export const KPICards: React.FC<KPICardsProps> = ({
             <span className="font-serif text-3xl sm:text-4xl font-bold text-white">
               {comboRate}%
             </span>
-            <span className="text-xs text-neutral-400">ordered w/ fries</span>
+            <span className="text-xs text-neutral-400">pedidos en combo</span>
           </div>
           <div className="mt-2 text-[11px] text-neutral-500">
-            {totalFriesCombos} of {totalMains} mains upgraded
+            {totalFriesCombos} de {totalMains} principales mejorados
           </div>
         </div>
 

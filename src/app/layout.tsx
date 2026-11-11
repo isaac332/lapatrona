@@ -18,8 +18,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Philly & Fry | Sales Counter & Accounting",
-  description: "Daily, weekly, and monthly sales counter for Philly & Fry",
+  title: "Philly & Fry | Mostrador de Ventas y Contabilidad",
+  description: "Contador de ventas y contabilidad diaria, semanal y mensual para Philly & Fry",
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="es-MX"
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased dark`}
     >
       <body className="min-h-full bg-[#0d0d0f] text-[#f5f0eb] flex flex-col font-sans selection:bg-[#e59b38] selection:text-black">
