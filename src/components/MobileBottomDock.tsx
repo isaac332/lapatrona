@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store, Users } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -14,6 +14,8 @@ interface MobileBottomDockProps {
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
   onOpenNuevaOrden: () => void;
+  onOpenMesas?: () => void;
+  openTabsCount?: number;
   onOpenHistorialCortes?: () => void;
   onOpenAtajos?: () => void;
   onOpenStockManager?: () => void;
@@ -37,6 +39,8 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenGastos,
   onOpenCalculadora,
   onOpenNuevaOrden,
+  onOpenMesas,
+  openTabsCount = 0,
   onOpenStockManager,
   onOpenHistorialComandas,
   onOpenPantallaCocina,
@@ -123,6 +127,27 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
               {activeKitchenOrdersCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center font-mono animate-pulse">
                   {activeKitchenOrdersCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          {onOpenMesas && (
+            <button
+              onClick={onOpenMesas}
+              aria-label="Mesas y cuentas abiertas"
+              title="Mesas y Cuentas Abiertas"
+              className={`w-10 h-10 rounded-xl border flex flex-col items-center justify-center active:scale-95 touch-manipulation select-none shrink-0 relative ${
+                openTabsCount > 0
+                  ? 'bg-amber-500/20 border-amber-500/40 text-[#e59b38]'
+                  : 'bg-white/[0.04] active:bg-white/[0.1] border-white/[0.08] text-neutral-300'
+              }`}
+            >
+              <Users className="w-4 h-4 text-[#e59b38]" />
+              <span className="text-[7.5px] uppercase mt-0.5">Mesas</span>
+              {openTabsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#e59b38] text-black text-[8px] font-black flex items-center justify-center font-mono">
+                  {openTabsCount}
                 </span>
               )}
             </button>

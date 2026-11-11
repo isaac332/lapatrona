@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore, useCallback, useEffect } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig, BusinessInfo } from '@/types/accounting';
+import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig, BusinessInfo, RestaurantTableConfig } from '@/types/accounting';
 import { INITIAL_PRODUCTS, INITIAL_STOCK } from '@/data/initialProducts';
 import { DEFAULT_BUSINESS_INFO } from '@/data/initialBusinessInfo';
+import { INITIAL_TABLES } from '@/data/initialTables';
 import {
   filterSalesByTimeframe,
   filterExpensesByTimeframe,
@@ -36,6 +37,7 @@ import { StockManagerModal } from '@/components/StockManagerModal';
 import { HistorialComandasModal } from '@/components/HistorialComandasModal';
 import { DailyGoalTracker } from '@/components/DailyGoalTracker';
 import { PantallaCocinaModal } from '@/components/PantallaCocinaModal';
+import { MesasModal } from '@/components/MesasModal';
 import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModal';
 import { MiseEnPlaceModal } from '@/components/MiseEnPlaceModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
@@ -121,6 +123,10 @@ export default function SalesCounterPage() {
   const [isGastosModalOpen, setIsGastosModalOpen] = useState(false);
   const [isCalculadoraModalOpen, setIsCalculadoraModalOpen] = useState(false);
   const [isNuevaOrdenOpen, setIsNuevaOrdenOpen] = useState(false);
+  const [isMesasModalOpen, setIsMesasModalOpen] = useState(false);
+  const [tableForNewOrder, setTableForNewOrder] = useState<string | undefined>(undefined);
+  const [editingOrderForTable, setEditingOrderForTable] = useState<CustomerOrder | null>(null);
+  const [tables] = useState<RestaurantTableConfig[]>(INITIAL_TABLES);
   const [isTicketComandaOpen, setIsTicketComandaOpen] = useState(false);
   const [activeTicketOrder, setActiveTicketOrder] = useState<CustomerOrder | null>(null);
   const [orderCounter, setOrderCounter] = useState<number>(() => {
@@ -549,10 +555,20 @@ export default function SalesCounterPage() {
         });
       }
     }
+    const existingIndex = orders.findIndex((o) => o.id === order.id);
+    const wasOpenTab = existingIndex !== -1 && orders[existingIndex].isOpenTab;
+
     const updated = [...newSales, ...sales];
     handleSaveSales(updated);
     setOrders((prev) => {
-      const nextOrders = [order, ...prev];
+      let nextOrders: CustomerOrder[];
+      const idx = prev.findIndex((o) => o.id === order.id);
+      if (idx !== -1) {
+        nextOrders = [...prev];
+        nextOrders[idx] = { ...order, isOpenTab: false, closedAt: new Date().toISOString() };
+      } else {
+        nextOrders = [{ ...order, isOpenTab: false, closedAt: new Date().toISOString() }, ...prev];
+      }
       try {
         localStorage.setItem('philly_fry_orders', JSON.stringify(nextOrders));
       } catch (e) {
@@ -561,18 +577,81 @@ export default function SalesCounterPage() {
       return nextOrders;
     });
 
-    // Deduct stock for items in this comanda
+    // Deduct stock for items in this comanda if not already deducted as an open tab
+    if (!wasOpenTab) {
+      setStockMap((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const item of order.items) {
+          const prodStock = next[item.productId];
+          if (prodStock && prodStock.trackStock) {
+            next[item.productId] = {
+              ...prodStock,
+              currentStock: Math.max(0, prodStock.currentStock - item.quantity),
+            };
+            changed = true;
+          }
+        }
+        if (changed) {
+          try {
+            localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+          } catch {}
+        }
+        return changed ? next : prev;
+      });
+
+      setOrderCounter((prev) => {
+        const next = prev + 1;
+        try {
+          localStorage.setItem('philly_fry_order_counter', next.toString());
+        } catch {}
+        return next;
+      });
+    }
+
+    setActiveTicketOrder(order);
+    setIsTicketComandaOpen(true);
+    playCashRegisterChime();
+    showToast(`✓ Comanda #${order.orderNumber} ${order.tableNumber ? `(${order.tableNumber})` : ''} cobrada ($${order.total.toFixed(2)} MXN).`);
+  };
+
+  const handleSaveOpenTab = (order: CustomerOrder) => {
+    const existingIndex = orders.findIndex((o) => o.id === order.id);
+    const prevItems = existingIndex !== -1 ? orders[existingIndex].items : [];
+
+    setOrders((prev) => {
+      let nextOrders: CustomerOrder[];
+      const idx = prev.findIndex((o) => o.id === order.id);
+      if (idx !== -1) {
+        nextOrders = [...prev];
+        nextOrders[idx] = { ...order, isOpenTab: true };
+      } else {
+        nextOrders = [{ ...order, isOpenTab: true }, ...prev];
+      }
+      try {
+        localStorage.setItem('philly_fry_orders', JSON.stringify(nextOrders));
+      } catch (e) {
+        console.error('Failed to save orders to localStorage', e);
+      }
+      return nextOrders;
+    });
+
+    // Deduct stock for newly added items
     setStockMap((prev) => {
       let changed = false;
       const next = { ...prev };
       for (const item of order.items) {
-        const prodStock = next[item.productId];
-        if (prodStock && prodStock.trackStock) {
-          next[item.productId] = {
-            ...prodStock,
-            currentStock: Math.max(0, prodStock.currentStock - item.quantity),
-          };
-          changed = true;
+        const prevQty = prevItems.find((p) => p.productId === item.productId)?.quantity || 0;
+        const delta = item.quantity - prevQty;
+        if (delta > 0) {
+          const prodStock = next[item.productId];
+          if (prodStock && prodStock.trackStock) {
+            next[item.productId] = {
+              ...prodStock,
+              currentStock: Math.max(0, prodStock.currentStock - delta),
+            };
+            changed = true;
+          }
         }
       }
       if (changed) {
@@ -583,17 +662,45 @@ export default function SalesCounterPage() {
       return changed ? next : prev;
     });
 
-    setOrderCounter((prev) => {
-      const next = prev + 1;
-      try {
-        localStorage.setItem('philly_fry_order_counter', next.toString());
-      } catch {}
-      return next;
-    });
-    setActiveTicketOrder(order);
-    setIsTicketComandaOpen(true);
+    if (existingIndex === -1) {
+      setOrderCounter((prev) => {
+        const next = prev + 1;
+        try {
+          localStorage.setItem('philly_fry_order_counter', next.toString());
+        } catch {}
+        return next;
+      });
+    }
+
     playCashRegisterChime();
-    showToast(`✓ Comanda #${order.orderNumber} registrada ($${order.total.toFixed(2)} MXN).`);
+    showToast(`✓ Cuenta de ${order.tableNumber || 'la mesa'} guardada en cuentas abiertas.`);
+  };
+
+  const handleOpenNewOrderForTable = (tableName: string) => {
+    setTableForNewOrder(tableName);
+    setEditingOrderForTable(null);
+    setIsMesasModalOpen(false);
+    setIsNuevaOrdenOpen(true);
+  };
+
+  const handleAddItemsToOrder = (order: CustomerOrder) => {
+    setTableForNewOrder(order.tableNumber);
+    setEditingOrderForTable(order);
+    setIsMesasModalOpen(false);
+    setIsNuevaOrdenOpen(true);
+  };
+
+  const handleCheckoutTableOrder = (order: CustomerOrder) => {
+    setTableForNewOrder(order.tableNumber);
+    setEditingOrderForTable(order);
+    setIsMesasModalOpen(false);
+    setIsNuevaOrdenOpen(true);
+  };
+
+  const handleCloseNuevaOrden = () => {
+    setIsNuevaOrdenOpen(false);
+    setTableForNewOrder(undefined);
+    setEditingOrderForTable(null);
   };
 
   // ZERO OUT THE WHOLE ACCOUNTING
@@ -744,6 +851,12 @@ export default function SalesCounterPage() {
         return;
       }
 
+      if (e.key.toLowerCase() === 'u') {
+        e.preventDefault();
+        setIsMesasModalOpen(true);
+        return;
+      }
+
       if (e.key.toLowerCase() === 'm') {
         e.preventDefault();
         setIsConfiguracionNegocioOpen(true);
@@ -883,6 +996,10 @@ export default function SalesCounterPage() {
     return orders.filter((o) => (o.status || 'pendiente') !== 'entregado').length;
   }, [orders]);
 
+  const openTabsCount = useMemo(() => {
+    return orders.filter((o) => o.isOpenTab).length;
+  }, [orders]);
+
   const handleExportPeriodCSV = () => {
     exportAccountingReportCSV({
       timeframe,
@@ -946,6 +1063,8 @@ export default function SalesCounterPage() {
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
+        onOpenMesas={() => setIsMesasModalOpen(true)}
+        openTabsCount={openTabsCount}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
         onOpenStockManager={() => setIsStockModalOpen(true)}
@@ -1245,6 +1364,8 @@ export default function SalesCounterPage() {
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
+        onOpenMesas={() => setIsMesasModalOpen(true)}
+        openTabsCount={openTabsCount}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
         onOpenStockManager={() => setIsStockModalOpen(true)}
@@ -1332,14 +1453,33 @@ export default function SalesCounterPage() {
       />
 
       {/* Armador de Comanda / Nueva Orden Modal */}
-      <NuevaOrdenModal
-        isOpen={isNuevaOrdenOpen}
-        onClose={() => setIsNuevaOrdenOpen(false)}
-        products={products}
-        nextOrderNumber={orderCounter}
-        stockMap={stockMap}
-        onCompleteOrder={handleCompleteOrder}
-      />
+      {isNuevaOrdenOpen && (
+        <NuevaOrdenModal
+          isOpen={isNuevaOrdenOpen}
+          onClose={handleCloseNuevaOrden}
+          products={products}
+          nextOrderNumber={editingOrderForTable ? editingOrderForTable.orderNumber : orderCounter}
+          stockMap={stockMap}
+          initialTable={tableForNewOrder}
+          existingOrder={editingOrderForTable}
+          onCompleteOrder={handleCompleteOrder}
+          onSaveOpenTab={handleSaveOpenTab}
+        />
+      )}
+
+      {/* Mesas y Cuentas Abiertas Modal */}
+      {isMesasModalOpen && (
+        <MesasModal
+          isOpen={isMesasModalOpen}
+          onClose={() => setIsMesasModalOpen(false)}
+          tables={tables}
+          orders={orders}
+          businessInfo={businessInfo}
+          onOpenNewOrderForTable={handleOpenNewOrderForTable}
+          onAddItemsToOrder={handleAddItemsToOrder}
+          onCheckoutTableOrder={handleCheckoutTableOrder}
+        />
+      )}
 
       {/* Ticket de Comanda / Nota de Consumo Modal */}
       <TicketComandaModal

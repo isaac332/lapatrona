@@ -216,6 +216,11 @@ function PantallaCocinaDialog({
                         >
                           {order.orderType === 'llevar' ? 'Para Llevar' : 'Comer Aquí'}
                         </span>
+                        {order.tableNumber && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#e59b38]/20 text-[#e59b38] border border-[#e59b38]/40">
+                            {order.tableNumber}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1.5">

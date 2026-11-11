@@ -49,12 +49,22 @@ export interface OrderDiscount {
   label?: string;
 }
 
+export interface RestaurantTableConfig {
+  id: string;
+  name: string;
+  zone: 'interior' | 'terraza' | 'barra';
+  capacity?: number;
+}
+
 export interface CustomerOrder {
   id: string;
   orderNumber: number;
   timestamp: string;
   orderType: 'aqui' | 'llevar';
   customerName?: string;
+  tableNumber?: string;
+  isOpenTab?: boolean;
+  closedAt?: string;
   notes?: string;
   items: CustomerOrderItem[];
   total: number;

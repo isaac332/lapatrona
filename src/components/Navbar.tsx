@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize, ChefHat, Store } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize, ChefHat, Store, Users } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -27,6 +27,8 @@ interface NavbarProps {
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
   onOpenNuevaOrden: () => void;
+  onOpenMesas?: () => void;
+  openTabsCount?: number;
   onOpenHistorialCortes?: () => void;
   onOpenAtajos?: () => void;
   onOpenStockManager?: () => void;
@@ -50,6 +52,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenGastos,
   onOpenCalculadora,
   onOpenNuevaOrden,
+  onOpenMesas,
+  openTabsCount = 0,
   onOpenHistorialCortes,
   onOpenAtajos,
   onOpenStockManager,
@@ -160,6 +164,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             <ShoppingBag className="w-3.5 h-3.5 text-black" />
             <span>+ Armar Comanda</span>
           </button>
+
+          {/* MESAS Y CUENTAS ABIERTAS BUTTON */}
+          {onOpenMesas && (
+            <button
+              onClick={onOpenMesas}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-all shadow-sm active:scale-95 ${
+                openTabsCount > 0
+                  ? 'bg-[#e59b38]/15 border-[#e59b38]/40 text-[#e59b38] hover:bg-[#e59b38]/25'
+                  : 'text-neutral-300 hover:text-white hover:bg-white/[0.06] border-white/[0.08]'
+              }`}
+              title="Mesas y Cuentas Abiertas con pre-cuenta y cobro final"
+            >
+              <Users className="w-3.5 h-3.5 text-[#e59b38]" />
+              <span>Mesas</span>
+              {openTabsCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#e59b38] text-black text-[9px] font-black flex items-center justify-center font-mono">
+                  {openTabsCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* PANTALLA DE COCINA / KDS BUTTON */}
           {onOpenPantallaCocina && (

@@ -36,8 +36,11 @@ export function generateOrderThermalText(order: CustomerOrder, businessInfo?: Bu
   lines.push(pad(`FOLIO: #${String(order.orderNumber).padStart(3, '0')}`, order.orderType === 'llevar' ? '[LLEVAR]' : '[AQUÍ]'));
   lines.push(`Fecha: ${new Date(order.timestamp).toLocaleString('es-MX')}`);
 
+  if (order.tableNumber) {
+    lines.push(`Mesa / Barra: ${order.tableNumber}`);
+  }
   if (order.customerName) {
-    lines.push(`Cliente/Mesa: ${order.customerName}`);
+    lines.push(`Cliente/Atendió: ${order.customerName}`);
   }
   if (order.notes) {
     lines.push(`Nota: ${order.notes}`);
@@ -92,6 +95,70 @@ export function formatCurrencyMXN(val: number): string {
 }
 
 export const generateEscPosComandaTicket = generateOrderThermalText;
+
+export function generatePreCuentaThermalText(order: CustomerOrder, businessInfo?: BusinessInfo): string {
+  const info = businessInfo || DEFAULT_BUSINESS_INFO;
+  const line = '--------------------------------';
+  const doubleLine = '================================';
+  const lines: string[] = [
+    doubleLine,
+    center(info.name.toUpperCase()),
+    center(`${info.tagline || 'ESTADO DE CONSUMO'}`),
+    doubleLine,
+    center('*** PRE-CUENTA ***'),
+    center('(NO ES COMPROBANTE FISCAL)'),
+    line,
+    pad('MESA / CUENTA:', order.tableNumber || (order.orderType === 'aqui' ? 'Consumo Aquí' : 'Para Llevar')),
+    pad('FOLIO COMANDA:', `#${String(order.orderNumber).padStart(3, '0')}`),
+  ];
+
+  const date = new Date(order.timestamp);
+  const dateStr = !isNaN(date.getTime())
+    ? date.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '';
+  const timeStr = !isNaN(date.getTime())
+    ? date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+    : '';
+  lines.push(pad(`FECHA: ${dateStr}`, `HORA: ${timeStr}`));
+  if (order.customerName) {
+    lines.push(pad('CLIENTE / ATENDIÓ:', order.customerName));
+  }
+  lines.push(line);
+  lines.push('CANT PRODUCTO              TOTAL');
+  lines.push(line);
+
+  for (const item of order.items) {
+    const qtyStr = `${item.quantity}x `.padEnd(4);
+    const subtotalStr = `$${item.subtotal.toFixed(2)}`;
+    const maxNameLen = 32 - qtyStr.length - subtotalStr.length;
+    let nameStr = item.productName;
+    if (nameStr.length > maxNameLen) {
+      nameStr = nameStr.substring(0, maxNameLen - 1) + '.';
+    }
+    lines.push(qtyStr + nameStr.padEnd(maxNameLen) + subtotalStr);
+  }
+
+  lines.push(line);
+  const foodSubtotal = order.items.reduce((acc, it) => acc + it.subtotal, 0);
+  if (order.discount && order.discount.amount > 0) {
+    lines.push(pad('Subtotal Alimentos:', `$${foodSubtotal.toFixed(2)}`));
+    lines.push(pad(`(-) Descuento:`, `-$${order.discount.amount.toFixed(2)}`));
+  }
+  const netTotal = Math.max(0, foodSubtotal - (order.discount?.amount || 0));
+  lines.push(pad('TOTAL CONSUMO:', `$${netTotal.toFixed(2)} MXN`));
+  lines.push(doubleLine);
+
+  lines.push(center('SUGERENCIA DE PROPINA'));
+  lines.push(pad('10% Sugerido:', `$${(netTotal * 0.1).toFixed(2)} (Total $${(netTotal * 1.1).toFixed(2)})`));
+  lines.push(pad('15% Sugerido:', `$${(netTotal * 0.15).toFixed(2)} (Total $${(netTotal * 1.15).toFixed(2)})`));
+  lines.push(pad('20% Sugerido:', `$${(netTotal * 0.2).toFixed(2)} (Total $${(netTotal * 1.2).toFixed(2)})`));
+  lines.push(line);
+  lines.push(center('La propina es 100% voluntaria.'));
+  lines.push(center('¡Muchas gracias por su visita!'));
+  lines.push('');
+
+  return lines.join('\n');
+}
 
 export function generateShiftThermalText(shift: ClosedShiftRecord, businessInfo?: BusinessInfo): string {
   const info = businessInfo || DEFAULT_BUSINESS_INFO;

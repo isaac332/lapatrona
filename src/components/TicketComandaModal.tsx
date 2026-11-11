@@ -125,9 +125,14 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
             {/* Order Details Metadata */}
             <div className="text-[10px] space-y-0.5 text-neutral-400 print:text-neutral-700">
               <div>Fecha: {formattedDate}</div>
+              {order.tableNumber && (
+                <div className="font-bold text-[#e59b38] print:text-black">
+                  Mesa / Barra: {order.tableNumber}
+                </div>
+              )}
               {order.customerName && (
                 <div className="font-bold text-white print:text-black">
-                  Cliente / Mesa: {order.customerName}
+                  Cliente / Atendió: {order.customerName}
                 </div>
               )}
               {order.notes && (

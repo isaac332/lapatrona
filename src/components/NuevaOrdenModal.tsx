@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Tag,
   Gift,
+  Users,
 } from 'lucide-react';
 
 interface NuevaOrdenModalProps {
@@ -26,7 +27,10 @@ interface NuevaOrdenModalProps {
   products: ProductItem[];
   nextOrderNumber: number;
   stockMap?: Record<string, ProductStockConfig>;
+  initialTable?: string;
+  existingOrder?: CustomerOrder | null;
   onCompleteOrder: (order: CustomerOrder) => void;
+  onSaveOpenTab?: (order: CustomerOrder) => void;
 }
 
 function createNewOrder(
@@ -41,7 +45,9 @@ function createNewOrder(
   change?: number,
   tip?: number,
   splitPayment?: SplitPaymentDetail,
-  discount?: OrderDiscount
+  discount?: OrderDiscount,
+  tableNumber?: string,
+  isOpenTab?: boolean
 ): CustomerOrder {
   return {
     id: `order-${nextOrderNumber}-${Date.now()}`,
@@ -49,6 +55,8 @@ function createNewOrder(
     timestamp: new Date().toISOString(),
     orderType,
     customerName: customerName.trim() || undefined,
+    tableNumber,
+    isOpenTab,
     notes: notes.trim() || undefined,
     items,
     total,
@@ -67,16 +75,43 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   products,
   nextOrderNumber,
   stockMap,
+  initialTable,
+  existingOrder,
   onCompleteOrder,
+  onSaveOpenTab,
 }) => {
-  const [orderType, setOrderType] = useState<'aqui' | 'llevar'>('llevar');
-  const [customerName, setCustomerName] = useState('');
-  const [notes, setNotes] = useState('');
-  const [cart, setCart] = useState<Record<string, number>>({});
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
+  const [orderType, setOrderType] = useState<'aqui' | 'llevar'>(
+    existingOrder ? existingOrder.orderType : initialTable ? 'aqui' : 'llevar'
+  );
+  const [tableNumber, setTableNumber] = useState<string>(
+    existingOrder?.tableNumber || initialTable || 'Mesa 1'
+  );
+  const [customerName, setCustomerName] = useState(existingOrder?.customerName || '');
+  const [notes, setNotes] = useState(existingOrder?.notes || '');
+  const [cart, setCart] = useState<Record<string, number>>(() => {
+    if (existingOrder) {
+      const initial: Record<string, number> = {};
+      for (const item of existingOrder.items) {
+        initial[item.productId] = (initial[item.productId] || 0) + item.quantity;
+      }
+      return initial;
+    }
+    return {};
+  });
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(existingOrder?.paymentMethod || 'efectivo');
   const [splitCashInput, setSplitCashInput] = useState<string>('');
-  const [discountType, setDiscountType] = useState<number | 'cortesia' | 'fixed'>(0);
-  const [customDiscount, setCustomDiscount] = useState<string>('');
+  const [discountType, setDiscountType] = useState<number | 'cortesia' | 'fixed'>(
+    existingOrder?.discount?.type === 'percent'
+      ? existingOrder.discount.value === 100
+        ? 'cortesia'
+        : existingOrder.discount.value
+      : existingOrder?.discount?.type === 'fixed'
+      ? 'fixed'
+      : 0
+  );
+  const [customDiscount, setCustomDiscount] = useState<string>(
+    existingOrder?.discount?.type === 'fixed' ? existingOrder.discount.amount.toString() : ''
+  );
   const [tipPercent, setTipPercent] = useState<number | 'custom'>(0);
   const [customTip, setCustomTip] = useState<string>('');
   const [amountReceived, setAmountReceived] = useState('');
@@ -199,22 +234,79 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
 
     triggerHaptic('success');
 
-    const newOrder = createNewOrder(
-      nextOrderNumber,
-      orderType,
-      customerName,
-      notes,
-      orderItems,
-      finalTotal,
-      paymentMethod,
-      (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? receivedNum : undefined,
-      (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? change : undefined,
-      tipAmount > 0 ? tipAmount : undefined,
-      paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined,
-      discountObj
-    );
+    const completedOrder: CustomerOrder = existingOrder
+      ? {
+          ...existingOrder,
+          orderType,
+          tableNumber: orderType === 'aqui' ? tableNumber : undefined,
+          customerName: customerName.trim() || undefined,
+          notes: notes.trim() || undefined,
+          items: orderItems,
+          total: finalTotal,
+          paymentMethod,
+          amountReceived: (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? receivedNum : undefined,
+          change: (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? change : undefined,
+          tip: tipAmount > 0 ? tipAmount : undefined,
+          splitPayment: paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined,
+          discount: discountObj,
+          isOpenTab: false,
+          closedAt: new Date().toISOString(),
+        }
+      : createNewOrder(
+          nextOrderNumber,
+          orderType,
+          customerName,
+          notes,
+          orderItems,
+          finalTotal,
+          paymentMethod,
+          (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? receivedNum : undefined,
+          (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? change : undefined,
+          tipAmount > 0 ? tipAmount : undefined,
+          paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined,
+          discountObj,
+          orderType === 'aqui' ? tableNumber : undefined,
+          false
+        );
 
-    onCompleteOrder(newOrder);
+    onCompleteOrder(completedOrder);
+    onClose();
+  };
+
+  const handleSaveAsOpenTab = () => {
+    if (orderItems.length === 0) return;
+    triggerHaptic('success');
+
+    const openOrder: CustomerOrder = existingOrder
+      ? {
+          ...existingOrder,
+          orderType,
+          tableNumber: orderType === 'aqui' ? tableNumber : undefined,
+          customerName: customerName.trim() || undefined,
+          notes: notes.trim() || undefined,
+          items: orderItems,
+          total: finalTotal,
+          discount: discountObj,
+          isOpenTab: true,
+        }
+      : createNewOrder(
+          nextOrderNumber,
+          orderType,
+          customerName,
+          notes,
+          orderItems,
+          finalTotal,
+          paymentMethod,
+          undefined,
+          undefined,
+          tipAmount > 0 ? tipAmount : undefined,
+          undefined,
+          discountObj,
+          orderType === 'aqui' ? tableNumber : 'Cuenta Llevar',
+          true
+        );
+
+    onSaveOpenTab?.(openOrder);
     onClose();
   };
 
@@ -406,6 +498,38 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                 <span>Comer Aquí</span>
               </button>
             </div>
+
+            {/* Table Selection when Comer Aquí */}
+            {orderType === 'aqui' && (
+              <div className="bg-[#121215] p-2.5 rounded-xl border border-white/10 space-y-1.5 animate-fade-in">
+                <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold uppercase">
+                  <div className="flex items-center gap-1 text-[#e59b38]">
+                    <Users className="w-3 h-3" />
+                    <span>Seleccionar Mesa / Barra:</span>
+                  </div>
+                  <span className="text-white font-bold">{tableNumber}</span>
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {['Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Barra 1', 'Barra 2', 'Barra 3', 'Terraza 1', 'Terraza 2'].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic('light');
+                        setTableNumber(m);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border ${
+                        tableNumber === m
+                          ? 'bg-[#e59b38] text-black border-[#e59b38] font-bold shadow-sm'
+                          : 'bg-white/5 border-white/10 text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Optional Customer Name & Notes */}
             <div className="grid grid-cols-2 gap-2">
@@ -734,24 +858,38 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={handleComplete}
-                disabled={orderItems.length === 0}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#e59b38] hover:bg-[#d48b28] disabled:opacity-30 disabled:pointer-events-none text-black font-extrabold text-sm uppercase tracking-wider transition-all shadow-lg active:scale-98 touch-manipulation"
-              >
-                {discountType === 'cortesia' && finalTotal === 0 ? (
-                  <>
-                    <Gift className="w-4 h-4" />
-                    <span>Registrar Cortesía ($0.00)</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Cobrar y Generar Comanda</span>
-                  </>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleComplete}
+                  disabled={orderItems.length === 0}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#e59b38] hover:bg-[#d48b28] disabled:opacity-30 disabled:pointer-events-none text-black font-extrabold text-sm uppercase tracking-wider transition-all shadow-lg active:scale-98 touch-manipulation"
+                >
+                  {discountType === 'cortesia' && finalTotal === 0 ? (
+                    <>
+                      <Gift className="w-4 h-4" />
+                      <span>Registrar Cortesía ($0.00)</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{existingOrder ? 'Cobrar y Cerrar Cuenta' : 'Cobrar Ahora'}</span>
+                    </>
+                  )}
+                </button>
+
+                {onSaveOpenTab && (
+                  <button
+                    type="button"
+                    onClick={handleSaveAsOpenTab}
+                    disabled={orderItems.length === 0}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/15 disabled:opacity-30 disabled:pointer-events-none text-neutral-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all touch-manipulation"
+                  >
+                    <Users className="w-3.5 h-3.5 text-[#e59b38]" />
+                    <span>Guardar en Cuenta Abierta ({orderType === 'aqui' ? tableNumber : 'Llevar'})</span>
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
 
           </div>

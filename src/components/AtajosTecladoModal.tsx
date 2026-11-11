@@ -19,6 +19,7 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
 
   const generalShortcuts = [
     { key: 'Espacio / O', action: 'Abrir Armador de Comanda / Nueva Orden' },
+    { key: 'U', action: 'Mesas y Cuentas Abiertas (Pre-cuenta y Cobro)' },
     { key: 'D', action: 'Pantalla de Cocina / KDS en Vivo' },
     { key: 'B', action: 'Buscar y Reimprimir Comandas Anteriores' },
     { key: 'S', action: 'Control de Porciones y Stock de Cocina' },

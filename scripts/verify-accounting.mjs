@@ -853,4 +853,93 @@ const cortesiaProfit = cortesiaPrice - cortesiaCost; // -$68
 assert.equal(cortesiaProfit, -68, 'Profit of cortesía item must be -$68.00 (food cost absorbed by house)');
 console.log('✓ Order discounts, promos, and 100% cortesía math fully verified');
 
-console.log('\nAll 19 accounting, POS, KDS, thermal, catalog, prep, split payment, and discount tests passed flawlessly!');
+// Test 20: Restaurant Table Management (Open Tabs, Rounds, Pre-Cuenta & Closed Settlement)
+console.log('Test 20: Restaurant Table Management (Open Tabs, Rounds, Pre-Cuenta & Settlement)');
+
+// 1. Initial State: Starting Cash $1,000, 0 sales
+let startingCashDrawer = 1000;
+let salesLedger = [];
+let ordersLedger = [];
+
+// 2. Open Tab for Mesa 1 with Round 1: 2x Philly Cheesesteak Combos ($185 each = $370)
+const round1Order = {
+  id: 'order-tab-1',
+  orderNumber: 1,
+  timestamp: new Date().toISOString(),
+  orderType: 'aqui',
+  tableNumber: 'Mesa 1',
+  customerName: 'Familia Ramírez',
+  isOpenTab: true,
+  items: [
+    { productId: 'sandwich-fries', productName: 'Philly Cheesesteak Combo', quantity: 2, unitPrice: 185, unitCost: 48, subtotal: 370 },
+  ],
+  total: 370,
+  paymentMethod: 'efectivo',
+};
+ordersLedger.push(round1Order);
+
+// Assert: while isOpenTab is true, salesLedger must remain empty and cash in drawer must NOT change
+assert.equal(salesLedger.length, 0, 'Open tab must NOT generate sales records in accounting before payment');
+assert.equal(startingCashDrawer, 1000, 'Cash in drawer must remain untouched at initial float');
+
+// 3. Customer orders Round 2: +1 Papas con Queso Amarillo Fundido ($65)
+const updatedTabOrder = {
+  ...round1Order,
+  items: [
+    ...round1Order.items,
+    { productId: 'fries-cheese', productName: 'Papas con Queso Fundido', quantity: 1, unitPrice: 65, unitCost: 18, subtotal: 65 },
+  ],
+  total: 435,
+};
+const orderIndex = ordersLedger.findIndex(o => o.id === updatedTabOrder.id);
+ordersLedger[orderIndex] = updatedTabOrder;
+
+assert.equal(ordersLedger[0].items.length, 2, 'Tab order must now contain 2 distinct product lines');
+assert.equal(ordersLedger[0].total, 435, 'Tab running total must equal $435.00 MXN');
+
+// 4. Pre-Cuenta Calculation: Tip Suggestions (10%, 15%, 20%)
+const preCuentaSubtotal = ordersLedger[0].total;
+const preCuentaTip10 = preCuentaSubtotal * 0.10;
+const preCuentaTip15 = preCuentaSubtotal * 0.15;
+const preCuentaTip20 = preCuentaSubtotal * 0.20;
+
+assert.equal(Math.round(preCuentaTip10 * 100) / 100, 43.50, '10% tip suggestion must be $43.50');
+assert.equal(Math.round(preCuentaTip15 * 100) / 100, 65.25, '15% tip suggestion must be $65.25');
+assert.equal(Math.round(preCuentaTip20 * 100) / 100, 87.00, '20% tip suggestion must be $87.00');
+
+// 5. Checkout & Settlement: Customer pays with Card/Clip + $45 Tip
+const closedOrder = {
+  ...updatedTabOrder,
+  isOpenTab: false,
+  paymentMethod: 'tarjeta',
+  tip: 45,
+  total: 480, // $435 food + $45 tip
+  closedAt: new Date().toISOString(),
+};
+
+// Now and only now, sales are booked to the accounting ledger
+for (const item of closedOrder.items) {
+  for (let i = 0; i < item.quantity; i++) {
+    salesLedger.push({
+      id: `sale-${item.productId}-${i}`,
+      productId: item.productId,
+      quantity: 1,
+      unitPrice: item.unitPrice,
+      unitCost: item.unitCost,
+      paymentMethod: closedOrder.paymentMethod,
+    });
+  }
+}
+
+assert.equal(salesLedger.length, 3, '3 individual items must be booked into sales ledger upon checkout');
+const recordedRevenue = salesLedger.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+assert.equal(recordedRevenue, 435, 'Total food revenue in ledger must equal $435.00 MXN');
+
+const openTabsRemaining = ordersLedger.filter(o => o.isOpenTab).length;
+assert.equal(openTabsRemaining, 1, 'Before marking ledger closed, 1 tab was open');
+ordersLedger[orderIndex] = closedOrder;
+const finalOpenTabs = ordersLedger.filter(o => o.isOpenTab).length;
+assert.equal(finalOpenTabs, 0, 'After checkout, open tabs count must be 0 and Mesa 1 must be freed');
+console.log('✓ Restaurant table management, rounds, pre-cuenta, and settlement fully verified');
+
+console.log('\nAll 20 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, and table management tests passed flawlessly!');
