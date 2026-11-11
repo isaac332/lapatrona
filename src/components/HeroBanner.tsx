@@ -44,7 +44,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] w-fit">
               <Sparkles className="w-3.5 h-3.5 text-[#e59b38]" />
               <span className="text-[11px] sm:text-xs uppercase tracking-widest text-neutral-300 font-medium">
-                Contador en Vivo • {timeframeLabel}
+                La Patrona • Contador en Vivo • {timeframeLabel}
               </span>
             </div>
 

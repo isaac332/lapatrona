@@ -1,8 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff } from 'lucide-react';
+
+const subscribeOnline = (callback: () => void) => {
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener('online', callback);
+  window.addEventListener('offline', callback);
+  return () => {
+    window.removeEventListener('online', callback);
+    window.removeEventListener('offline', callback);
+  };
+};
+
+const getOnlineSnapshot = () => (typeof navigator !== 'undefined' ? navigator.onLine : true);
+const getOnlineServerSnapshot = () => true;
 
 interface NavbarProps {
   timeframe: TimeframeFilter;
@@ -29,6 +42,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNuevaOrden,
   totalUnitsInTimeframe,
 }) => {
+  const isOnline = useSyncExternalStore(subscribeOnline, getOnlineSnapshot, getOnlineServerSnapshot);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('SW registration failed:', err);
+      });
+    }
+  }, []);
+
   const timeframeLabels: Record<TimeframeFilter, string> = {
     today: 'Hoy',
     week: 'Esta Semana',
@@ -41,13 +65,26 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-20 flex items-center justify-between gap-2">
         {/* Brand / Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse lg:hidden" />
           <div className="flex flex-col">
-            <span className="font-sans font-black tracking-[0.15em] sm:tracking-[0.2em] text-base sm:text-2xl text-[#f5f0eb] uppercase leading-tight">
-              PHILLY & FRY
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-sans font-black tracking-[0.15em] sm:tracking-[0.2em] text-base sm:text-2xl text-[#f5f0eb] uppercase leading-tight">
+                LA PATRONA
+              </span>
+              {/* Online/Offline status badge */}
+              {isOnline ? (
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[9px] text-emerald-400 font-mono font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Online
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[9px] text-amber-300 font-mono font-medium animate-pulse">
+                  <WifiOff className="w-3 h-3 text-amber-400" />
+                  Offline
+                </span>
+              )}
+            </div>
             <span className="text-[9px] sm:text-[10px] tracking-widest uppercase text-[#e59b38] font-semibold leading-tight">
-              Mostrador POS • Ventas
+              Philly & Fry POS • Mostrador
             </span>
           </div>
         </div>
