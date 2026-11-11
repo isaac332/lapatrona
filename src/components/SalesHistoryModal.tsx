@@ -42,6 +42,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
 
     const headers = [
       'ID Venta',
+      'Folio Comanda',
       'Fecha y Hora',
       'Producto',
       'Variante',
@@ -49,11 +50,17 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
       'Precio Unitario ($)',
       'Total ($)',
       'Costo Insumo ($)',
+      'Utilidad Bruta ($)',
+      'Margen (%)',
       'Forma de Pago',
     ];
     const rows = sales.map((s) => {
       const prod = productMap.get(s.productId);
-      const total = (s.quantity * s.unitPrice).toFixed(2);
+      const subtotal = s.quantity * s.unitPrice;
+      const subcost = s.quantity * s.unitCost;
+      const profit = subtotal - subcost;
+      const margin = subtotal > 0 ? Math.round((profit / subtotal) * 100) : 0;
+      const total = subtotal.toFixed(2);
       const methodLabel =
         s.paymentMethod === 'tarjeta'
           ? 'Tarjeta / Clip'
@@ -63,13 +70,16 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
 
       return [
         s.id,
+        s.orderNumber ? `#${s.orderNumber}` : 'Directo',
         new Date(s.timestamp).toLocaleString('es-MX'),
         `"${prod?.name || s.productId}"`,
         `"${prod?.variantLabel || ''}"`,
         s.quantity,
         s.unitPrice.toFixed(2),
         total,
-        s.unitCost.toFixed(2),
+        subcost.toFixed(2),
+        profit.toFixed(2),
+        `${margin}%`,
         `"${methodLabel}"`,
       ].join(',');
     });
@@ -81,7 +91,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
     link.setAttribute('href', url);
     link.setAttribute(
       'download',
-      `ventas-philly-fry-${timeframe}-${new Date().toISOString().split('T')[0]}.csv`
+      `ventas-lapatrona-pos-${timeframe}-${new Date().toISOString().split('T')[0]}.csv`
     );
     document.body.appendChild(link);
     link.click();
