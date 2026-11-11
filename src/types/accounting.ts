@@ -124,6 +124,7 @@ export interface ClosedShiftRecord {
   cardSalesTotal: number;
   transferSalesTotal: number;
   totalExpenses: number;
+  totalTipsCollected?: number;
   expectedCashInDrawer: number;
   countedCash?: number;
   difference?: number;

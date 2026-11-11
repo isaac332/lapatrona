@@ -180,6 +180,12 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
                         <span>-${selectedShift.totalExpenses.toFixed(2)} MXN</span>
                       </div>
                     )}
+                    {selectedShift.totalTipsCollected !== undefined && selectedShift.totalTipsCollected > 0 && (
+                      <div className="flex justify-between text-[#e59b38] print:text-black text-[11px]">
+                        <span>(+) Propinas Personal:</span>
+                        <span>+${selectedShift.totalTipsCollected.toFixed(2)} MXN</span>
+                      </div>
+                    )}
                     <div className="flex justify-between pt-1 border-t border-dashed border-white/10 text-emerald-400 font-bold">
                       <span>Efectivo Esperado Cajón:</span>
                       <span>${selectedShift.expectedCashInDrawer.toFixed(2)} MXN</span>

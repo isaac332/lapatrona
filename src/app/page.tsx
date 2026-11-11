@@ -123,6 +123,15 @@ export default function SalesCounterPage() {
       return 1;
     }
   });
+  const [orders, setOrders] = useState<CustomerOrder[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('philly_fry_orders');
+      return saved !== null ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [startingCash, setStartingCash] = useState<number>(() => {
     if (typeof window === 'undefined') return 1000;
     try {
@@ -345,6 +354,15 @@ export default function SalesCounterPage() {
     }
     const updated = [...newSales, ...sales];
     handleSaveSales(updated);
+    setOrders((prev) => {
+      const nextOrders = [order, ...prev];
+      try {
+        localStorage.setItem('philly_fry_orders', JSON.stringify(nextOrders));
+      } catch (e) {
+        console.error('Failed to save orders to localStorage', e);
+      }
+      return nextOrders;
+    });
     setOrderCounter((prev) => {
       const next = prev + 1;
       try {
@@ -361,6 +379,10 @@ export default function SalesCounterPage() {
   const handleConfirmZeroOut = () => {
     handleSaveSales([]);
     handleSaveExpenses([]);
+    setOrders([]);
+    try {
+      localStorage.removeItem('philly_fry_orders');
+    } catch {}
     setOrderCounter(1);
     try {
       localStorage.setItem('philly_fry_order_counter', '1');
@@ -505,6 +527,43 @@ export default function SalesCounterPage() {
   const totalExpensesInTimeframe = useMemo(() => {
     return filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   }, [filteredExpenses]);
+
+  // Filter orders for the selected timeframe (used for tip aggregation)
+  const filteredOrders = useMemo(() => {
+    if (!currentDate) return orders;
+    return orders.filter((o) => {
+      const orderDate = new Date(o.timestamp);
+      if (isNaN(orderDate.getTime())) return false;
+      switch (timeframe) {
+        case 'today':
+          return (
+            orderDate.getFullYear() === currentDate.getFullYear() &&
+            orderDate.getMonth() === currentDate.getMonth() &&
+            orderDate.getDate() === currentDate.getDate()
+          );
+        case 'week': {
+          const start = new Date(currentDate);
+          start.setDate(currentDate.getDate() - 6);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(currentDate);
+          end.setHours(23, 59, 59, 999);
+          return orderDate >= start && orderDate <= end;
+        }
+        case 'month':
+          return (
+            orderDate.getFullYear() === currentDate.getFullYear() &&
+            orderDate.getMonth() === currentDate.getMonth()
+          );
+        case 'all':
+        default:
+          return true;
+      }
+    });
+  }, [orders, timeframe, currentDate]);
+
+  const totalTipsInTimeframe = useMemo(() => {
+    return filteredOrders.reduce((sum, o) => sum + (o.tip || 0), 0);
+  }, [filteredOrders]);
 
   // Overall counts for Today (used in Hero banner and Daily Granular view)
   const todaySales = useMemo(() => {
@@ -930,6 +989,7 @@ export default function SalesCounterPage() {
         onUpdateStartingCash={handleUpdateStartingCash}
         onArchiveShift={handleArchiveShift}
         shiftCounter={shiftCounter}
+        totalTipsCollected={totalTipsInTimeframe}
         onConfirmZeroOut={() => {
           setIsCorteModalOpen(false);
           setIsZeroOutModalOpen(true);

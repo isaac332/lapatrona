@@ -18,6 +18,7 @@ interface CorteDeCajaModalProps {
   onUpdateStartingCash: (amount: number) => void;
   onArchiveShift?: (record: ClosedShiftRecord) => void;
   shiftCounter?: number;
+  totalTipsCollected?: number;
 }
 
 export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
@@ -33,6 +34,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   onUpdateStartingCash,
   onArchiveShift,
   shiftCounter = 1,
+  totalTipsCollected = 0,
 }) => {
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [isEditingStartingCash, setIsEditingStartingCash] = useState(false);
@@ -463,6 +465,14 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                 </div>
               )}
 
+              {/* Propinas Acumuladas */}
+              {totalTipsCollected > 0 && (
+                <div className="flex justify-between items-center text-xs text-[#e59b38] print:text-black">
+                  <span>PROPINAS PERSONAL (A REPARTIR):</span>
+                  <span className="font-bold font-mono">+${totalTipsCollected.toFixed(2)} MXN</span>
+                </div>
+              )}
+
               {/* Expected Cash in drawer */}
               <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 print:border-black/40 print:bg-transparent mt-1 space-y-1">
                 <div className="flex justify-between items-center">
@@ -620,6 +630,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                   cardSalesTotal: paymentBreakdown.tarjeta.total,
                   transferSalesTotal: paymentBreakdown.transferencia.total,
                   totalExpenses,
+                  totalTipsCollected,
                   expectedCashInDrawer,
                   countedCash: countedCash !== null ? countedCash : undefined,
                   difference: arqueoResult ? arqueoResult.difference : undefined,
