@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt } from 'lucide-react';
 
 interface NavbarProps {
   timeframe: TimeframeFilter;
@@ -10,6 +10,7 @@ interface NavbarProps {
   onOpenPriceManager: () => void;
   onOpenHistory: () => void;
   onOpenZeroOut: () => void;
+  onOpenCorte: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPriceManager,
   onOpenHistory,
   onOpenZeroOut,
+  onOpenCorte,
   totalUnitsInTimeframe,
 }) => {
   const timeframeLabels: Record<TimeframeFilter, string> = {
@@ -66,6 +68,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Desktop Right Actions */}
         <div className="hidden lg:flex items-center gap-2">
+          {/* CORTE DE CAJA BUTTON */}
+          <button
+            onClick={onOpenCorte}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-[#e59b38] hover:bg-[#e59b38]/10 border border-[#e59b38]/30 transition-all shadow-sm active:scale-95"
+            title="Generar Ticket de Corte de Turno o Jornada"
+          >
+            <Receipt className="w-3.5 h-3.5 text-[#e59b38]" />
+            <span>Corte de Caja</span>
+          </button>
+
           {/* ZERO OUT ACTION BUTTON */}
           <button
             onClick={onOpenZeroOut}

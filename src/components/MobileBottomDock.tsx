@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3 } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -10,6 +10,7 @@ interface MobileBottomDockProps {
   onOpenPriceManager: () => void;
   onOpenHistory: () => void;
   onOpenZeroOut: () => void;
+  onOpenCorte: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -19,6 +20,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenPriceManager,
   onOpenHistory,
   onOpenZeroOut,
+  onOpenCorte,
   totalUnitsInTimeframe,
 }) => {
   const tabs: { id: TimeframeFilter; label: string; icon: React.FC<{ className?: string }> }[] = [
@@ -59,6 +61,16 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
 
         {/* Action Icon Buttons for Thumb */}
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={onOpenCorte}
+            aria-label="Corte de caja"
+            title="Ticket de Corte de Caja"
+            className="w-10 h-10 rounded-xl bg-[#e59b38]/15 active:bg-[#e59b38]/30 border border-[#e59b38]/30 flex flex-col items-center justify-center text-[#e59b38] active:scale-95 touch-manipulation select-none"
+          >
+            <Receipt className="w-4 h-4" />
+            <span className="text-[8px] font-bold uppercase mt-0.5">Corte</span>
+          </button>
+
           <button
             onClick={onOpenZeroOut}
             aria-label="Poner en ceros"

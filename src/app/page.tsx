@@ -21,6 +21,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { PriceManagerModal } from '@/components/PriceManagerModal';
 import { SalesHistoryModal } from '@/components/SalesHistoryModal';
 import { ZeroOutModal } from '@/components/ZeroOutModal';
+import { CorteDeCajaModal } from '@/components/CorteDeCajaModal';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -85,6 +86,7 @@ export default function SalesCounterPage() {
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isZeroOutModalOpen, setIsZeroOutModalOpen] = useState(false);
+  const [isCorteModalOpen, setIsCorteModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -285,6 +287,7 @@ export default function SalesCounterPage() {
         onOpenPriceManager={() => setIsPriceModalOpen(true)}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
         onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
+        onOpenCorte={() => setIsCorteModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -481,6 +484,13 @@ export default function SalesCounterPage() {
             </button>
             <span>•</span>
             <button
+              onClick={() => setIsCorteModalOpen(true)}
+              className="text-[#e59b38] hover:text-[#d48b28] flex items-center gap-1 transition-colors"
+            >
+              <span>Ticket de Corte</span>
+            </button>
+            <span>•</span>
+            <button
               onClick={() => setIsZeroOutModalOpen(true)}
               className="text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
             >
@@ -505,6 +515,7 @@ export default function SalesCounterPage() {
         onOpenPriceManager={() => setIsPriceModalOpen(true)}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
         onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
+        onOpenCorte={() => setIsCorteModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -534,6 +545,20 @@ export default function SalesCounterPage() {
         onConfirmZeroOut={handleConfirmZeroOut}
         sales={sales}
         products={products}
+      />
+
+      {/* Corte de Caja / Receipt Modal */}
+      <CorteDeCajaModal
+        isOpen={isCorteModalOpen}
+        onClose={() => setIsCorteModalOpen(false)}
+        sales={filteredSales}
+        products={products}
+        timeframe={timeframe}
+        hourlyBlocks={hourlyBlocks}
+        onConfirmZeroOut={() => {
+          setIsCorteModalOpen(false);
+          setIsZeroOutModalOpen(true);
+        }}
       />
     </div>
   );
