@@ -48,6 +48,38 @@ export interface CustomerOrderItem {
   instructions?: string;
 }
 
+export type TipStaffRole = 'cocina' | 'mesero' | 'barra' | 'limpieza' | 'cajero' | 'otro';
+
+export interface TipStaffMember {
+  id: string;
+  name: string;
+  role: TipStaffRole;
+  hoursWorked?: number;
+  percentage?: number;
+  customAmount?: number;
+  active?: boolean;
+}
+
+export interface TipSettlementPayout {
+  staffId: string;
+  name: string;
+  role: TipStaffRole;
+  amount: number;
+  percentage: number;
+  hoursWorked?: number;
+}
+
+export interface TipSettlementRecord {
+  id: string;
+  shiftNumber: number;
+  date: string;
+  totalTips: number;
+  mode: 'equitativo' | 'puesto' | 'horas';
+  payouts: TipSettlementPayout[];
+  notes?: string;
+  cashierName?: string;
+}
+
 export interface SplitPaymentDetail {
   cash: number;
   card: number;

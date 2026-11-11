@@ -24,6 +24,7 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
     { key: 'B', action: 'Buscar y Reimprimir Comandas Anteriores' },
     { key: 'S', action: 'Control de Porciones y Stock de Cocina' },
     { key: 'C', action: 'Abrir Corte de Caja y Arqueo de Efectivo' },
+    { key: 'L', action: 'Liquidación y Reparto de Propinas del Turno (Pool)' },
     { key: 'G', action: 'Registrar Gasto o Salida de Cajón' },
     { key: 'W', action: 'Registrar Merma o Desperdicio de Cocina' },
     { key: 'K', action: 'Abrir Calculadora Rápida de Cambio' },

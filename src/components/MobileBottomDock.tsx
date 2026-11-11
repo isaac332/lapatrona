@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store, Users, FileSpreadsheet } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store, Users, FileSpreadsheet, Coins } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -22,6 +22,7 @@ interface MobileBottomDockProps {
   onOpenHistorialComandas?: () => void;
   onOpenPantallaCocina?: () => void;
   onOpenExportesContables?: () => void;
+  onOpenTipPool?: () => void;
   activeKitchenOrdersCount?: number;
   onOpenConfiguracionNegocio?: () => void;
   lowStockCount?: number;
@@ -46,6 +47,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenHistorialComandas,
   onOpenPantallaCocina,
   onOpenExportesContables,
+  onOpenTipPool,
   activeKitchenOrdersCount = 0,
   onOpenConfiguracionNegocio,
   lowStockCount = 0,
@@ -185,6 +187,18 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             <Receipt className="w-4 h-4" />
             <span className="text-[8px] font-bold uppercase mt-0.5">Corte</span>
           </button>
+
+          {onOpenTipPool && (
+            <button
+              onClick={onOpenTipPool}
+              aria-label="Liquidación de propinas"
+              title="Liquidación de Propinas (Pool)"
+              className="w-10 h-10 rounded-xl bg-amber-500/15 active:bg-amber-500/30 border border-amber-500/30 flex flex-col items-center justify-center text-amber-400 active:scale-95 touch-manipulation select-none shrink-0"
+            >
+              <Coins className="w-4 h-4" />
+              <span className="text-[7.5px] font-bold uppercase mt-0.5">Propina</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenGastos}

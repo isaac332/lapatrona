@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize, ChefHat, Store, Users, FileSpreadsheet } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX, Maximize, Minimize, ChefHat, Store, Users, FileSpreadsheet, Coins } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -35,6 +35,7 @@ interface NavbarProps {
   onOpenHistorialComandas?: () => void;
   onOpenPantallaCocina?: () => void;
   onOpenExportesContables?: () => void;
+  onOpenTipPool?: () => void;
   activeKitchenOrdersCount?: number;
   onOpenConfiguracionNegocio?: () => void;
   lowStockCount?: number;
@@ -61,6 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenHistorialComandas,
   onOpenPantallaCocina,
   onOpenExportesContables,
+  onOpenTipPool,
   activeKitchenOrdersCount = 0,
   onOpenConfiguracionNegocio,
   lowStockCount = 0,
@@ -251,6 +253,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Receipt className="w-3.5 h-3.5 text-[#e59b38]" />
             <span>Corte de Caja</span>
           </button>
+
+          {/* LIQUIDACIÓN DE PROPINAS BUTTON */}
+          {onOpenTipPool && (
+            <button
+              onClick={onOpenTipPool}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 border border-amber-500/30 transition-all shadow-sm active:scale-95"
+              title="Liquidación y Reparto de Propinas del Personal (Atajo: L)"
+            >
+              <Coins className="w-3.5 h-3.5 text-amber-400" />
+              <span>Propinas</span>
+            </button>
+          )}
 
           {/* TURNOS CERRADOS ANTERIORES BUTTON */}
           {onOpenHistorialCortes && (

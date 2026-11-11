@@ -10,6 +10,9 @@ import {
   ProductPerformance,
   PaymentMethod,
   PaymentBreakdown,
+  TipStaffMember,
+  TipStaffRole,
+  TipSettlementPayout,
 } from '@/types/accounting';
 
 export function isSameDay(date1: Date, date2: Date): boolean {
@@ -524,4 +527,135 @@ export function calculateArqueoDifference(
     return { difference: diff, status: 'sobrante' };
   }
   return { difference: diff, status: 'faltante' };
+}
+
+// Tip Pool & Staff Settlement Calculations
+export interface TipDistributionResult {
+  payouts: TipSettlementPayout[];
+  totalDistributed: number;
+  residual: number;
+}
+
+export function calculateTipDistribution(
+  totalTips: number,
+  staff: TipStaffMember[],
+  mode: 'equitativo' | 'puesto' | 'horas',
+  customRoleWeights?: Partial<Record<TipStaffRole, number>>
+): TipDistributionResult {
+  const activeStaff = staff.filter((s) => s.active !== false);
+
+  if (totalTips <= 0 || activeStaff.length === 0) {
+    return {
+      payouts: activeStaff.map((s) => ({
+        staffId: s.id,
+        name: s.name,
+        role: s.role,
+        amount: 0,
+        percentage: 0,
+        hoursWorked: s.hoursWorked,
+      })),
+      totalDistributed: 0,
+      residual: 0,
+    };
+  }
+
+  const totalCents = Math.round(totalTips * 100);
+  const n = activeStaff.length;
+
+  const defaultWeights: Record<TipStaffRole, number> = {
+    cocina: 40,
+    mesero: 40,
+    barra: 10,
+    limpieza: 10,
+    cajero: 0,
+    otro: 0,
+    ...customRoleWeights,
+  };
+
+  if (mode === 'equitativo') {
+    const baseCents = Math.floor(totalCents / n);
+    const remainderCents = totalCents - baseCents * n;
+
+    const payouts: TipSettlementPayout[] = activeStaff.map((member, index) => {
+      const extraCent = index < remainderCents ? 1 : 0;
+      const amount = (baseCents + extraCent) / 100;
+      const percentage = Math.round((amount / totalTips) * 10000) / 100;
+      return {
+        staffId: member.id,
+        name: member.name,
+        role: member.role,
+        amount,
+        percentage,
+        hoursWorked: member.hoursWorked,
+      };
+    });
+
+    const totalDistributed = Math.round(payouts.reduce((sum, p) => sum + p.amount, 0) * 100) / 100;
+    const residual = Math.round((totalTips - totalDistributed) * 100) / 100;
+
+    return {
+      payouts,
+      totalDistributed,
+      residual,
+    };
+  }
+
+  // Calculate weights based on mode
+  let weights: number[] = [];
+  if (mode === 'puesto') {
+    weights = activeStaff.map((member) => {
+      if (typeof member.percentage === 'number' && member.percentage > 0) {
+        return member.percentage;
+      }
+      return defaultWeights[member.role] ?? 10;
+    });
+  } else if (mode === 'horas') {
+    weights = activeStaff.map((member) => {
+      return typeof member.hoursWorked === 'number' && member.hoursWorked > 0
+        ? member.hoursWorked
+        : 8;
+    });
+  }
+
+  const sumWeights = weights.reduce((acc, curr) => acc + curr, 0);
+
+  // If weights are 0, fall back to equal distribution
+  if (sumWeights <= 0) {
+    return calculateTipDistribution(totalTips, activeStaff, 'equitativo');
+  }
+
+  // Hare-Niemeyer / Largest Remainder algorithm for penny-perfect zero-discrepancy distribution
+  const rawCents = weights.map((w) => (w / sumWeights) * totalCents);
+  const floorCents = rawCents.map((rc) => Math.floor(rc));
+  const allocatedCents = floorCents.reduce((acc, fc) => acc + fc, 0);
+  const remainderCents = totalCents - allocatedCents;
+
+  const fractionalIndices = rawCents
+    .map((rc, idx) => ({ idx, frac: rc - floorCents[idx] }))
+    .sort((a, b) => b.frac - a.frac);
+
+  const bonusCentsSet = new Set(fractionalIndices.slice(0, remainderCents).map((item) => item.idx));
+
+  const payouts: TipSettlementPayout[] = activeStaff.map((member, idx) => {
+    const cents = floorCents[idx] + (bonusCentsSet.has(idx) ? 1 : 0);
+    const amount = cents / 100;
+    const percentage = Math.round((amount / totalTips) * 10000) / 100;
+    return {
+      staffId: member.id,
+      name: member.name,
+      role: member.role,
+      amount,
+      percentage,
+      hoursWorked: member.hoursWorked,
+    };
+  });
+
+  const totalDistributed = Math.round(payouts.reduce((sum, p) => sum + p.amount, 0) * 100) / 100;
+  const residual = Math.round((totalTips - totalDistributed) * 100) / 100;
+
+  return {
+    payouts,
+    totalDistributed,
+    residual,
+  };
 }

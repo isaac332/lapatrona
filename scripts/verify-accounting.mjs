@@ -1258,4 +1258,198 @@ assert.equal(customMargin, 72);
 
 console.log('✓ Dish modifiers, kitchen instructions, margin calculation, and SAT breakdown verified');
 
-console.log('\nAll 25 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, Corte Z, order cancellation, SAT export, and modifier tests passed flawlessly!');
+// Test 26: Tip Pool (Reparto de Propinas) Distribution, Role Weights, Hours, and Penny-Perfect Cuadre
+console.log('\nTest 26: Tip Pool (Reparto de Propinas), Role Weights, Hours, and Penny-Perfect Cuadre');
+
+function calculateTipDistribution(totalTips, staff, mode, customRoleWeights) {
+  const activeStaff = staff.filter((s) => s.active !== false);
+
+  if (totalTips <= 0 || activeStaff.length === 0) {
+    return {
+      payouts: activeStaff.map((s) => ({
+        staffId: s.id,
+        name: s.name,
+        role: s.role,
+        amount: 0,
+        percentage: 0,
+        hoursWorked: s.hoursWorked,
+      })),
+      totalDistributed: 0,
+      residual: 0,
+    };
+  }
+
+  const totalCents = Math.round(totalTips * 100);
+  const n = activeStaff.length;
+
+  const defaultWeights = {
+    cocina: 40,
+    mesero: 40,
+    barra: 10,
+    limpieza: 10,
+    cajero: 0,
+    otro: 0,
+    ...customRoleWeights,
+  };
+
+  if (mode === 'equitativo') {
+    const baseCents = Math.floor(totalCents / n);
+    const remainderCents = totalCents - baseCents * n;
+
+    const payouts = activeStaff.map((member, index) => {
+      const extraCent = index < remainderCents ? 1 : 0;
+      const amount = (baseCents + extraCent) / 100;
+      const percentage = Math.round((amount / totalTips) * 10000) / 100;
+      return {
+        staffId: member.id,
+        name: member.name,
+        role: member.role,
+        amount,
+        percentage,
+        hoursWorked: member.hoursWorked,
+      };
+    });
+
+    const totalDistributed = Math.round(payouts.reduce((sum, p) => sum + p.amount, 0) * 100) / 100;
+    const residual = Math.round((totalTips - totalDistributed) * 100) / 100;
+
+    return {
+      payouts,
+      totalDistributed,
+      residual,
+    };
+  }
+
+  let weights = [];
+  if (mode === 'puesto') {
+    weights = activeStaff.map((member) => {
+      if (typeof member.percentage === 'number' && member.percentage > 0) {
+        return member.percentage;
+      }
+      return defaultWeights[member.role] ?? 10;
+    });
+  } else if (mode === 'horas') {
+    weights = activeStaff.map((member) => {
+      return typeof member.hoursWorked === 'number' && member.hoursWorked > 0
+        ? member.hoursWorked
+        : 8;
+    });
+  }
+
+  const sumWeights = weights.reduce((acc, curr) => acc + curr, 0);
+
+  if (sumWeights <= 0) {
+    return calculateTipDistribution(totalTips, activeStaff, 'equitativo');
+  }
+
+  const rawCents = weights.map((w) => (w / sumWeights) * totalCents);
+  const floorCents = rawCents.map((rc) => Math.floor(rc));
+  const allocatedCents = floorCents.reduce((acc, fc) => acc + fc, 0);
+  const remainderCents = totalCents - allocatedCents;
+
+  const fractionalIndices = rawCents
+    .map((rc, idx) => ({ idx, frac: rc - floorCents[idx] }))
+    .sort((a, b) => b.frac - a.frac);
+
+  const bonusCentsSet = new Set(fractionalIndices.slice(0, remainderCents).map((item) => item.idx));
+
+  const payouts = activeStaff.map((member, idx) => {
+    const cents = floorCents[idx] + (bonusCentsSet.has(idx) ? 1 : 0);
+    const amount = cents / 100;
+    const percentage = Math.round((amount / totalTips) * 10000) / 100;
+    return {
+      staffId: member.id,
+      name: member.name,
+      role: member.role,
+      amount,
+      percentage,
+      hoursWorked: member.hoursWorked,
+    };
+  });
+
+  const totalDistributed = Math.round(payouts.reduce((sum, p) => sum + p.amount, 0) * 100) / 100;
+  const residual = Math.round((totalTips - totalDistributed) * 100) / 100;
+
+  return {
+    payouts,
+    totalDistributed,
+    residual,
+  };
+}
+
+// Case 1: Equal division with penny remainder (3 members, $100.00 MXN)
+const staffEqual = [
+  { id: 's1', name: 'Carlos', role: 'cocina', active: true },
+  { id: 's2', name: 'Lucía', role: 'mesero', active: true },
+  { id: 's3', name: 'Rodrigo', role: 'barra', active: true },
+];
+
+const resEqual = calculateTipDistribution(100.0, staffEqual, 'equitativo');
+assert.equal(resEqual.totalDistributed, 100.0);
+assert.equal(resEqual.residual, 0.0);
+assert.equal(resEqual.payouts[0].amount, 33.34);
+assert.equal(resEqual.payouts[1].amount, 33.33);
+assert.equal(resEqual.payouts[2].amount, 33.33);
+assert.equal(resEqual.payouts.reduce((sum, p) => sum + p.amount, 0), 100.0);
+
+// Case 2: Role-based split (Cocina 40%, Mesero 40%, Barra 10%, Limpieza 10%)
+const staffRoles = [
+  { id: 's1', name: 'Carlos Ramos', role: 'cocina', active: true },
+  { id: 's2', name: 'Lucía Méndez', role: 'mesero', active: true },
+  { id: 's3', name: 'Rodrigo Nava', role: 'barra', active: true },
+  { id: 's4', name: 'Martha Gómez', role: 'limpieza', active: true },
+];
+
+const resRole = calculateTipDistribution(450.0, staffRoles, 'puesto');
+assert.equal(resRole.totalDistributed, 450.0);
+assert.equal(resRole.residual, 0.0);
+assert.equal(resRole.payouts.find((p) => p.staffId === 's1').amount, 180.0); // 40% of 450
+assert.equal(resRole.payouts.find((p) => p.staffId === 's2').amount, 180.0); // 40% of 450
+assert.equal(resRole.payouts.find((p) => p.staffId === 's3').amount, 45.0);  // 10% of 450
+assert.equal(resRole.payouts.find((p) => p.staffId === 's4').amount, 45.0);  // 10% of 450
+
+// Case 3: Role-based split with fractional cents ($125.75 MXN)
+const resRoleDecimals = calculateTipDistribution(125.75, staffRoles, 'puesto');
+assert.equal(resRoleDecimals.totalDistributed, 125.75);
+assert.equal(resRoleDecimals.residual, 0.0);
+const sumRoleDecimals = resRoleDecimals.payouts.reduce((sum, p) => sum + p.amount, 0);
+assert.equal(Math.round(sumRoleDecimals * 100) / 100, 125.75);
+
+// Case 4: Hours worked proportional split
+const staffHours = [
+  { id: 's1', name: 'Carlos Ramos', role: 'cocina', hoursWorked: 8, active: true },
+  { id: 's2', name: 'Lucía Méndez', role: 'mesero', hoursWorked: 8, active: true },
+  { id: 's3', name: 'Rodrigo Nava', role: 'barra', hoursWorked: 4, active: true },
+  { id: 's4', name: 'Martha Gómez', role: 'limpieza', hoursWorked: 4, active: true },
+];
+
+const resHours = calculateTipDistribution(600.0, staffHours, 'horas');
+assert.equal(resHours.totalDistributed, 600.0);
+assert.equal(resHours.residual, 0.0);
+assert.equal(resHours.payouts.find((p) => p.staffId === 's1').amount, 200.0);
+assert.equal(resHours.payouts.find((p) => p.staffId === 's2').amount, 200.0);
+assert.equal(resHours.payouts.find((p) => p.staffId === 's3').amount, 100.0);
+assert.equal(resHours.payouts.find((p) => p.staffId === 's4').amount, 100.0);
+
+// Case 5: Inactive collaborator exclusion
+const staffWithInactive = [
+  { id: 's1', name: 'Carlos', role: 'cocina', active: true },
+  { id: 's2', name: 'Lucía (Ausente)', role: 'mesero', active: false },
+  { id: 's3', name: 'Rodrigo', role: 'barra', active: true },
+];
+
+const resInactive = calculateTipDistribution(200.0, staffWithInactive, 'equitativo');
+assert.equal(resInactive.payouts.length, 2);
+assert.equal(resInactive.totalDistributed, 200.0);
+assert.equal(resInactive.payouts[0].amount, 100.0);
+assert.equal(resInactive.payouts[1].amount, 100.0);
+
+// Case 6: Zero tips edge case
+const resZero = calculateTipDistribution(0, staffEqual, 'equitativo');
+assert.equal(resZero.totalDistributed, 0);
+assert.equal(resZero.residual, 0);
+assert(resZero.payouts.every((p) => p.amount === 0));
+
+console.log('✓ Tip pool equal, role-based, and hours worked penny-perfect distribution verified');
+
+console.log('\nAll 26 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, Corte Z, order cancellation, SAT export, modifier, and tip pool tests passed flawlessly!');

@@ -21,6 +21,7 @@ interface CorteDeCajaModalProps {
   totalTipsCollected?: number;
   orders?: CustomerOrder[];
   totalWasteCost?: number;
+  onOpenTipPool?: () => void;
 }
 
 export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
@@ -39,6 +40,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   totalTipsCollected = 0,
   orders = [],
   totalWasteCost = 0,
+  onOpenTipPool,
 }) => {
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [corteType, setCorteType] = useState<'x' | 'z'>('x');
@@ -602,9 +604,20 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
               {/* Propinas Acumuladas */}
               {totalTipsCollected > 0 && (
-                <div className="flex justify-between items-center text-xs text-[#e59b38] print:text-black">
-                  <span>PROPINAS PERSONAL (A REPARTIR):</span>
-                  <span className="font-bold font-mono">+${totalTipsCollected.toFixed(2)} MXN</span>
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 print:border-black/30 print:bg-transparent space-y-1.5">
+                  <div className="flex justify-between items-center text-xs text-[#e59b38] print:text-black">
+                    <span className="font-bold">PROPINAS PERSONAL (A REPARTIR):</span>
+                    <span className="font-bold font-mono">+${totalTipsCollected.toFixed(2)} MXN</span>
+                  </div>
+                  {onOpenTipPool && (
+                    <button
+                      type="button"
+                      onClick={onOpenTipPool}
+                      className="w-full py-1.5 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors print:hidden"
+                    >
+                      <span>💰 Repartir Propinas del Turno (Pool)</span>
+                    </button>
+                  )}
                 </div>
               )}
 

@@ -1,4 +1,4 @@
-import { CustomerOrder, ClosedShiftRecord, BusinessInfo } from '@/types/accounting';
+import { CustomerOrder, ClosedShiftRecord, BusinessInfo, TipSettlementRecord } from '@/types/accounting';
 import { DEFAULT_BUSINESS_INFO } from '@/data/initialBusinessInfo';
 
 const LINE_WIDTH = 32;
@@ -267,4 +267,120 @@ export function generateShiftThermalText(shift: ClosedShiftRecord, businessInfo?
   lines.push('');
 
   return lines.join('\n');
+}
+
+export function generateTipSettlementThermalText(
+  record: TipSettlementRecord,
+  businessInfo?: BusinessInfo
+): string {
+  const info = businessInfo || DEFAULT_BUSINESS_INFO;
+  const line = '--------------------------------';
+  const doubleLine = '================================';
+
+  const modeLabels: Record<string, string> = {
+    equitativo: 'EQUITATIVO (PARTES IGUALES)',
+    puesto: 'POR PUESTO / ROL',
+    horas: 'POR HORAS TRABAJADAS',
+  };
+
+  const lines: string[] = [
+    center(info.name.toUpperCase()),
+    center(info.tagline),
+    doubleLine,
+    center('*** REPARTO DE PROPINAS ***'),
+    center(`TURNO #${record.shiftNumber}`),
+    doubleLine,
+    `Fecha: ${new Date(record.date).toLocaleString('es-MX')}`,
+    pad('MODO DE REPARTO:', modeLabels[record.mode] || (record.mode || 'equitativo').toUpperCase()),
+    line,
+    pad('TOTAL A REPARTIR:', `$${record.totalTips.toFixed(2)} MXN`),
+    pad('COLABORADORES:', `${record.payouts.length} personas`),
+    line,
+    pad('COLABORADOR (ROL)', 'MONTO'),
+    line,
+  ];
+
+  record.payouts.forEach((p) => {
+    const roleTag = p.role.substring(0, 4).toUpperCase();
+    const displayName = p.name.length > 17 ? p.name.substring(0, 16) + '.' : p.name;
+    lines.push(pad(`${displayName} [${roleTag}]`, `$${p.amount.toFixed(2)}`));
+    if (p.percentage !== undefined) {
+      lines.push(`   (${p.percentage.toFixed(1)}% del total)`);
+    }
+  });
+
+  lines.push(line);
+  const totalPaid = record.payouts.reduce((acc, p) => acc + p.amount, 0);
+  lines.push(pad('TOTAL DISTRIBUIDO:', `$${totalPaid.toFixed(2)} MXN`));
+  const residual = Math.round((record.totalTips - totalPaid) * 100) / 100;
+  lines.push(pad('DIFERENCIA RESIDUAL:', `$${residual.toFixed(2)}`));
+
+  if (record.cashierName) {
+    lines.push(pad('Encargado / Cajero:', record.cashierName));
+  }
+  if (record.notes) {
+    lines.push(`Notas: ${record.notes}`);
+  }
+
+  lines.push(line);
+  lines.push(center('Firma de Conformidad de Equipo:'));
+  lines.push('');
+  lines.push('________________________________');
+  lines.push(center('Distribución 100% Transparente'));
+  lines.push(center(`${info.name} • Equipo`));
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+export function generateTipSettlementWhatsAppText(
+  record: TipSettlementRecord,
+  businessInfo?: BusinessInfo
+): string {
+  const info = businessInfo || DEFAULT_BUSINESS_INFO;
+  const modeLabels: Record<string, string> = {
+    equitativo: '⚖️ Equitativo (Partes iguales)',
+    puesto: '👨‍🍳 Por Puesto / Rol',
+    horas: '⏱️ Por Horas trabajadas',
+  };
+
+  const roleNameMap: Record<string, string> = {
+    cocina: 'Cocina',
+    mesero: 'Servicio / Mesas',
+    barra: 'Barra',
+    limpieza: 'Limpieza',
+    cajero: 'Cajero',
+    otro: 'Personal',
+  };
+
+  let text =
+    `💰 *REPARTO DE PROPINAS • ${info.name.toUpperCase()}*\n` +
+    `🔢 *Turno:* #${record.shiftNumber}\n` +
+    `📅 *Fecha:* ${new Date(record.date).toLocaleString('es-MX')}\n` +
+    `💵 *Fondo Total Propinas:* $${record.totalTips.toFixed(2)} MXN\n` +
+    `⚙️ *Modo:* ${modeLabels[record.mode] || record.mode}\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `📋 *Desglose por Colaborador:*\n`;
+
+  record.payouts.forEach((p) => {
+    const roleFriendly = roleNameMap[p.role] || p.role;
+    text += `• *${p.name}* (${roleFriendly}): *$${p.amount.toFixed(2)} MXN* (${p.percentage.toFixed(1)}%)\n`;
+  });
+
+  const totalPaid = record.payouts.reduce((acc, p) => acc + p.amount, 0);
+  text +=
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `✅ *Total Liquidado:* $${totalPaid.toFixed(2)} MXN\n` +
+    `✨ *Diferencia / Faltante:* $0.00 MXN\n`;
+
+  if (record.cashierName) {
+    text += `👤 *Entregó:* ${record.cashierName}\n`;
+  }
+  if (record.notes) {
+    text += `📝 *Notas:* ${record.notes}\n`;
+  }
+
+  text += `\n_¡Excelente turno equipo! Gracias por el servicio de hoy._ 🔥`;
+
+  return text;
 }

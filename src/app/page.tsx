@@ -43,6 +43,7 @@ import { MermasModal } from '@/components/MermasModal';
 import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModal';
 import { MiseEnPlaceModal } from '@/components/MiseEnPlaceModal';
 import { ExportesContablesModal } from '@/components/ExportesContablesModal';
+import { PoolPropinasModal } from '@/components/PoolPropinasModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
@@ -206,6 +207,7 @@ export default function SalesCounterPage() {
   const [isPantallaCocinaOpen, setIsPantallaCocinaOpen] = useState(false);
   const [isConfiguracionNegocioOpen, setIsConfiguracionNegocioOpen] = useState(false);
   const [isExportesModalOpen, setIsExportesModalOpen] = useState(false);
+  const [isTipPoolOpen, setIsTipPoolOpen] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
     if (typeof window === 'undefined') return DEFAULT_BUSINESS_INFO;
     try {
@@ -902,6 +904,7 @@ export default function SalesCounterPage() {
         setIsPantallaCocinaOpen(false);
         setIsConfiguracionNegocioOpen(false);
         setIsExportesModalOpen(false);
+        setIsTipPoolOpen(false);
         return;
       }
 
@@ -921,7 +924,8 @@ export default function SalesCounterPage() {
         isHistorialComandasOpen ||
         isPantallaCocinaOpen ||
         isConfiguracionNegocioOpen ||
-        isExportesModalOpen;
+        isExportesModalOpen ||
+        isTipPoolOpen;
 
       if (isAnyModalOpen) return;
 
@@ -957,6 +961,12 @@ export default function SalesCounterPage() {
       if (e.key.toLowerCase() === 'c') {
         e.preventDefault();
         setIsCorteModalOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setIsTipPoolOpen(true);
         return;
       }
 
@@ -1042,6 +1052,7 @@ export default function SalesCounterPage() {
     isPantallaCocinaOpen,
     isConfiguracionNegocioOpen,
     isExportesModalOpen,
+    isTipPoolOpen,
   ]);
 
   // Filter sales for the selected timeframe
@@ -1241,6 +1252,7 @@ export default function SalesCounterPage() {
         activeKitchenOrdersCount={activeKitchenOrdersCount}
         onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
         onOpenExportesContables={() => setIsExportesModalOpen(true)}
+        onOpenTipPool={() => setIsTipPoolOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -1545,6 +1557,7 @@ export default function SalesCounterPage() {
         activeKitchenOrdersCount={activeKitchenOrdersCount}
         onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
         onOpenExportesContables={() => setIsExportesModalOpen(true)}
+        onOpenTipPool={() => setIsTipPoolOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -1596,6 +1609,10 @@ export default function SalesCounterPage() {
         totalTipsCollected={totalTipsInTimeframe}
         orders={filteredOrders}
         totalWasteCost={totalWasteInTimeframe}
+        onOpenTipPool={() => {
+          setIsCorteModalOpen(false);
+          setIsTipPoolOpen(true);
+        }}
         onConfirmZeroOut={() => {
           setIsCorteModalOpen(false);
           setIsZeroOutModalOpen(true);
@@ -1737,6 +1754,18 @@ export default function SalesCounterPage() {
         startingCash={startingCash}
         businessInfo={businessInfo}
         currentDate={currentDate || new Date()}
+      />
+
+      {/* Liquidación y Reparto de Propinas Modal */}
+      <PoolPropinasModal
+        isOpen={isTipPoolOpen}
+        onClose={() => setIsTipPoolOpen(false)}
+        shiftNumber={shiftCounter}
+        totalTipsCollected={totalTipsInTimeframe}
+        businessInfo={businessInfo}
+        onSaveSettlement={(record) => {
+          showToast(`✓ Liquidación de propinas Turno #${record.shiftNumber} guardada ($${record.totalTips.toFixed(2)} MXN).`);
+        }}
       />
 
       {/* Atajos de Teclado POS Guía Modal */}
