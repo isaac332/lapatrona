@@ -24,6 +24,14 @@ import { CheckCircle2, RotateCcw } from 'lucide-react';
 
 const subscribe = () => () => {};
 
+let cachedClientDate: Date | null = null;
+const getClientDate = (): Date => {
+  if (!cachedClientDate) {
+    cachedClientDate = new Date();
+  }
+  return cachedClientDate;
+};
+
 export default function SalesCounterPage() {
   const isHydrated = useSyncExternalStore(
     subscribe,
@@ -31,15 +39,9 @@ export default function SalesCounterPage() {
     () => false
   );
 
-  const clientTimestamp = useSyncExternalStore(
-    subscribe,
-    () => Date.now(),
-    () => null
-  );
-
   const currentDate = useMemo(() => {
-    return clientTimestamp ? new Date(clientTimestamp) : undefined;
-  }, [clientTimestamp]);
+    return isHydrated ? getClientDate() : undefined;
+  }, [isHydrated]);
 
   // Sync products with Mexican Spanish texts while preserving user-configured prices/costs
   const [products, setProducts] = useState<ProductItem[]>(() => {
