@@ -111,6 +111,26 @@ export interface CashShiftState {
   denominations?: CashDenominationCount;
 }
 
+export interface ClosedShiftRecord {
+  id: string;
+  shiftNumber: number;
+  openedAt: string;
+  closedAt: string;
+  cashierName?: string;
+  startingCash: number;
+  totalGrossRevenue: number;
+  cashSalesTotal: number;
+  cardSalesTotal: number;
+  transferSalesTotal: number;
+  totalExpenses: number;
+  expectedCashInDrawer: number;
+  countedCash?: number;
+  difference?: number;
+  differenceStatus?: 'cuadrada' | 'sobrante' | 'faltante';
+  totalUnits: number;
+  notes?: string;
+}
+
 export interface ProductPerformance {
   product: ProductItem;
   units: number;

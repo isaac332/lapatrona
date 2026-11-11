@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord, CashDenominationCount } from '@/types/accounting';
+import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord, CashDenominationCount, ClosedShiftRecord } from '@/types/accounting';
 import { getPaymentBreakdown, calculateDenominationTotal, calculateExpectedDrawerCash, calculateArqueoDifference } from '@/utils/accountingCalculations';
 import { X, Printer, RotateCcw, Receipt, CheckCircle2, AlertTriangle, AlertCircle, Coins, Banknote } from 'lucide-react';
 
@@ -16,6 +16,8 @@ interface CorteDeCajaModalProps {
   onConfirmZeroOut: () => void;
   startingCash: number;
   onUpdateStartingCash: (amount: number) => void;
+  onArchiveShift?: (record: ClosedShiftRecord) => void;
+  shiftCounter?: number;
 }
 
 export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
@@ -29,6 +31,8 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   onConfirmZeroOut,
   startingCash,
   onUpdateStartingCash,
+  onArchiveShift,
+  shiftCounter = 1,
 }) => {
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [isEditingStartingCash, setIsEditingStartingCash] = useState(false);
@@ -604,13 +608,33 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
           <button
             type="button"
             onClick={() => {
+              if (onArchiveShift) {
+                const shiftRecord: ClosedShiftRecord = {
+                  id: `shift-${Date.now()}`,
+                  shiftNumber: shiftCounter,
+                  openedAt: sales.length > 0 ? sales[sales.length - 1].timestamp : new Date().toISOString(),
+                  closedAt: new Date().toISOString(),
+                  startingCash,
+                  totalGrossRevenue: totalRevenue,
+                  cashSalesTotal: paymentBreakdown.efectivo.total,
+                  cardSalesTotal: paymentBreakdown.tarjeta.total,
+                  transferSalesTotal: paymentBreakdown.transferencia.total,
+                  totalExpenses,
+                  expectedCashInDrawer,
+                  countedCash: countedCash !== null ? countedCash : undefined,
+                  difference: arqueoResult ? arqueoResult.difference : undefined,
+                  differenceStatus: arqueoResult ? arqueoResult.status : undefined,
+                  totalUnits,
+                };
+                onArchiveShift(shiftRecord);
+              }
               onClose();
               onConfirmZeroOut();
             }}
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95 touch-manipulation"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Cerrar Turno y Poner en Ceros</span>
+            <span>Cerrar Turno #{shiftCounter} y Poner en Ceros</span>
           </button>
         </div>
 

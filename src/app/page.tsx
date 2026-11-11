@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder } from '@/types/accounting';
+import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord } from '@/types/accounting';
 import { INITIAL_PRODUCTS } from '@/data/initialProducts';
 import {
   filterSalesByTimeframe,
@@ -28,6 +28,7 @@ import { GastosModal } from '@/components/GastosModal';
 import { CalculadoraCambioModal } from '@/components/CalculadoraCambioModal';
 import { NuevaOrdenModal } from '@/components/NuevaOrdenModal';
 import { TicketComandaModal } from '@/components/TicketComandaModal';
+import { HistorialCortesModal } from '@/components/HistorialCortesModal';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -130,6 +131,25 @@ export default function SalesCounterPage() {
       return 1000;
     }
   });
+  const [closedShifts, setClosedShifts] = useState<ClosedShiftRecord[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('philly_fry_closed_shifts');
+      return saved !== null ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [shiftCounter, setShiftCounter] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    try {
+      const saved = localStorage.getItem('philly_fry_shift_counter');
+      return saved !== null ? parseInt(saved, 10) : 1;
+    } catch {
+      return 1;
+    }
+  });
+  const [isHistorialCortesOpen, setIsHistorialCortesOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -139,6 +159,32 @@ export default function SalesCounterPage() {
     setTimeout(() => {
       setToastMessage((curr) => (curr === message ? null : curr));
     }, 3500);
+  };
+
+  const handleArchiveShift = (record: ClosedShiftRecord) => {
+    const updated = [record, ...closedShifts];
+    setClosedShifts(updated);
+    try {
+      localStorage.setItem('philly_fry_closed_shifts', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save closed shift', e);
+    }
+    setShiftCounter((prev) => {
+      const next = prev + 1;
+      try {
+        localStorage.setItem('philly_fry_shift_counter', next.toString());
+      } catch {}
+      return next;
+    });
+    showToast(`✓ Turno #${record.shiftNumber} archivado en el historial de cortes.`);
+  };
+
+  const handleClearShiftHistory = () => {
+    setClosedShifts([]);
+    try {
+      localStorage.removeItem('philly_fry_closed_shifts');
+    } catch {}
+    showToast('✓ Historial de turnos limpiado.');
   };
 
   const handleUpdateStartingCash = (amount: number) => {
@@ -436,6 +482,7 @@ export default function SalesCounterPage() {
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
+        onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -711,6 +758,7 @@ export default function SalesCounterPage() {
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
+        onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -754,10 +802,20 @@ export default function SalesCounterPage() {
         hourlyBlocks={hourlyBlocks}
         startingCash={startingCash}
         onUpdateStartingCash={handleUpdateStartingCash}
+        onArchiveShift={handleArchiveShift}
+        shiftCounter={shiftCounter}
         onConfirmZeroOut={() => {
           setIsCorteModalOpen(false);
           setIsZeroOutModalOpen(true);
         }}
+      />
+
+      {/* Historial de Turnos y Cortes Anteriores Modal */}
+      <HistorialCortesModal
+        isOpen={isHistorialCortesOpen}
+        onClose={() => setIsHistorialCortesOpen(false)}
+        shifts={closedShifts}
+        onClearHistory={handleClearShiftHistory}
       />
 
       {/* Gastos Menores y Salidas de Caja Modal */}

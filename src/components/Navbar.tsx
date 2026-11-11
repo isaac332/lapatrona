@@ -2,7 +2,7 @@
 
 import React, { useEffect, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -27,6 +27,7 @@ interface NavbarProps {
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
   onOpenNuevaOrden: () => void;
+  onOpenHistorialCortes?: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -40,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenGastos,
   onOpenCalculadora,
   onOpenNuevaOrden,
+  onOpenHistorialCortes,
   totalUnitsInTimeframe,
 }) => {
   const isOnline = useSyncExternalStore(subscribeOnline, getOnlineSnapshot, getOnlineServerSnapshot);
@@ -130,6 +132,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Receipt className="w-3.5 h-3.5 text-[#e59b38]" />
             <span>Corte de Caja</span>
           </button>
+
+          {/* TURNOS CERRADOS ANTERIORES BUTTON */}
+          {onOpenHistorialCortes && (
+            <button
+              onClick={onOpenHistorialCortes}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-neutral-300 hover:text-white hover:bg-white/[0.06] border border-white/[0.08] transition-all shadow-sm active:scale-95"
+              title="Historial de turnos archivados y reimpresión de tickets"
+            >
+              <FileText className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Turnos Archivados</span>
+            </button>
+          )}
 
           {/* GASTOS DE CAJA BUTTON */}
           <button
