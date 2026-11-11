@@ -32,6 +32,8 @@ import { HistorialCortesModal } from '@/components/HistorialCortesModal';
 import { AtajosTecladoModal } from '@/components/AtajosTecladoModal';
 import { StockManagerModal } from '@/components/StockManagerModal';
 import { HistorialComandasModal } from '@/components/HistorialComandasModal';
+import { DailyGoalTracker } from '@/components/DailyGoalTracker';
+import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -176,7 +178,38 @@ export default function SalesCounterPage() {
   });
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isHistorialComandasOpen, setIsHistorialComandasOpen] = useState(false);
+  const [dailyGoal, setDailyGoal] = useState<number>(() => {
+    if (typeof window === 'undefined') return 8000;
+    try {
+      const saved = localStorage.getItem('philly_fry_daily_goal');
+      return saved !== null ? parseFloat(saved) : 8000;
+    } catch {
+      return 8000;
+    }
+  });
+  const [soundActive, setSoundActive] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return isSoundEnabled();
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleToggleSound = () => {
+    const next = !soundActive;
+    setSoundActive(next);
+    setSoundEnabled(next);
+    if (next) {
+      playCashRegisterChime();
+    }
+    showToast(next ? '✓ Sonido de cobro activado.' : 'Sonido silenciado.');
+  };
+
+  const handleUpdateDailyGoal = (amount: number) => {
+    setDailyGoal(amount);
+    try {
+      localStorage.setItem('philly_fry_daily_goal', amount.toString());
+      showToast(`✓ Meta del turno fijada: $${amount.toLocaleString('es-MX')} MXN.`);
+    } catch {}
+  };
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
 
@@ -339,6 +372,8 @@ export default function SalesCounterPage() {
       return updated;
     });
 
+    playCashRegisterChime();
+
     // Deduct stock if tracked
     if (currentStockConfig?.trackStock) {
       setStockMap((prev) => {
@@ -482,6 +517,7 @@ export default function SalesCounterPage() {
     });
     setActiveTicketOrder(order);
     setIsTicketComandaOpen(true);
+    playCashRegisterChime();
     showToast(`✓ Comanda #${order.orderNumber} registrada ($${order.total.toFixed(2)} MXN).`);
   };
 
@@ -804,6 +840,8 @@ export default function SalesCounterPage() {
         onOpenHistorialComandas={() => setIsHistorialComandasOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
+        soundEnabled={soundActive}
+        onToggleSound={handleToggleSound}
       />
 
       {/* Hero Banner */}
@@ -832,6 +870,13 @@ export default function SalesCounterPage() {
             onOpenGastos={() => setIsGastosModalOpen(true)}
             onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
             onOpenCorte={() => setIsCorteModalOpen(true)}
+          />
+
+          {/* Daily Sales Target Goal Progress Bar */}
+          <DailyGoalTracker
+            currentRevenue={todayRevenue}
+            goalAmount={dailyGoal}
+            onUpdateGoal={handleUpdateDailyGoal}
           />
 
           {/* Section 2: Dedicated Granular Timeframe View (Day / Week / Month / Total) */}
@@ -1087,6 +1132,8 @@ export default function SalesCounterPage() {
         onOpenHistorialComandas={() => setIsHistorialComandasOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
+        soundEnabled={soundActive}
+        onToggleSound={handleToggleSound}
       />
 
       {/* Pricing and Cost Management Modal */}

@@ -20,6 +20,8 @@ interface MobileBottomDockProps {
   onOpenHistorialComandas?: () => void;
   lowStockCount?: number;
   totalUnitsInTimeframe: number;
+  soundEnabled?: boolean;
+  onToggleSound?: () => void;
 }
 
 export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
@@ -36,6 +38,8 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenHistorialComandas,
   lowStockCount = 0,
   totalUnitsInTimeframe,
+  soundEnabled = true,
+  onToggleSound,
 }) => {
   const tabs: { id: TimeframeFilter; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'today', label: 'Hoy', icon: Clock },

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package, Volume2, VolumeX } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -33,6 +33,8 @@ interface NavbarProps {
   onOpenHistorialComandas?: () => void;
   lowStockCount?: number;
   totalUnitsInTimeframe: number;
+  soundEnabled?: boolean;
+  onToggleSound?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -51,6 +53,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenHistorialComandas,
   lowStockCount = 0,
   totalUnitsInTimeframe,
+  soundEnabled = true,
+  onToggleSound,
 }) => {
   const isOnline = useSyncExternalStore(subscribeOnline, getOnlineSnapshot, getOnlineServerSnapshot);
 
@@ -248,6 +252,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {/* Audio Chime Toggle Button */}
+          {onToggleSound && (
+            <button
+              onClick={onToggleSound}
+              className={`p-2 rounded-full border transition-all active:scale-95 ${
+                soundEnabled
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                  : 'bg-white/[0.04] border-white/[0.08] text-neutral-500 hover:text-neutral-300'
+              }`}
+              title={soundEnabled ? 'Sonido de cobro activo (Clic para silenciar)' : 'Sonido silenciado (Clic para activar)'}
+            >
+              {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            </button>
+          )}
+
           {/* Units Counter Badge Button */}
           <button
             onClick={onOpenHistory}
@@ -262,6 +281,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Mobile Header Quick Stats & Nueva Comanda Button */}
         <div className="flex lg:hidden items-center gap-1.5">
+          {onToggleSound && (
+            <button
+              onClick={onToggleSound}
+              className={`p-1.5 rounded-full border transition-all ${
+                soundEnabled
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : 'bg-white/[0.04] border-white/[0.08] text-neutral-500'
+              }`}
+              title="Sonido de cobro"
+            >
+              {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            </button>
+          )}
+
           <button
             onClick={onOpenNuevaOrden}
             className="flex items-center gap-1 bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold px-2.5 py-1.5 rounded-full text-xs shadow-sm active:scale-95"
