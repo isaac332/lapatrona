@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { ProductItem, TimeframeFilter } from '@/types/accounting';
+import { triggerHaptic } from '@/utils/haptics';
 import { Plus, Minus, Pencil, Check, X } from 'lucide-react';
 
 interface ProductCardProps {
@@ -55,12 +56,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const handleIncrement = (amount: number) => {
+    triggerHaptic(amount > 1 ? 'medium' : 'light');
     triggerUpdateAnimation();
     onIncrement(product.id, amount);
   };
 
   const handleDecrement = (amount: number) => {
     if (activeCount > 0) {
+      triggerHaptic('medium');
       triggerUpdateAnimation();
       onDecrement(product.id, amount);
     }
@@ -69,6 +72,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleSavePrice = () => {
     const parsed = parseFloat(tempPrice);
     if (!isNaN(parsed) && parsed >= 0) {
+      triggerHaptic('success');
       onUpdatePrice(product.id, parsed);
       setPriceFlash(true);
       setTimeout(() => setPriceFlash(false), 800);
