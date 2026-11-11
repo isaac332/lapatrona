@@ -20,6 +20,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { PriceManagerModal } from '@/components/PriceManagerModal';
 import { SalesHistoryModal } from '@/components/SalesHistoryModal';
 import { ZeroOutModal } from '@/components/ZeroOutModal';
+import { MobileBottomDock } from '@/components/MobileBottomDock';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -450,7 +451,7 @@ export default function SalesCounterPage() {
       </main>
 
       {/* Footer in Mexican Spanish */}
-      <footer className="border-t border-white/[0.08] bg-[#0d0d0f] py-8">
+      <footer className="border-t border-white/[0.08] bg-[#0d0d0f] py-8 pb-28 lg:pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
           <div className="flex items-center gap-3">
             <span className="font-bold tracking-widest uppercase text-white font-sans text-sm">
@@ -492,6 +493,16 @@ export default function SalesCounterPage() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile Fixed Bottom Dock */}
+      <MobileBottomDock
+        timeframe={timeframe}
+        onTimeframeChange={setTimeframe}
+        onOpenPriceManager={() => setIsPriceModalOpen(true)}
+        onOpenHistory={() => setIsHistoryModalOpen(true)}
+        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
+        totalUnitsInTimeframe={totalUnitsInTimeframe}
+      />
 
       {/* Pricing and Cost Management Modal */}
       <PriceManagerModal

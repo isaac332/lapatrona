@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
@@ -20,6 +20,20 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Philly & Fry | Mostrador de Ventas y Contabilidad",
   description: "Contador de ventas y contabilidad diaria, semanal y mensual para Philly & Fry",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Philly & Fry",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0d0d0f",
 };
 
 export default function RootLayout({
@@ -32,7 +46,7 @@ export default function RootLayout({
       lang="es-MX"
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full bg-[#0d0d0f] text-[#f5f0eb] flex flex-col font-sans selection:bg-[#e59b38] selection:text-black">
+      <body className="min-h-full bg-[#0d0d0f] text-[#f5f0eb] flex flex-col font-sans selection:bg-[#e59b38] selection:text-black touch-manipulation">
         {children}
       </body>
     </html>
