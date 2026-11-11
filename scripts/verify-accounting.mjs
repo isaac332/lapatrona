@@ -590,4 +590,24 @@ assert.equal(resFaltante.difference, -80);
 
 console.log('✓ Cash drawer float, denomination tally, and arqueo statuses verified');
 
-console.log('\nAll 11 accounting verification tests passed flawlessly!');
+// Test 12: Order with Tip, Food Subtotal, and Cash Change Calculation
+console.log('Test 12: Order with Tip (Propina), Net Food Subtotal, and Cash Change Calculation');
+const foodItems = [
+  { productId: 'sandwich-fries', quantity: 2, unitPrice: 185 }, // $370
+  { productId: 'fries-cheese', quantity: 1, unitPrice: 85 },     // $85
+];
+const foodSubtotal = foodItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0); // $455
+const tip15 = Math.round((foodSubtotal * 15) / 100); // 15% of $455 = 68.25 -> $68
+const finalTotal = foodSubtotal + tip15; // $523
+assert.equal(foodSubtotal, 455);
+assert.equal(tip15, 68);
+assert.equal(finalTotal, 523);
+
+// Cash payment with $1,000 bill
+const billReceived = 1000;
+const changeCalculated = Math.max(0, billReceived - finalTotal);
+assert.equal(changeCalculated, 477, 'Change from $1,000 on $523 order must be $477.00');
+
+console.log('✓ Order tip calculation, food subtotal, and cash change verified');
+
+console.log('\nAll 12 accounting verification tests passed flawlessly!');

@@ -147,6 +147,18 @@ export const TicketComandaModal: React.FC<TicketComandaModalProps> = ({
 
             {/* Total & Payment Method */}
             <div className="pt-2 border-t border-dashed border-white/20 print:border-black/30 space-y-1">
+              {order.tip && order.tip > 0 ? (
+                <>
+                  <div className="flex justify-between items-center text-xs text-neutral-400 print:text-black">
+                    <span>Subtotal Alimentos:</span>
+                    <span className="font-mono">${(order.total - order.tip).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-[#e59b38] print:text-black">
+                    <span>(+) Propina Personal:</span>
+                    <span className="font-mono font-bold">+${order.tip.toFixed(2)}</span>
+                  </div>
+                </>
+              ) : null}
               <div className="flex justify-between items-center text-sm font-black">
                 <span>TOTAL A PAGAR:</span>
                 <span className="text-base text-[#e59b38] print:text-black">

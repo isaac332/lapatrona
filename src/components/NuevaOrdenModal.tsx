@@ -34,7 +34,8 @@ function createNewOrder(
   total: number,
   paymentMethod: PaymentMethod,
   amountReceived?: number,
-  change?: number
+  change?: number,
+  tip?: number
 ): CustomerOrder {
   return {
     id: `order-${nextOrderNumber}-${Date.now()}`,
@@ -45,6 +46,7 @@ function createNewOrder(
     notes: notes.trim() || undefined,
     items,
     total,
+    tip,
     paymentMethod,
     amountReceived,
     change,
@@ -63,6 +65,8 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   const [notes, setNotes] = useState('');
   const [cart, setCart] = useState<Record<string, number>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
+  const [tipPercent, setTipPercent] = useState<number | 'custom'>(0);
+  const [customTip, setCustomTip] = useState<string>('');
   const [amountReceived, setAmountReceived] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
@@ -111,10 +115,15 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
     .filter((item): item is CustomerOrderItem => item !== null);
 
   const totalItemsCount = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const foodSubtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const tipAmount =
+    tipPercent === 'custom'
+      ? parseFloat(customTip) || 0
+      : Math.round((foodSubtotal * (tipPercent as number)) / 100);
+  const finalTotal = foodSubtotal + tipAmount;
 
   const receivedNum = parseFloat(amountReceived) || 0;
-  const change = paymentMethod === 'efectivo' && receivedNum > 0 ? Math.max(0, receivedNum - totalAmount) : 0;
+  const change = paymentMethod === 'efectivo' && receivedNum > 0 ? Math.max(0, receivedNum - finalTotal) : 0;
 
   const billetes = [50, 100, 200, 500, 1000];
 
@@ -130,10 +139,11 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
       customerName,
       notes,
       orderItems,
-      totalAmount,
+      finalTotal,
       paymentMethod,
       paymentMethod === 'efectivo' && receivedNum > 0 ? receivedNum : undefined,
-      paymentMethod === 'efectivo' && receivedNum > 0 ? change : undefined
+      paymentMethod === 'efectivo' && receivedNum > 0 ? change : undefined,
+      tipAmount > 0 ? tipAmount : undefined
     );
 
     onCompleteOrder(newOrder);
@@ -397,8 +407,60 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
               </div>
             </div>
 
+            {/* Propina (Tip) Selector */}
+            {foodSubtotal > 0 && (
+              <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold uppercase">
+                  <span>Propina para el Personal:</span>
+                  {tipAmount > 0 && (
+                    <span className="text-[#e59b38] font-mono font-bold">
+                      +${tipAmount.toFixed(2)} MXN
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {[
+                    { id: 0, label: 'Sin propina' },
+                    { id: 10, label: '10%' },
+                    { id: 15, label: '15%' },
+                    { id: 'custom' as const, label: 'Otro' },
+                  ].map((t) => {
+                    const isActive = tipPercent === t.id;
+                    return (
+                      <button
+                        key={String(t.id)}
+                        type="button"
+                        onClick={() => setTipPercent(t.id)}
+                        className={`py-1 rounded text-[11px] font-bold transition-all ${
+                          isActive
+                            ? 'bg-[#e59b38] text-black shadow-sm font-extrabold'
+                            : 'bg-white/5 hover:bg-white/10 text-neutral-400 border border-white/10'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {tipPercent === 'custom' && (
+                  <div className="pt-1 flex items-center gap-1.5">
+                    <span className="text-xs text-neutral-400 font-mono">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="Monto de propina"
+                      value={customTip}
+                      onChange={(e) => setCustomTip(e.target.value)}
+                      className="w-full bg-[#1b1b20] border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-[#e59b38]"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Cash Payment Bill Helper */}
-            {paymentMethod === 'efectivo' && totalAmount > 0 && (
+            {paymentMethod === 'efectivo' && finalTotal > 0 && (
               <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10">
                 <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold uppercase">
                   <span>Paga con billete de:</span>
@@ -425,17 +487,30 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
 
             {/* Total and Submit Button */}
             <div className="pt-2">
+              {tipAmount > 0 && (
+                <div className="space-y-0.5 pb-2 mb-2 border-b border-white/[0.08] text-xs">
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Subtotal Alimentos:</span>
+                    <span className="font-mono text-white">${foodSubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[#e59b38]">
+                    <span>(+) Propina:</span>
+                    <span className="font-mono font-bold">+${tipAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-baseline mb-2">
                 <span className="text-xs uppercase tracking-wider text-neutral-400 font-bold">TOTAL:</span>
                 <span className="font-serif text-2xl font-bold text-white">
-                  ${totalAmount.toFixed(2)} <span className="text-xs text-neutral-500 font-sans">MXN</span>
+                  ${finalTotal.toFixed(2)} <span className="text-xs text-neutral-500 font-sans">MXN</span>
                 </span>
               </div>
 
               <button
                 type="button"
                 onClick={handleComplete}
-                disabled={totalAmount <= 0}
+                disabled={finalTotal <= 0}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#e59b38] hover:bg-[#d48b28] disabled:opacity-30 disabled:pointer-events-none text-black font-extrabold text-sm uppercase tracking-wider transition-all shadow-lg active:scale-98 touch-manipulation"
               >
                 <CheckCircle2 className="w-4 h-4" />

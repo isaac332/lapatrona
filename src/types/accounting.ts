@@ -44,6 +44,7 @@ export interface CustomerOrder {
   notes?: string;
   items: CustomerOrderItem[];
   total: number;
+  tip?: number;
   paymentMethod: PaymentMethod;
   amountReceived?: number;
   change?: number;

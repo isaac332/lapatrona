@@ -40,6 +40,10 @@ export function generateOrderThermalText(order: CustomerOrder): string {
   });
 
   lines.push(line);
+  if (order.tip && order.tip > 0) {
+    lines.push(pad('Subtotal Alimentos:', `$${(order.total - order.tip).toFixed(2)}`));
+    lines.push(pad('(+) Propina:', `$${order.tip.toFixed(2)}`));
+  }
   lines.push(pad('TOTAL A PAGAR:', `$${order.total.toFixed(2)} MXN`));
   lines.push(pad('Forma de Pago:', order.paymentMethod.toUpperCase()));
 
