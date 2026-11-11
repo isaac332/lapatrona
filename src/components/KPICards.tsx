@@ -3,18 +3,20 @@
 import React from 'react';
 import { TimeframeFilter, ProductItem, SaleRecord } from '@/types/accounting';
 import { getPaymentBreakdown } from '@/utils/accountingCalculations';
-import { ShoppingBag, DollarSign, Award, Sparkles, RotateCcw, Wallet, Calculator, Download } from 'lucide-react';
+import { ShoppingBag, DollarSign, Award, Sparkles, RotateCcw, Wallet, Calculator, Download, Trash2 } from 'lucide-react';
 
 interface KPICardsProps {
   timeframe: TimeframeFilter;
   sales: SaleRecord[];
   products: ProductItem[];
   totalExpenses: number;
+  totalWasteCost?: number;
   startingCash?: number;
   onLoadSample: () => void;
   onOpenZeroOut: () => void;
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
+  onOpenMermas?: () => void;
   onOpenCorte?: () => void;
   onExportCSV?: () => void;
 }
@@ -24,11 +26,13 @@ export const KPICards: React.FC<KPICardsProps> = ({
   sales,
   products,
   totalExpenses,
+  totalWasteCost = 0,
   startingCash = 0,
   onLoadSample,
   onOpenZeroOut,
   onOpenGastos,
   onOpenCalculadora,
+  onOpenMermas,
   onOpenCorte,
   onExportCSV,
 }) => {
@@ -109,6 +113,22 @@ export const KPICards: React.FC<KPICardsProps> = ({
             <Wallet className="w-3.5 h-3.5" />
             <span>Registrar Gasto</span>
           </button>
+
+          {/* Quick Waste / Merma Button */}
+          {onOpenMermas && (
+            <button
+              onClick={onOpenMermas}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors touch-manipulation active:scale-95 ${
+                totalWasteCost > 0
+                  ? 'text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/25'
+                  : 'text-neutral-400 hover:text-white bg-white/5 border-white/10'
+              }`}
+              title="Registrar merma o desperdicio de cocina"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Mermas{totalWasteCost > 0 ? ` (-$${totalWasteCost.toFixed(0)})` : ''}</span>
+            </button>
+          )}
 
           {/* Export Report CSV Button */}
           {onExportCSV && sales.length > 0 && (

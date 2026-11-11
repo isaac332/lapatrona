@@ -1,6 +1,7 @@
 import {
   SaleRecord,
   ExpenseRecord,
+  WasteRecord,
   TimeframeFilter,
   ProductItem,
   HourlyBlock,
@@ -80,6 +81,31 @@ export function filterExpensesByTimeframe(
         return isSameWeek(expDate, referenceDate);
       case 'month':
         return isSameMonth(expDate, referenceDate);
+      case 'all':
+      default:
+        return true;
+    }
+  });
+}
+
+export function filterWasteByTimeframe(
+  waste: WasteRecord[],
+  timeframe: TimeframeFilter,
+  referenceDate?: Date
+): WasteRecord[] {
+  if (!referenceDate) return waste;
+
+  return waste.filter((w) => {
+    const wDate = new Date(w.timestamp);
+    if (isNaN(wDate.getTime())) return false;
+
+    switch (timeframe) {
+      case 'today':
+        return isSameDay(wDate, referenceDate);
+      case 'week':
+        return isSameWeek(wDate, referenceDate);
+      case 'month':
+        return isSameMonth(wDate, referenceDate);
       case 'all':
       default:
         return true;

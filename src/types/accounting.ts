@@ -85,6 +85,23 @@ export interface ExpenseRecord {
   timestamp: string; // ISO string
 }
 
+export type WasteReason = 'quemado' | 'caida' | 'caducidad' | 'error_comanda' | 'merma_corte' | 'otro';
+
+export interface WasteRecord {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemType: 'product' | 'ingredient';
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  totalCost: number;
+  reason: WasteReason;
+  notes?: string;
+  responsible?: string;
+  timestamp: string;
+}
+
 export interface PaymentBreakdown {
   efectivo: { count: number; total: number; percentage: number };
   tarjeta: { count: number; total: number; percentage: number };

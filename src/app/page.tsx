@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore, useCallback, useEffect } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig, BusinessInfo, RestaurantTableConfig } from '@/types/accounting';
+import { ProductItem, SaleRecord, ExpenseRecord, WasteRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig, BusinessInfo, RestaurantTableConfig } from '@/types/accounting';
 import { INITIAL_PRODUCTS, INITIAL_STOCK } from '@/data/initialProducts';
 import { DEFAULT_BUSINESS_INFO } from '@/data/initialBusinessInfo';
 import { INITIAL_TABLES } from '@/data/initialTables';
 import {
   filterSalesByTimeframe,
   filterExpensesByTimeframe,
+  filterWasteByTimeframe,
   getProductCountsByTimeframe,
   generateSampleSales,
   generateSampleExpenses,
@@ -38,6 +39,7 @@ import { HistorialComandasModal } from '@/components/HistorialComandasModal';
 import { DailyGoalTracker } from '@/components/DailyGoalTracker';
 import { PantallaCocinaModal } from '@/components/PantallaCocinaModal';
 import { MesasModal } from '@/components/MesasModal';
+import { MermasModal } from '@/components/MermasModal';
 import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModal';
 import { MiseEnPlaceModal } from '@/components/MiseEnPlaceModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
@@ -124,6 +126,16 @@ export default function SalesCounterPage() {
   const [isCalculadoraModalOpen, setIsCalculadoraModalOpen] = useState(false);
   const [isNuevaOrdenOpen, setIsNuevaOrdenOpen] = useState(false);
   const [isMesasModalOpen, setIsMesasModalOpen] = useState(false);
+  const [isMermasModalOpen, setIsMermasModalOpen] = useState(false);
+  const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('philly_fry_waste');
+      return saved !== null ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [tableForNewOrder, setTableForNewOrder] = useState<string | undefined>(undefined);
   const [editingOrderForTable, setEditingOrderForTable] = useState<CustomerOrder | null>(null);
   const [tables] = useState<RestaurantTableConfig[]>(INITIAL_TABLES);
@@ -508,6 +520,49 @@ export default function SalesCounterPage() {
     showToast('✓ Gasto eliminado de la contabilidad.');
   };
 
+  // Kitchen Waste & Spoilage Handlers
+  const handleSaveWaste = (records: WasteRecord[]) => {
+    setWasteRecords(records);
+    try {
+      localStorage.setItem('philly_fry_waste', JSON.stringify(records));
+    } catch (e) {
+      console.error('Failed to save waste to localStorage', e);
+    }
+  };
+
+  const handleAddWasteRecord = (record: WasteRecord, deductStock: boolean) => {
+    const updated = [record, ...wasteRecords];
+    handleSaveWaste(updated);
+
+    if (deductStock && record.itemType === 'product') {
+      setStockMap((prev) => {
+        const prodStock = prev[record.itemId];
+        if (prodStock && prodStock.trackStock) {
+          const next = {
+            ...prev,
+            [record.itemId]: {
+              ...prodStock,
+              currentStock: Math.max(0, prodStock.currentStock - record.quantity),
+            },
+          };
+          try {
+            localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+          } catch {}
+          return next;
+        }
+        return prev;
+      });
+    }
+
+    showToast(`✓ Merma de ${record.quantity} ${record.unit} de ${record.itemName} registrada (-$${record.totalCost.toFixed(2)}).`);
+  };
+
+  const handleDeleteWasteRecord = (id: string) => {
+    const updated = wasteRecords.filter((w) => w.id !== id);
+    handleSaveWaste(updated);
+    showToast('✓ Registro de merma eliminado.');
+  };
+
   // Complete Customer Order (Comanda)
   const handleCompleteOrder = (order: CustomerOrder) => {
     const newSales: SaleRecord[] = [];
@@ -707,9 +762,11 @@ export default function SalesCounterPage() {
   const handleConfirmZeroOut = () => {
     handleSaveSales([]);
     handleSaveExpenses([]);
+    handleSaveWaste([]);
     setOrders([]);
     try {
       localStorage.removeItem('philly_fry_orders');
+      localStorage.removeItem('philly_fry_waste');
     } catch {}
     setOrderCounter(1);
     try {
@@ -821,6 +878,12 @@ export default function SalesCounterPage() {
         return;
       }
 
+      if (e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        setIsMermasModalOpen(true);
+        return;
+      }
+
       if (e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsCalculadoraModalOpen(true);
@@ -901,6 +964,16 @@ export default function SalesCounterPage() {
   const totalExpensesInTimeframe = useMemo(() => {
     return filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   }, [filteredExpenses]);
+
+  // Filter kitchen waste for the selected timeframe
+  const filteredWaste = useMemo(() => {
+    if (!currentDate) return [];
+    return filterWasteByTimeframe(wasteRecords, timeframe, currentDate);
+  }, [wasteRecords, timeframe, currentDate]);
+
+  const totalWasteInTimeframe = useMemo(() => {
+    return filteredWaste.reduce((acc, curr) => acc + curr.totalCost, 0);
+  }, [filteredWaste]);
 
   // Filter orders for the selected timeframe (used for tip aggregation)
   const filteredOrders = useMemo(() => {
@@ -1098,11 +1171,13 @@ export default function SalesCounterPage() {
             sales={filteredSales}
             products={products}
             totalExpenses={totalExpensesInTimeframe}
+            totalWasteCost={totalWasteInTimeframe}
             startingCash={startingCash}
             onLoadSample={handleLoadSample}
             onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
             onOpenGastos={() => setIsGastosModalOpen(true)}
             onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
+            onOpenMermas={() => setIsMermasModalOpen(true)}
             onOpenCorte={() => setIsCorteModalOpen(true)}
             onExportCSV={handleExportPeriodCSV}
           />
@@ -1445,6 +1520,21 @@ export default function SalesCounterPage() {
         onAddExpense={handleAddExpense}
         onDeleteExpense={handleDeleteExpense}
       />
+
+      {/* Mermas y Desperdicios de Cocina Modal */}
+      {isMermasModalOpen && (
+        <MermasModal
+          isOpen={isMermasModalOpen}
+          onClose={() => setIsMermasModalOpen(false)}
+          wasteRecords={filteredWaste}
+          products={products}
+          stockMap={stockMap}
+          businessInfo={businessInfo}
+          onAddWasteRecord={handleAddWasteRecord}
+          onDeleteWasteRecord={handleDeleteWasteRecord}
+          totalRevenue={todayRevenue}
+        />
+      )}
 
       {/* Calculadora de Cambio Modal */}
       <CalculadoraCambioModal

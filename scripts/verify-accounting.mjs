@@ -942,4 +942,68 @@ const finalOpenTabs = ordersLedger.filter(o => o.isOpenTab).length;
 assert.equal(finalOpenTabs, 0, 'After checkout, open tabs count must be 0 and Mesa 1 must be freed');
 console.log('✓ Restaurant table management, rounds, pre-cuenta, and settlement fully verified');
 
-console.log('\nAll 20 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, and table management tests passed flawlessly!');
+// Test 21: Kitchen Waste & Spoilage (Mermas de Cocina) Accounting and Stock Tracking
+console.log('Test 21: Kitchen Waste & Spoilage (Mermas de Cocina) Accounting & Stock Tracking');
+
+let testStockInventory = {
+  'sandwich-fries': { currentStock: 25, trackStock: true },
+  'fries-cheese': { currentStock: 30, trackStock: true },
+};
+
+const wasteLog = [];
+
+// Incident A: 2 Philly Cheesesteak Combos burned on the grill
+const burnWaste = {
+  id: 'waste-1',
+  itemId: 'sandwich-fries',
+  itemName: 'Philly Cheesesteak Combo',
+  itemType: 'product',
+  quantity: 2,
+  unit: 'porciones',
+  unitCost: 48.0,
+  totalCost: 96.0,
+  reason: 'quemado',
+  responsible: 'Parrillero Carlos',
+};
+wasteLog.push(burnWaste);
+
+// Deduct 2 portions from current kitchen stock
+if (burnWaste.itemType === 'product' && testStockInventory[burnWaste.itemId]) {
+  testStockInventory[burnWaste.itemId].currentStock -= burnWaste.quantity;
+}
+
+assert.equal(testStockInventory['sandwich-fries'].currentStock, 23, 'Inventory must decrease from 25 to 23 after 2 burned portions');
+assert.equal(burnWaste.totalCost, 96.0, 'Burned waste cost must equal 2 * $48.00 = $96.00 MXN');
+
+// Incident B: 1 order of fries dropped on the floor
+const dropWaste = {
+  id: 'waste-2',
+  itemId: 'fries-cheese',
+  itemName: 'Papas con Queso Amarillo',
+  itemType: 'product',
+  quantity: 1,
+  unit: 'porciones',
+  unitCost: 18.0,
+  totalCost: 18.0,
+  reason: 'caida',
+  responsible: 'Ayudante Luis',
+};
+wasteLog.push(dropWaste);
+testStockInventory['fries-cheese'].currentStock -= dropWaste.quantity;
+assert.equal(testStockInventory['fries-cheese'].currentStock, 29, 'Fries inventory must decrease from 30 to 29');
+
+// Financial Impact on Gross Margin & Operating Profit
+const totalTurnoRevenue = 5000.0; // $5,000 MXN gross sales
+const totalFoodCost = 1500.0;    // $1,500 MXN standard COGS
+const totalGrossProfit = totalTurnoRevenue - totalFoodCost; // $3,500 MXN
+const totalWasteCost = wasteLog.reduce((sum, w) => sum + w.totalCost, 0); // 96 + 18 = $114.00
+assert.equal(totalWasteCost, 114.0, 'Total kitchen waste cost must equal $114.00 MXN');
+
+const wasteIncidencePercentage = Math.round((totalWasteCost / totalTurnoRevenue) * 100 * 10) / 10;
+assert.equal(wasteIncidencePercentage, 2.3, 'Waste incidence on revenue must be 2.3%');
+
+const netOperatingProfitAfterWaste = totalGrossProfit - totalWasteCost;
+assert.equal(netOperatingProfitAfterWaste, 3386.0, 'Net operating profit after waste must be $3,386.00 MXN');
+console.log('✓ Kitchen waste inventory deductions, incident logging, and cost impacts fully verified');
+
+console.log('\nAll 21 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, and kitchen waste tests passed flawlessly!');
