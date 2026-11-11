@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem } from '@/types/accounting';
+import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, ProductStockConfig } from '@/types/accounting';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   X,
@@ -22,6 +22,7 @@ interface NuevaOrdenModalProps {
   onClose: () => void;
   products: ProductItem[];
   nextOrderNumber: number;
+  stockMap?: Record<string, ProductStockConfig>;
   onCompleteOrder: (order: CustomerOrder) => void;
 }
 
@@ -58,6 +59,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   onClose,
   products,
   nextOrderNumber,
+  stockMap,
   onCompleteOrder,
 }) => {
   const [orderType, setOrderType] = useState<'aqui' | 'llevar'>('llevar');
@@ -73,6 +75,14 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   if (!isOpen) return null;
 
   const handleAddItem = (productId: string) => {
+    const stock = stockMap?.[productId];
+    if (stock?.trackStock) {
+      const currentInCart = cart[productId] || 0;
+      if (currentInCart >= stock.currentStock) {
+        triggerHaptic('medium');
+        return;
+      }
+    }
     triggerHaptic('light');
     setCart((prev) => ({
       ...prev,
@@ -223,18 +233,35 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2">
               {filteredProducts.map((product) => {
                 const inCartQty = cart[product.id] || 0;
+                const stock = stockMap?.[product.id];
+                const isExhausted = stock?.trackStock && stock.currentStock <= 0;
+                const isMaxReached = stock?.trackStock && inCartQty >= stock.currentStock;
+
                 return (
                   <div
                     key={product.id}
                     className={`flex items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-all ${
                       inCartQty > 0
                         ? 'bg-[#e59b38]/10 border-[#e59b38]/40 shadow-sm'
+                        : isExhausted
+                        ? 'bg-neutral-900/60 border-white/[0.04] opacity-60'
                         : 'bg-[#18181c] border-white/[0.06] hover:border-white/20'
                     }`}
                   >
                     <div className="flex-1 pr-2">
-                      <div className="font-semibold text-xs sm:text-sm text-white leading-tight">
-                        {product.name}
+                      <div className="font-semibold text-xs sm:text-sm text-white leading-tight flex items-center gap-2">
+                        <span>{product.name}</span>
+                        {stock?.trackStock && (
+                          isExhausted ? (
+                            <span className="text-[10px] text-rose-400 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30">
+                              Agotado
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-neutral-400 font-mono">
+                              ({stock.currentStock} disp.)
+                            </span>
+                          )
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-[11px]">
                         <span className="text-[#e59b38] font-medium">{product.variantLabel}</span>
@@ -259,7 +286,12 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleAddItem(product.id)}
-                            className="w-8 h-8 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] flex items-center justify-center text-black font-bold active:scale-95 transition-all shadow-sm"
+                            disabled={isMaxReached}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold active:scale-95 transition-all shadow-sm ${
+                              isMaxReached
+                                ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                                : 'bg-[#e59b38] hover:bg-[#d48b28] text-black'
+                            }`}
                           >
                             <Plus className="w-3.5 h-3.5" />
                           </button>
@@ -268,7 +300,12 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleAddItem(product.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-neutral-300 hover:text-white transition-all active:scale-95"
+                          disabled={isExhausted}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all active:scale-95 ${
+                            isExhausted
+                              ? 'bg-transparent border-white/5 text-neutral-600 cursor-not-allowed'
+                              : 'bg-white/5 hover:bg-white/10 border-white/10 text-neutral-300 hover:text-white'
+                          }`}
                         >
                           <Plus className="w-3.5 h-3.5 text-[#e59b38]" />
                           <span>Agregar</span>

@@ -140,3 +140,11 @@ export interface ProductPerformance {
   percentageOfRevenue: number;
   margin: number | null;
 }
+
+export interface ProductStockConfig {
+  productId: string;
+  currentStock: number;
+  initialStock: number;
+  lowStockThreshold: number;
+  trackStock: boolean;
+}

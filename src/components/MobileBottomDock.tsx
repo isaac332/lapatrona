@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -16,6 +16,9 @@ interface MobileBottomDockProps {
   onOpenNuevaOrden: () => void;
   onOpenHistorialCortes?: () => void;
   onOpenAtajos?: () => void;
+  onOpenStockManager?: () => void;
+  onOpenHistorialComandas?: () => void;
+  lowStockCount?: number;
   totalUnitsInTimeframe: number;
 }
 
@@ -29,6 +32,9 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenGastos,
   onOpenCalculadora,
   onOpenNuevaOrden,
+  onOpenStockManager,
+  onOpenHistorialComandas,
+  lowStockCount = 0,
   totalUnitsInTimeframe,
 }) => {
   const tabs: { id: TimeframeFilter; label: string; icon: React.FC<{ className?: string }> }[] = [
@@ -78,6 +84,39 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             <ShoppingBag className="w-4 h-4 text-black" />
             <span className="text-[7.5px] font-black uppercase mt-0.5">+Orden</span>
           </button>
+
+          {onOpenHistorialComandas && (
+            <button
+              onClick={onOpenHistorialComandas}
+              aria-label="Historial de comandas"
+              title="Buscar y reimprimir notas de consumo"
+              className="w-10 h-10 rounded-xl bg-white/[0.04] active:bg-white/[0.1] border border-white/[0.08] flex flex-col items-center justify-center text-neutral-300 active:scale-95 touch-manipulation select-none shrink-0"
+            >
+              <FileSearch className="w-4 h-4 text-[#e59b38]" />
+              <span className="text-[7.5px] uppercase mt-0.5">Notas</span>
+            </button>
+          )}
+
+          {onOpenStockManager && (
+            <button
+              onClick={onOpenStockManager}
+              aria-label="Control de stock"
+              title="Control de Porciones"
+              className={`w-10 h-10 rounded-xl border flex flex-col items-center justify-center active:scale-95 touch-manipulation select-none shrink-0 relative ${
+                lowStockCount > 0
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                  : 'bg-white/[0.04] active:bg-white/[0.1] border-white/[0.08] text-neutral-300'
+              }`}
+            >
+              <Package className="w-4 h-4 text-[#e59b38]" />
+              <span className="text-[7.5px] uppercase mt-0.5">Stock</span>
+              {lowStockCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-black text-[8px] font-black flex items-center justify-center font-mono">
+                  {lowStockCount}
+                </span>
+              )}
+            </button>
+          )}
 
           <button
             onClick={onOpenCorte}

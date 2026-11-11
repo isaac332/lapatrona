@@ -610,4 +610,54 @@ assert.equal(changeCalculated, 477, 'Change from $1,000 on $523 order must be $4
 
 console.log('✓ Order tip calculation, food subtotal, and cash change verified');
 
-console.log('\nAll 12 accounting verification tests passed flawlessly!');
+// Test 13: Daily Stock Tracking, Sales Deduction, Low-Stock Threshold & Exhaustion
+console.log('Test 13: Daily Stock Tracking, Sales Deduction, Low-Stock Threshold & Exhaustion');
+const initialStockState = {
+  'sandwich-alone': { currentStock: 10, lowStockThreshold: 3, trackStock: true },
+  'steak-frites': { currentStock: 2, lowStockThreshold: 3, trackStock: true },
+  'fries-alone': { currentStock: 50, lowStockThreshold: 8, trackStock: false },
+};
+
+function deductStock(stockState, productId, quantity) {
+  const item = stockState[productId];
+  if (!item || !item.trackStock) return stockState;
+  return {
+    ...stockState,
+    [productId]: {
+      ...item,
+      currentStock: Math.max(0, item.currentStock - quantity),
+    },
+  };
+}
+
+function getStockStatus(item) {
+  if (!item.trackStock) return 'untracked';
+  if (item.currentStock <= 0) return 'exhausted';
+  if (item.currentStock <= item.lowStockThreshold) return 'low';
+  return 'healthy';
+}
+
+// 1. Initial healthy check
+assert.equal(getStockStatus(initialStockState['sandwich-alone']), 'healthy');
+// 2. Initial low check (2 <= 3)
+assert.equal(getStockStatus(initialStockState['steak-frites']), 'low');
+// 3. Untracked
+assert.equal(getStockStatus(initialStockState['fries-alone']), 'untracked');
+
+// Deduct 8 from sandwich-alone -> 2 remaining -> 'low'
+let updatedStock = deductStock(initialStockState, 'sandwich-alone', 8);
+assert.equal(updatedStock['sandwich-alone'].currentStock, 2);
+assert.equal(getStockStatus(updatedStock['sandwich-alone']), 'low');
+
+// Deduct 2 more -> 0 remaining -> 'exhausted'
+updatedStock = deductStock(updatedStock, 'sandwich-alone', 2);
+assert.equal(updatedStock['sandwich-alone'].currentStock, 0);
+assert.equal(getStockStatus(updatedStock['sandwich-alone']), 'exhausted');
+
+// Deducting further cannot drop below 0
+updatedStock = deductStock(updatedStock, 'sandwich-alone', 5);
+assert.equal(updatedStock['sandwich-alone'].currentStock, 0);
+
+console.log('✓ Stock deduction, boundary limits, and low/exhausted thresholds verified');
+
+console.log('\nAll 13 accounting and POS verification tests passed flawlessly!');

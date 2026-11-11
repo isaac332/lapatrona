@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore, useCallback, useEffect } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord } from '@/types/accounting';
-import { INITIAL_PRODUCTS } from '@/data/initialProducts';
+import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig } from '@/types/accounting';
+import { INITIAL_PRODUCTS, INITIAL_STOCK } from '@/data/initialProducts';
 import {
   filterSalesByTimeframe,
   filterExpensesByTimeframe,
@@ -30,6 +30,8 @@ import { NuevaOrdenModal } from '@/components/NuevaOrdenModal';
 import { TicketComandaModal } from '@/components/TicketComandaModal';
 import { HistorialCortesModal } from '@/components/HistorialCortesModal';
 import { AtajosTecladoModal } from '@/components/AtajosTecladoModal';
+import { StockManagerModal } from '@/components/StockManagerModal';
+import { HistorialComandasModal } from '@/components/HistorialComandasModal';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -161,6 +163,19 @@ export default function SalesCounterPage() {
   });
   const [isHistorialCortesOpen, setIsHistorialCortesOpen] = useState(false);
   const [isAtajosModalOpen, setIsAtajosModalOpen] = useState(false);
+  const [stockMap, setStockMap] = useState<Record<string, ProductStockConfig>>(() => {
+    if (typeof window === 'undefined') return INITIAL_STOCK;
+    try {
+      const saved = localStorage.getItem('philly_fry_stock');
+      if (!saved) return INITIAL_STOCK;
+      const parsed = JSON.parse(saved);
+      return { ...INITIAL_STOCK, ...parsed };
+    } catch {
+      return INITIAL_STOCK;
+    }
+  });
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [isHistorialComandasOpen, setIsHistorialComandasOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -241,10 +256,63 @@ export default function SalesCounterPage() {
     }
   };
 
+  const handleSaveStock = useCallback((updatedStock: Record<string, ProductStockConfig>) => {
+    setStockMap(updatedStock);
+    try {
+      localStorage.setItem('philly_fry_stock', JSON.stringify(updatedStock));
+    } catch (e) {
+      console.error('Failed to save stock to localStorage', e);
+    }
+  }, []);
+
+  const handleUpdateStockQuantity = (productId: string, newStock: number) => {
+    const current = stockMap[productId] || INITIAL_STOCK[productId];
+    if (!current) return;
+    const updated = {
+      ...stockMap,
+      [productId]: { ...current, currentStock: newStock },
+    };
+    handleSaveStock(updated);
+  };
+
+  const handleAddStock = (productId: string, amount: number) => {
+    const current = stockMap[productId] || INITIAL_STOCK[productId];
+    if (!current) return;
+    const updated = {
+      ...stockMap,
+      [productId]: { ...current, currentStock: current.currentStock + amount },
+    };
+    handleSaveStock(updated);
+    const prod = products.find((p) => p.id === productId);
+    showToast(`✓ +${amount} porciones agregadas a ${prod?.name || 'producto'}.`);
+  };
+
+  const handleToggleTrackStock = (productId: string) => {
+    const current = stockMap[productId] || INITIAL_STOCK[productId];
+    if (!current) return;
+    const updated = {
+      ...stockMap,
+      [productId]: { ...current, trackStock: !current.trackStock },
+    };
+    handleSaveStock(updated);
+  };
+
+  const handleResetAllStock = useCallback(() => {
+    handleSaveStock(INITIAL_STOCK);
+    showToast('✓ Porciones de turno reiniciadas a valores de apertura.');
+  }, [handleSaveStock]);
+
   // Increment product sales tally
   const handleIncrement = useCallback((productId: string, amount: number = 1) => {
     const targetProduct = products.find((p) => p.id === productId);
     if (!targetProduct) return;
+
+    // Check available stock
+    const currentStockConfig = stockMap[productId];
+    if (currentStockConfig?.trackStock && currentStockConfig.currentStock <= 0) {
+      showToast(`⚠ Agotado: No hay porciones disponibles de ${targetProduct.name}.`);
+      return;
+    }
 
     const newRecords: SaleRecord[] = [];
     const now = new Date().toISOString();
@@ -270,7 +338,26 @@ export default function SalesCounterPage() {
       }
       return updated;
     });
-  }, [products, selectedPaymentMethod]);
+
+    // Deduct stock if tracked
+    if (currentStockConfig?.trackStock) {
+      setStockMap((prev) => {
+        const prodStock = prev[productId];
+        if (!prodStock) return prev;
+        const next = {
+          ...prev,
+          [productId]: {
+            ...prodStock,
+            currentStock: Math.max(0, prodStock.currentStock - amount),
+          },
+        };
+        try {
+          localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    }
+  }, [products, selectedPaymentMethod, stockMap]);
 
   // Update payment method of a past sale (from audit ledger)
   const handleUpdateSalePaymentMethod = (saleId: string, newMethod: PaymentMethod) => {
@@ -363,6 +450,29 @@ export default function SalesCounterPage() {
       }
       return nextOrders;
     });
+
+    // Deduct stock for items in this comanda
+    setStockMap((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const item of order.items) {
+        const prodStock = next[item.productId];
+        if (prodStock && prodStock.trackStock) {
+          next[item.productId] = {
+            ...prodStock,
+            currentStock: Math.max(0, prodStock.currentStock - item.quantity),
+          };
+          changed = true;
+        }
+      }
+      if (changed) {
+        try {
+          localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+        } catch {}
+      }
+      return changed ? next : prev;
+    });
+
     setOrderCounter((prev) => {
       const next = prev + 1;
       try {
@@ -387,6 +497,7 @@ export default function SalesCounterPage() {
     try {
       localStorage.setItem('philly_fry_order_counter', '1');
     } catch {}
+    handleResetAllStock();
     showToast('✓ Contabilidad reiniciada en ceros exitosamente.');
   };
 
@@ -424,6 +535,8 @@ export default function SalesCounterPage() {
         setIsTicketComandaOpen(false);
         setIsHistorialCortesOpen(false);
         setIsAtajosModalOpen(false);
+        setIsStockModalOpen(false);
+        setIsHistorialComandasOpen(false);
         return;
       }
 
@@ -437,7 +550,9 @@ export default function SalesCounterPage() {
         isNuevaOrdenOpen ||
         isTicketComandaOpen ||
         isHistorialCortesOpen ||
-        isAtajosModalOpen;
+        isAtajosModalOpen ||
+        isStockModalOpen ||
+        isHistorialComandasOpen;
 
       if (isAnyModalOpen) return;
 
@@ -455,6 +570,18 @@ export default function SalesCounterPage() {
       if (e.key === ' ' || e.key.toLowerCase() === 'o' || e.key.toLowerCase() === 'n') {
         e.preventDefault();
         setIsNuevaOrdenOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsHistorialComandasOpen(true);
+        return;
+      }
+
+      if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setIsStockModalOpen(true);
         return;
       }
 
@@ -510,6 +637,8 @@ export default function SalesCounterPage() {
     isTicketComandaOpen,
     isHistorialCortesOpen,
     isAtajosModalOpen,
+    isStockModalOpen,
+    isHistorialComandasOpen,
   ]);
 
   // Filter sales for the selected timeframe
@@ -564,6 +693,12 @@ export default function SalesCounterPage() {
   const totalTipsInTimeframe = useMemo(() => {
     return filteredOrders.reduce((sum, o) => sum + (o.tip || 0), 0);
   }, [filteredOrders]);
+
+  const lowStockCount = useMemo(() => {
+    return Object.values(stockMap).filter((item) => {
+      return item.trackStock && item.currentStock <= item.lowStockThreshold;
+    }).length;
+  }, [stockMap]);
 
   // Overall counts for Today (used in Hero banner and Daily Granular view)
   const todaySales = useMemo(() => {
@@ -665,6 +800,9 @@ export default function SalesCounterPage() {
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
+        onOpenStockManager={() => setIsStockModalOpen(true)}
+        onOpenHistorialComandas={() => setIsHistorialComandasOpen(true)}
+        lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -799,6 +937,7 @@ export default function SalesCounterPage() {
                     counts={counts}
                     timeframe={timeframe}
                     shortcutKey={shortcutIndex !== -1 && shortcutIndex < 9 ? String(shortcutIndex + 1) : undefined}
+                    stockConfig={stockMap[product.id]}
                     onIncrement={handleIncrement}
                     onDecrement={handleDecrement}
                     onUpdatePrice={handleUpdateProductPrice}
@@ -944,6 +1083,9 @@ export default function SalesCounterPage() {
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
+        onOpenStockManager={() => setIsStockModalOpen(true)}
+        onOpenHistorialComandas={() => setIsHistorialComandasOpen(true)}
+        lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -1026,6 +1168,7 @@ export default function SalesCounterPage() {
         onClose={() => setIsNuevaOrdenOpen(false)}
         products={products}
         nextOrderNumber={orderCounter}
+        stockMap={stockMap}
         onCompleteOrder={handleCompleteOrder}
       />
 
@@ -1035,6 +1178,25 @@ export default function SalesCounterPage() {
         onClose={() => setIsTicketComandaOpen(false)}
         order={activeTicketOrder}
         onNewOrder={() => setIsNuevaOrdenOpen(true)}
+      />
+
+      {/* Control de Stock y Porciones Modal */}
+      <StockManagerModal
+        isOpen={isStockModalOpen}
+        onClose={() => setIsStockModalOpen(false)}
+        products={products}
+        stockMap={stockMap}
+        onUpdateStock={handleUpdateStockQuantity}
+        onAddStock={handleAddStock}
+        onToggleTrackStock={handleToggleTrackStock}
+        onResetAllStock={handleResetAllStock}
+      />
+
+      {/* Historial y Reimpresión de Comandas Modal */}
+      <HistorialComandasModal
+        isOpen={isHistorialComandasOpen}
+        onClose={() => setIsHistorialComandasOpen(false)}
+        orders={orders}
       />
 
       {/* Atajos de Teclado POS Guía Modal */}

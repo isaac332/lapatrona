@@ -2,7 +2,7 @@
 
 import React, { useEffect, useSyncExternalStore } from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag, WifiOff, FileText, Keyboard, Package } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
@@ -29,6 +29,9 @@ interface NavbarProps {
   onOpenNuevaOrden: () => void;
   onOpenHistorialCortes?: () => void;
   onOpenAtajos?: () => void;
+  onOpenStockManager?: () => void;
+  onOpenHistorialComandas?: () => void;
+  lowStockCount?: number;
   totalUnitsInTimeframe: number;
 }
 
@@ -44,6 +47,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNuevaOrden,
   onOpenHistorialCortes,
   onOpenAtajos,
+  onOpenStockManager,
+  onOpenHistorialComandas,
+  lowStockCount = 0,
   totalUnitsInTimeframe,
 }) => {
   const isOnline = useSyncExternalStore(subscribeOnline, getOnlineSnapshot, getOnlineServerSnapshot);
@@ -124,6 +130,39 @@ export const Navbar: React.FC<NavbarProps> = ({
             <ShoppingBag className="w-3.5 h-3.5 text-black" />
             <span>+ Armar Comanda</span>
           </button>
+
+          {/* HISTORIAL Y BUSCADOR DE COMANDAS BUTTON */}
+          {onOpenHistorialComandas && (
+            <button
+              onClick={onOpenHistorialComandas}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-neutral-300 hover:text-white hover:bg-white/[0.06] border border-white/[0.08] transition-all shadow-sm active:scale-95"
+              title="Buscar y reimprimir notas de consumo anteriores por folio o cliente"
+            >
+              <Receipt className="w-3.5 h-3.5 text-[#e59b38]" />
+              <span>Comandas</span>
+            </button>
+          )}
+
+          {/* CONTROL DE STOCK Y PORCIONES BUTTON */}
+          {onOpenStockManager && (
+            <button
+              onClick={onOpenStockManager}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold border transition-all shadow-sm active:scale-95 ${
+                lowStockCount > 0
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25 animate-pulse'
+                  : 'text-neutral-300 hover:text-white hover:bg-white/[0.06] border-white/[0.08]'
+              }`}
+              title="Control de porciones e inventario de cocina"
+            >
+              <Package className="w-3.5 h-3.5 text-[#e59b38]" />
+              <span>Porciones</span>
+              {lowStockCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-amber-500 text-black text-[9px] font-black flex items-center justify-center font-mono">
+                  {lowStockCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* CORTE DE CAJA BUTTON */}
           <button

@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { ProductItem, TimeframeFilter } from '@/types/accounting';
+import { ProductItem, TimeframeFilter, ProductStockConfig } from '@/types/accounting';
 import { triggerHaptic } from '@/utils/haptics';
-import { Plus, Minus, Pencil, Check, X } from 'lucide-react';
+import { Plus, Minus, Pencil, Check, X, AlertCircle, AlertTriangle } from 'lucide-react';
 
 interface ProductCardProps {
   product: ProductItem;
@@ -16,6 +16,7 @@ interface ProductCardProps {
   };
   timeframe: TimeframeFilter;
   shortcutKey?: string;
+  stockConfig?: ProductStockConfig;
   onIncrement: (productId: string, amount: number) => void;
   onDecrement: (productId: string, amount: number) => void;
   onUpdatePrice: (productId: string, newPrice: number) => void;
@@ -26,6 +27,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   counts,
   timeframe,
   shortcutKey,
+  stockConfig,
   onIncrement,
   onDecrement,
   onUpdatePrice,
@@ -38,6 +40,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const activeCount = counts[timeframe];
   const subtotal = activeCount * product.defaultPrice;
+
+  const isStockTracked = stockConfig?.trackStock ?? false;
+  const currentStock = stockConfig?.currentStock ?? 999;
+  const isExhausted = isStockTracked && currentStock <= 0;
+  const isLowStock = isStockTracked && currentStock > 0 && currentStock <= (stockConfig?.lowStockThreshold ?? 5);
 
   // Focus and select input when entering edit mode
   useEffect(() => {
@@ -221,9 +228,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Category Label */}
-        <div className="absolute bottom-2 left-3 sm:left-4 text-[9px] sm:text-[10px] tracking-widest uppercase font-semibold text-neutral-400">
-          {categoryNameMap[product.category] || product.category}
+        {/* Category Label and Stock Status Badge */}
+        <div className="absolute bottom-2 left-3 sm:left-4 right-3 flex items-center justify-between z-10">
+          <div className="text-[9px] sm:text-[10px] tracking-widest uppercase font-semibold text-neutral-400">
+            {categoryNameMap[product.category] || product.category}
+          </div>
+
+          {isStockTracked && (
+            <div>
+              {isExhausted ? (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40 backdrop-blur-md">
+                  <AlertCircle className="w-3 h-3" /> AGOTADO
+                </span>
+              ) : isLowStock ? (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40 backdrop-blur-md animate-pulse">
+                  <AlertTriangle className="w-3 h-3" /> Quedan {currentStock}
+                </span>
+              ) : (
+                <span className="text-[10px] text-neutral-400 font-mono bg-black/60 px-2 py-0.5 rounded-full border border-white/10 backdrop-blur-md">
+                  {currentStock} disp.
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -320,27 +347,48 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Minus className="w-5 h-5" />
             </button>
 
-            <button
-              onClick={() => handleIncrement(1)}
-              aria-label={`Registrar venta de ${product.name}`}
-              className="flex-[2.2] h-12 flex items-center justify-center gap-2 rounded-xl bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold text-sm uppercase tracking-wider shadow-lg active:scale-95 transition-all duration-150 touch-manipulation select-none"
-            >
-              <Plus className="w-5 h-5 stroke-[3]" />
-              <span>+1 Venta</span>
-            </button>
+            {isExhausted ? (
+              <button
+                disabled
+                aria-label={`Producto agotado: ${product.name}`}
+                className="flex-[2.2] h-12 flex items-center justify-center gap-2 rounded-xl bg-neutral-800/80 text-neutral-500 font-extrabold text-sm uppercase tracking-wider border border-white/10 cursor-not-allowed select-none"
+              >
+                <AlertCircle className="w-4 h-4 text-rose-400" />
+                <span>Agotado</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleIncrement(1)}
+                aria-label={`Registrar venta de ${product.name}`}
+                className="flex-[2.2] h-12 flex items-center justify-center gap-2 rounded-xl bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold text-sm uppercase tracking-wider shadow-lg active:scale-95 transition-all duration-150 touch-manipulation select-none"
+              >
+                <Plus className="w-5 h-5 stroke-[3]" />
+                <span>+1 Venta</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Increment Chips (+5 Rush and +10 Bulk) */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleIncrement(5)}
-              className="flex-1 py-2 sm:py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] active:bg-white/[0.08] text-neutral-300 active:text-white text-xs font-mono font-medium transition-colors touch-manipulation select-none active:scale-95"
+              disabled={isExhausted}
+              className={`flex-1 py-2 sm:py-1.5 rounded-lg border border-white/[0.08] text-xs font-mono font-medium transition-colors touch-manipulation select-none active:scale-95 ${
+                isExhausted
+                  ? 'bg-transparent text-neutral-600 border-white/[0.04] cursor-not-allowed'
+                  : 'bg-white/[0.03] active:bg-white/[0.08] text-neutral-300 active:text-white'
+              }`}
             >
               +5 Racha
             </button>
             <button
               onClick={() => handleIncrement(10)}
-              className="flex-1 py-2 sm:py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] active:bg-white/[0.08] text-neutral-300 active:text-white text-xs font-mono font-medium transition-colors touch-manipulation select-none active:scale-95"
+              disabled={isExhausted}
+              className={`flex-1 py-2 sm:py-1.5 rounded-lg border border-white/[0.08] text-xs font-mono font-medium transition-colors touch-manipulation select-none active:scale-95 ${
+                isExhausted
+                  ? 'bg-transparent text-neutral-600 border-white/[0.04] cursor-not-allowed'
+                  : 'bg-white/[0.03] active:bg-white/[0.08] text-neutral-300 active:text-white'
+              }`}
             >
               +10 Lote
             </button>

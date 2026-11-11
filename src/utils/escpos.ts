@@ -60,6 +60,12 @@ export function generateOrderThermalText(order: CustomerOrder): string {
   return lines.join('\n');
 }
 
+export function formatCurrencyMXN(val: number): string {
+  return `$${val.toFixed(2)} MXN`;
+}
+
+export const generateEscPosComandaTicket = generateOrderThermalText;
+
 export function generateShiftThermalText(shift: ClosedShiftRecord): string {
   const line = '--------------------------------';
   const lines: string[] = [

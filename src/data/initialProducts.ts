@@ -1,4 +1,56 @@
-import { ProductItem } from '@/types/accounting';
+import { ProductItem, ProductStockConfig } from '@/types/accounting';
+
+export const INITIAL_STOCK: Record<string, ProductStockConfig> = {
+  'sandwich-alone': {
+    productId: 'sandwich-alone',
+    currentStock: 30,
+    initialStock: 30,
+    lowStockThreshold: 5,
+    trackStock: true,
+  },
+  'sandwich-fries': {
+    productId: 'sandwich-fries',
+    currentStock: 30,
+    initialStock: 30,
+    lowStockThreshold: 5,
+    trackStock: true,
+  },
+  'quesadilla-alone': {
+    productId: 'quesadilla-alone',
+    currentStock: 25,
+    initialStock: 25,
+    lowStockThreshold: 4,
+    trackStock: true,
+  },
+  'quesadilla-fries': {
+    productId: 'quesadilla-fries',
+    currentStock: 25,
+    initialStock: 25,
+    lowStockThreshold: 4,
+    trackStock: true,
+  },
+  'steak-frites': {
+    productId: 'steak-frites',
+    currentStock: 20,
+    initialStock: 20,
+    lowStockThreshold: 3,
+    trackStock: true,
+  },
+  'fries-alone': {
+    productId: 'fries-alone',
+    currentStock: 45,
+    initialStock: 45,
+    lowStockThreshold: 8,
+    trackStock: true,
+  },
+  'fries-cheese': {
+    productId: 'fries-cheese',
+    currentStock: 30,
+    initialStock: 30,
+    lowStockThreshold: 6,
+    trackStock: true,
+  },
+};
 
 export const INITIAL_PRODUCTS: ProductItem[] = [
   {
