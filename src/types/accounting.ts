@@ -21,6 +21,32 @@ export interface SaleRecord {
   unitPrice: number;
   unitCost: number;
   paymentMethod?: PaymentMethod;
+  orderId?: string;
+  orderNumber?: number;
+}
+
+export interface CustomerOrderItem {
+  productId: string;
+  productName: string;
+  variantLabel: string;
+  quantity: number;
+  unitPrice: number;
+  unitCost: number;
+  subtotal: number;
+}
+
+export interface CustomerOrder {
+  id: string;
+  orderNumber: number;
+  timestamp: string;
+  orderType: 'aqui' | 'llevar';
+  customerName?: string;
+  notes?: string;
+  items: CustomerOrderItem[];
+  total: number;
+  paymentMethod: PaymentMethod;
+  amountReceived?: number;
+  change?: number;
 }
 
 export interface ExpenseRecord {

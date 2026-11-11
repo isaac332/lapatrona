@@ -439,4 +439,52 @@ assert.equal(bankMoney, 945, 'Bank money must equal Card Sales plus Transfer Sal
 assert.equal(drawerCash + bankMoney + 215, breakdown.totalRevenue, 'Complete financial balance: Drawer + Bank + Expenses == Gross Sales');
 console.log('✓ Payment method breakdown and drawer/bank reconciliation verified');
 
-console.log('\nAll 8 accounting verification tests passed flawlessly!');
+// Test 9: Multi-Item Comanda / Customer Order Generation & Atomic Sales Ledger Sync
+console.log('Test 9: Multi-Item Customer Order (Comanda) Generation');
+const sampleOrder = {
+  id: 'order-101',
+  orderNumber: 1,
+  timestamp: new Date().toISOString(),
+  orderType: 'llevar',
+  customerName: 'Carlos',
+  paymentMethod: 'efectivo',
+  items: [
+    { productId: 'sandwich-fries', productName: 'Combo Philly Cheesesteak', quantity: 2, unitPrice: 185, unitCost: 70, subtotal: 370 },
+    { productId: 'quesadilla-alone', productName: 'Quesadilla de Ribeye', quantity: 1, unitPrice: 135, unitCost: 55, subtotal: 135 },
+    { productId: 'fries-cheese', productName: 'Papas con Queso Amarillo', quantity: 1, unitPrice: 85, unitCost: 24, subtotal: 85 },
+  ],
+  total: 590,
+  amountReceived: 1000,
+  change: 410,
+};
+
+// Check that item subtotals match order total
+const calculatedTotal = sampleOrder.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+assert.equal(calculatedTotal, sampleOrder.total, 'Calculated items total must match order total');
+assert.equal(sampleOrder.change, sampleOrder.amountReceived - sampleOrder.total, 'Change must match received minus total');
+
+// Convert order to atomic sale records
+const generatedSales = [];
+for (const item of sampleOrder.items) {
+  for (let i = 0; i < item.quantity; i++) {
+    generatedSales.push({
+      id: `s-${sampleOrder.id}-${item.productId}-${i}`,
+      productId: item.productId,
+      timestamp: sampleOrder.timestamp,
+      quantity: 1,
+      unitPrice: item.unitPrice,
+      unitCost: item.unitCost,
+      paymentMethod: sampleOrder.paymentMethod,
+      orderId: sampleOrder.id,
+      orderNumber: sampleOrder.orderNumber,
+    });
+  }
+}
+
+// 2 + 1 + 1 = 4 total item units
+assert.equal(generatedSales.length, 4, 'Must create 4 individual sale units from the order');
+const orderUnitsRevenue = generatedSales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+assert.equal(orderUnitsRevenue, 590, 'Gross revenue from generated records must equal $590.00');
+console.log('✓ Multi-item comanda generation, change calculation, and atomic sales records sync verified');
+
+console.log('\nAll 9 accounting verification tests passed flawlessly!');

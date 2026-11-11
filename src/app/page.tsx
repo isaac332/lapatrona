@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod } from '@/types/accounting';
+import { ProductItem, SaleRecord, ExpenseRecord, TimeframeFilter, PaymentMethod, CustomerOrder } from '@/types/accounting';
 import { INITIAL_PRODUCTS } from '@/data/initialProducts';
 import {
   filterSalesByTimeframe,
@@ -26,6 +26,8 @@ import { ZeroOutModal } from '@/components/ZeroOutModal';
 import { CorteDeCajaModal } from '@/components/CorteDeCajaModal';
 import { GastosModal } from '@/components/GastosModal';
 import { CalculadoraCambioModal } from '@/components/CalculadoraCambioModal';
+import { NuevaOrdenModal } from '@/components/NuevaOrdenModal';
+import { TicketComandaModal } from '@/components/TicketComandaModal';
 import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 const subscribe = () => () => {};
@@ -107,6 +109,18 @@ export default function SalesCounterPage() {
   const [isCorteModalOpen, setIsCorteModalOpen] = useState(false);
   const [isGastosModalOpen, setIsGastosModalOpen] = useState(false);
   const [isCalculadoraModalOpen, setIsCalculadoraModalOpen] = useState(false);
+  const [isNuevaOrdenOpen, setIsNuevaOrdenOpen] = useState(false);
+  const [isTicketComandaOpen, setIsTicketComandaOpen] = useState(false);
+  const [activeTicketOrder, setActiveTicketOrder] = useState<CustomerOrder | null>(null);
+  const [orderCounter, setOrderCounter] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    try {
+      const saved = localStorage.getItem('philly_fry_order_counter');
+      return saved !== null ? parseInt(saved, 10) : 1;
+    } catch {
+      return 1;
+    }
+  });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -236,10 +250,47 @@ export default function SalesCounterPage() {
     showToast('✓ Gasto eliminado de la contabilidad.');
   };
 
+  // Complete Customer Order (Comanda)
+  const handleCompleteOrder = (order: CustomerOrder) => {
+    const newSales: SaleRecord[] = [];
+    const now = new Date().toISOString();
+    for (const item of order.items) {
+      for (let i = 0; i < item.quantity; i++) {
+        newSales.push({
+          id: `sale-${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${item.productId}-${i}`,
+          productId: item.productId,
+          timestamp: now,
+          quantity: 1,
+          unitPrice: item.unitPrice,
+          unitCost: item.unitCost,
+          paymentMethod: order.paymentMethod,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+        });
+      }
+    }
+    const updated = [...newSales, ...sales];
+    handleSaveSales(updated);
+    setOrderCounter((prev) => {
+      const next = prev + 1;
+      try {
+        localStorage.setItem('philly_fry_order_counter', next.toString());
+      } catch {}
+      return next;
+    });
+    setActiveTicketOrder(order);
+    setIsTicketComandaOpen(true);
+    showToast(`✓ Comanda #${order.orderNumber} registrada ($${order.total.toFixed(2)} MXN).`);
+  };
+
   // ZERO OUT THE WHOLE ACCOUNTING
   const handleConfirmZeroOut = () => {
     handleSaveSales([]);
     handleSaveExpenses([]);
+    setOrderCounter(1);
+    try {
+      localStorage.setItem('philly_fry_order_counter', '1');
+    } catch {}
     showToast('✓ Contabilidad reiniciada en ceros exitosamente.');
   };
 
@@ -365,6 +416,7 @@ export default function SalesCounterPage() {
         onOpenCorte={() => setIsCorteModalOpen(true)}
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
+        onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -637,6 +689,7 @@ export default function SalesCounterPage() {
         onOpenCorte={() => setIsCorteModalOpen(true)}
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
+        onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
       />
 
@@ -698,6 +751,23 @@ export default function SalesCounterPage() {
       <CalculadoraCambioModal
         isOpen={isCalculadoraModalOpen}
         onClose={() => setIsCalculadoraModalOpen(false)}
+      />
+
+      {/* Armador de Comanda / Nueva Orden Modal */}
+      <NuevaOrdenModal
+        isOpen={isNuevaOrdenOpen}
+        onClose={() => setIsNuevaOrdenOpen(false)}
+        products={products}
+        nextOrderNumber={orderCounter}
+        onCompleteOrder={handleCompleteOrder}
+      />
+
+      {/* Ticket de Comanda / Nota de Consumo Modal */}
+      <TicketComandaModal
+        isOpen={isTicketComandaOpen}
+        onClose={() => setIsTicketComandaOpen(false)}
+        order={activeTicketOrder}
+        onNewOrder={() => setIsNuevaOrdenOpen(true)}
       />
     </div>
   );

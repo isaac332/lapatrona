@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator } from 'lucide-react';
+import { History, DollarSign, RotateCcw, Receipt, Wallet, Calculator, ShoppingBag } from 'lucide-react';
 
 interface NavbarProps {
   timeframe: TimeframeFilter;
@@ -13,6 +13,7 @@ interface NavbarProps {
   onOpenCorte: () => void;
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
+  onOpenNuevaOrden: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -25,6 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCorte,
   onOpenGastos,
   onOpenCalculadora,
+  onOpenNuevaOrden,
   totalUnitsInTimeframe,
 }) => {
   const timeframeLabels: Record<TimeframeFilter, string> = {
@@ -72,6 +74,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Desktop Right Actions */}
         <div className="hidden lg:flex items-center gap-2">
+          {/* NUEVA COMANDA BUTTON */}
+          <button
+            onClick={onOpenNuevaOrden}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-black bg-[#e59b38] hover:bg-[#d48b28] text-black shadow-md transition-all active:scale-95"
+            title="Armar comanda completa con ticket para cocina o cliente"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-black" />
+            <span>+ Armar Comanda</span>
+          </button>
+
           {/* CORTE DE CAJA BUTTON */}
           <button
             onClick={onOpenCorte}
@@ -144,14 +156,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
 
-        {/* Mobile Header Quick Stats / Pill */}
-        <div className="flex lg:hidden items-center gap-2">
+        {/* Mobile Header Quick Stats & Nueva Comanda Button */}
+        <div className="flex lg:hidden items-center gap-1.5">
+          <button
+            onClick={onOpenNuevaOrden}
+            className="flex items-center gap-1 bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold px-2.5 py-1.5 rounded-full text-xs shadow-sm active:scale-95"
+            title="Armar nueva comanda"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-black" />
+            <span>+ Comanda</span>
+          </button>
+
           <button
             onClick={onOpenHistory}
-            className="flex items-center gap-1.5 bg-[#1a1a1f] border border-white/10 px-3 py-1.5 rounded-full text-xs"
+            className="flex items-center gap-1.5 bg-[#1a1a1f] border border-white/10 px-2.5 py-1.5 rounded-full text-xs"
           >
             <span className="text-[10px] text-neutral-400 uppercase font-medium">{timeframeLabels[timeframe]}:</span>
-            <span className="font-mono font-bold text-[#e59b38]">{totalUnitsInTimeframe} uds</span>
+            <span className="font-mono font-bold text-[#e59b38]">{totalUnitsInTimeframe}</span>
           </button>
         </div>
       </div>

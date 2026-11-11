@@ -190,6 +190,14 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                           {prod ? prod.name : sale.productId}
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-neutral-400 mt-0.5">
+                          {sale.orderNumber && (
+                            <>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-[#e59b38]/15 text-[#e59b38] border border-[#e59b38]/30">
+                                #{String(sale.orderNumber).padStart(3, '0')}
+                              </span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span className="text-[#e59b38]">{prod?.variantLabel}</span>
                           <span>•</span>
                           <span>{formattedDate} {formattedTime}</span>

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator } from 'lucide-react';
+import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag } from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
@@ -13,6 +13,7 @@ interface MobileBottomDockProps {
   onOpenCorte: () => void;
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
+  onOpenNuevaOrden: () => void;
   totalUnitsInTimeframe: number;
 }
 
@@ -25,6 +26,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onOpenCorte,
   onOpenGastos,
   onOpenCalculadora,
+  onOpenNuevaOrden,
   totalUnitsInTimeframe,
 }) => {
   const tabs: { id: TimeframeFilter; label: string; icon: React.FC<{ className?: string }> }[] = [
@@ -65,6 +67,16 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
 
         {/* Action Icon Buttons for Thumb */}
         <div className="flex items-center gap-1 shrink-0 overflow-x-auto no-scrollbar py-0.5">
+          <button
+            onClick={onOpenNuevaOrden}
+            aria-label="Armar nueva comanda"
+            title="Armar Comanda / Orden"
+            className="w-10 h-10 rounded-xl bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold flex flex-col items-center justify-center shadow-md active:scale-95 touch-manipulation select-none shrink-0"
+          >
+            <ShoppingBag className="w-4 h-4 text-black" />
+            <span className="text-[7.5px] font-black uppercase mt-0.5">+Orden</span>
+          </button>
+
           <button
             onClick={onOpenCorte}
             aria-label="Corte de caja"
