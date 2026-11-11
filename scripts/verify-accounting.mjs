@@ -791,4 +791,66 @@ const splitCashChange = receivedCashBill - splitOrder.splitPayment.cash;
 assert.equal(splitCashChange, 300, 'Change from $500 bill on $200 cash portion must be $300');
 console.log('✓ Split payment reconciliation and cash drawer allocations verified');
 
-console.log('\nAll 18 accounting, POS, KDS, thermal, catalog, prep, and split payment tests passed flawlessly!');
+// Test 19: Order Discounts, Promos, and 100% Cortesías Reconciliation
+console.log('Test 19: Order Discounts, Promos, and 100% Cortesías Reconciliation');
+
+// Scenario A: 10% percentage promo on multi-item comanda
+const discountedOrder = {
+  items: [
+    { productId: 'sandwich-fries', quantity: 2, unitPrice: 185, unitCost: 48, subtotal: 370 },
+    { productId: 'fries-cheese', quantity: 1, unitPrice: 65, unitCost: 18, subtotal: 65 },
+  ],
+  discount: { type: 'percent', value: 10, amount: 44, label: 'Descuento 10%' },
+};
+
+const discountOrderFoodSubtotal = discountedOrder.items.reduce((s, it) => s + it.subtotal, 0); // $435
+assert.equal(discountOrderFoodSubtotal, 435, 'Food subtotal must equal $435.00');
+
+const netDiscountFoodTotal = Math.max(0, discountOrderFoodSubtotal - discountedOrder.discount.amount); // $391
+assert.equal(netDiscountFoodTotal, 391, 'Net food total after $44 discount must equal $391.00');
+
+const discountRatio = netDiscountFoodTotal / discountOrderFoodSubtotal;
+let simulatedSalesRevenue = 0;
+let simulatedCost = 0;
+const totalDiscountUnits = discountedOrder.items.reduce((acc, it) => acc + it.quantity, 0);
+let unitsProcessedCount = 0;
+
+for (const item of discountedOrder.items) {
+  for (let i = 0; i < item.quantity; i++) {
+    unitsProcessedCount++;
+    let effectivePrice = Math.round(item.unitPrice * discountRatio * 100) / 100;
+    if (unitsProcessedCount === totalDiscountUnits) {
+      const remaining = Math.round((netDiscountFoodTotal - simulatedSalesRevenue) * 100) / 100;
+      if (remaining >= 0) effectivePrice = remaining;
+    }
+    simulatedSalesRevenue += effectivePrice;
+    simulatedCost += item.unitCost;
+  }
+}
+
+assert.equal(Math.round(simulatedSalesRevenue * 100) / 100, 391.0, 'Simulated sales revenue must equal $391.00 exactly without rounding drift');
+const totalOrderCost = 2 * 48 + 18; // $114
+assert.equal(simulatedCost, totalOrderCost, 'Total incurred cost must be preserved at $114.00');
+const orderGrossProfit = simulatedSalesRevenue - simulatedCost; // 391 - 114 = $277
+assert.equal(orderGrossProfit, 277, 'Gross profit must be $277.00');
+
+// Scenario B: 100% Cortesía (House invite / complimentary dish)
+const cortesiaOrder = {
+  items: [
+    { productId: 'steak-frites', quantity: 1, unitPrice: 210, unitCost: 68, subtotal: 210 },
+  ],
+  discount: { type: 'percent', value: 100, amount: 210, label: 'Cortesía 100%' },
+};
+
+const cortesiaFoodSubtotal = cortesiaOrder.items.reduce((s, it) => s + it.subtotal, 0);
+const cortesiaNet = Math.max(0, cortesiaFoodSubtotal - cortesiaOrder.discount.amount);
+assert.equal(cortesiaNet, 0, 'Net total of 100% cortesía must be $0.00');
+
+const cortesiaPrice = Math.round(cortesiaOrder.items[0].unitPrice * (cortesiaNet / cortesiaFoodSubtotal) * 100) / 100;
+assert.equal(cortesiaPrice, 0, 'Effective price for cortesía item must be $0.00');
+const cortesiaCost = cortesiaOrder.items[0].unitCost; // $68
+const cortesiaProfit = cortesiaPrice - cortesiaCost; // -$68
+assert.equal(cortesiaProfit, -68, 'Profit of cortesía item must be -$68.00 (food cost absorbed by house)');
+console.log('✓ Order discounts, promos, and 100% cortesía math fully verified');
+
+console.log('\nAll 19 accounting, POS, KDS, thermal, catalog, prep, split payment, and discount tests passed flawlessly!');

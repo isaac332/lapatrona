@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, ProductStockConfig, SplitPaymentDetail } from '@/types/accounting';
+import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, ProductStockConfig, SplitPaymentDetail, OrderDiscount } from '@/types/accounting';
 import { triggerHaptic } from '@/utils/haptics';
 import {
   X,
@@ -16,6 +16,8 @@ import {
   Split,
   Trash2,
   CheckCircle2,
+  Tag,
+  Gift,
 } from 'lucide-react';
 
 interface NuevaOrdenModalProps {
@@ -38,7 +40,8 @@ function createNewOrder(
   amountReceived?: number,
   change?: number,
   tip?: number,
-  splitPayment?: SplitPaymentDetail
+  splitPayment?: SplitPaymentDetail,
+  discount?: OrderDiscount
 ): CustomerOrder {
   return {
     id: `order-${nextOrderNumber}-${Date.now()}`,
@@ -50,6 +53,7 @@ function createNewOrder(
     items,
     total,
     tip,
+    discount,
     paymentMethod,
     splitPayment,
     amountReceived,
@@ -71,6 +75,8 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   const [cart, setCart] = useState<Record<string, number>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
   const [splitCashInput, setSplitCashInput] = useState<string>('');
+  const [discountType, setDiscountType] = useState<number | 'cortesia' | 'fixed'>(0);
+  const [customDiscount, setCustomDiscount] = useState<string>('');
   const [tipPercent, setTipPercent] = useState<number | 'custom'>(0);
   const [customTip, setCustomTip] = useState<string>('');
   const [amountReceived, setAmountReceived] = useState('');
@@ -130,11 +136,43 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
 
   const totalItemsCount = orderItems.reduce((sum, item) => sum + item.quantity, 0);
   const foodSubtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+  let discountAmount = 0;
+  if (discountType === 'cortesia') {
+    discountAmount = foodSubtotal;
+  } else if (discountType === 'fixed') {
+    discountAmount = Math.min(foodSubtotal, Math.max(0, parseFloat(customDiscount) || 0));
+  } else if (typeof discountType === 'number' && discountType > 0) {
+    discountAmount = Math.round((foodSubtotal * discountType) / 100);
+  }
+
+  const discountedFoodSubtotal = Math.max(0, foodSubtotal - discountAmount);
+
   const tipAmount =
     tipPercent === 'custom'
       ? parseFloat(customTip) || 0
-      : Math.round((foodSubtotal * (tipPercent as number)) / 100);
-  const finalTotal = foodSubtotal + tipAmount;
+      : Math.round((discountedFoodSubtotal * (tipPercent as number)) / 100);
+  const finalTotal = discountedFoodSubtotal + tipAmount;
+
+  const discountObj: OrderDiscount | undefined =
+    discountAmount > 0
+      ? {
+          type: discountType === 'fixed' ? 'fixed' : 'percent',
+          value:
+            discountType === 'cortesia'
+              ? 100
+              : discountType === 'fixed'
+              ? parseFloat(customDiscount) || 0
+              : (discountType as number),
+          amount: discountAmount,
+          label:
+            discountType === 'cortesia'
+              ? 'Cortesía 100%'
+              : discountType === 'fixed'
+              ? `Descuento Fijo -$${discountAmount}`
+              : `Descuento ${discountType}%`,
+        }
+      : undefined;
 
   const rawCashPortion = parseFloat(splitCashInput);
   const cashPortion =
@@ -172,7 +210,8 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
       (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? receivedNum : undefined,
       (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? change : undefined,
       tipAmount > 0 ? tipAmount : undefined,
-      paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined
+      paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined,
+      discountObj
     );
 
     onCompleteOrder(newOrder);
@@ -522,6 +561,67 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
               </div>
             )}
 
+            {/* Descuentos y Cortesías */}
+            {foodSubtotal > 0 && (
+              <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold uppercase">
+                  <div className="flex items-center gap-1 text-emerald-400">
+                    <Tag className="w-3 h-3" />
+                    <span>Descuento / Cortesía:</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <span className="text-emerald-400 font-mono font-bold">
+                      -${discountAmount.toFixed(2)} MXN
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-6 gap-1">
+                  {[
+                    { id: 0, label: '0%' },
+                    { id: 10, label: '10%' },
+                    { id: 15, label: '15%' },
+                    { id: 20, label: '20%' },
+                    { id: 'cortesia' as const, label: 'Cortesía' },
+                    { id: 'fixed' as const, label: 'Monto $' },
+                  ].map((d) => {
+                    const isActive = discountType === d.id;
+                    return (
+                      <button
+                        key={String(d.id)}
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic('light');
+                          setDiscountType(d.id);
+                        }}
+                        className={`py-1 rounded text-[10px] font-bold transition-all ${
+                          isActive
+                            ? 'bg-emerald-500 text-black shadow-sm font-extrabold'
+                            : 'bg-white/5 hover:bg-white/10 text-neutral-400 border border-white/10'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {discountType === 'fixed' && (
+                  <div className="pt-1 flex items-center gap-1.5">
+                    <span className="text-xs text-neutral-400 font-mono">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={foodSubtotal}
+                      step="any"
+                      placeholder={`Monto descuento (máx $${foodSubtotal})`}
+                      value={customDiscount}
+                      onChange={(e) => setCustomDiscount(e.target.value)}
+                      className="w-full bg-[#1b1b20] border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Propina (Tip) Selector */}
             {foodSubtotal > 0 && (
               <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10">
@@ -606,16 +706,24 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
 
             {/* Total and Submit Button */}
             <div className="pt-2">
-              {tipAmount > 0 && (
+              {(tipAmount > 0 || discountAmount > 0) && (
                 <div className="space-y-0.5 pb-2 mb-2 border-b border-white/[0.08] text-xs">
                   <div className="flex justify-between text-neutral-400">
                     <span>Subtotal Alimentos:</span>
                     <span className="font-mono text-white">${foodSubtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-[#e59b38]">
-                    <span>(+) Propina:</span>
-                    <span className="font-mono font-bold">+${tipAmount.toFixed(2)}</span>
-                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-400 font-semibold">
+                      <span>(-) {discountObj?.label || 'Descuento'}:</span>
+                      <span className="font-mono font-bold">-${discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {tipAmount > 0 && (
+                    <div className="flex justify-between text-[#e59b38]">
+                      <span>(+) Propina:</span>
+                      <span className="font-mono font-bold">+${tipAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -629,11 +737,20 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
               <button
                 type="button"
                 onClick={handleComplete}
-                disabled={finalTotal <= 0}
+                disabled={orderItems.length === 0}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#e59b38] hover:bg-[#d48b28] disabled:opacity-30 disabled:pointer-events-none text-black font-extrabold text-sm uppercase tracking-wider transition-all shadow-lg active:scale-98 touch-manipulation"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Cobrar y Generar Comanda</span>
+                {discountType === 'cortesia' && finalTotal === 0 ? (
+                  <>
+                    <Gift className="w-4 h-4" />
+                    <span>Registrar Cortesía ($0.00)</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Cobrar y Generar Comanda</span>
+                  </>
+                )}
               </button>
             </div>
 

@@ -53,8 +53,12 @@ export function generateOrderThermalText(order: CustomerOrder, businessInfo?: Bu
   });
 
   lines.push(line);
+  const foodSubtotal = order.items.reduce((acc, it) => acc + it.subtotal, 0);
+  if (order.discount && order.discount.amount > 0) {
+    lines.push(pad('Subtotal Alimentos:', `$${foodSubtotal.toFixed(2)}`));
+    lines.push(pad(`(-) Descuento:`, `-$${order.discount.amount.toFixed(2)}`));
+  }
   if (order.tip && order.tip > 0) {
-    lines.push(pad('Subtotal Alimentos:', `$${(order.total - order.tip).toFixed(2)}`));
     lines.push(pad('(+) Propina:', `$${order.tip.toFixed(2)}`));
   }
   lines.push(pad('TOTAL A PAGAR:', `$${order.total.toFixed(2)} MXN`));

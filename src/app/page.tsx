@@ -507,19 +507,39 @@ export default function SalesCounterPage() {
     const newSales: SaleRecord[] = [];
     const now = new Date().toISOString();
     const isMixto = order.paymentMethod === 'mixto' && order.splitPayment;
+
+    const foodSubtotal = order.items.reduce((s, it) => s + it.subtotal, 0);
+    const discountAmount = order.discount?.amount || 0;
+    const netFoodTotal = Math.max(0, foodSubtotal - discountAmount);
+    const discountRatio = foodSubtotal > 0 ? netFoodTotal / foodSubtotal : 1;
+
     const cashFraction = isMixto && order.total > 0 ? order.splitPayment!.cash / order.total : 0;
+
+    let accumulatedRevenue = 0;
+    const totalItemUnits = order.items.reduce((acc, it) => acc + it.quantity, 0);
+    let unitsProcessed = 0;
 
     for (const item of order.items) {
       for (let i = 0; i < item.quantity; i++) {
-        const unitCash = isMixto ? Math.round(item.unitPrice * cashFraction * 100) / 100 : undefined;
-        const unitCard = isMixto ? Math.round((item.unitPrice - (unitCash || 0)) * 100) / 100 : undefined;
+        unitsProcessed++;
+        let effectiveUnitPrice = Math.round(item.unitPrice * discountRatio * 100) / 100;
+        if (unitsProcessed === totalItemUnits && foodSubtotal > 0) {
+          const remainingExpected = Math.round((netFoodTotal - accumulatedRevenue) * 100) / 100;
+          if (remainingExpected >= 0) {
+            effectiveUnitPrice = remainingExpected;
+          }
+        }
+        accumulatedRevenue += effectiveUnitPrice;
+
+        const unitCash = isMixto ? Math.round(effectiveUnitPrice * cashFraction * 100) / 100 : undefined;
+        const unitCard = isMixto ? Math.round((effectiveUnitPrice - (unitCash || 0)) * 100) / 100 : undefined;
 
         newSales.push({
           id: `sale-${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${item.productId}-${i}`,
           productId: item.productId,
           timestamp: now,
           quantity: 1,
-          unitPrice: item.unitPrice,
+          unitPrice: effectiveUnitPrice,
           unitCost: item.unitCost,
           paymentMethod: order.paymentMethod,
           cashAmount: unitCash,

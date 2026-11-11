@@ -42,6 +42,13 @@ export interface SplitPaymentDetail {
   card: number;
 }
 
+export interface OrderDiscount {
+  type: 'percent' | 'fixed';
+  value: number;
+  amount: number;
+  label?: string;
+}
+
 export interface CustomerOrder {
   id: string;
   orderNumber: number;
@@ -52,6 +59,7 @@ export interface CustomerOrder {
   items: CustomerOrderItem[];
   total: number;
   tip?: number;
+  discount?: OrderDiscount;
   paymentMethod: PaymentMethod;
   splitPayment?: SplitPaymentDetail;
   amountReceived?: number;
