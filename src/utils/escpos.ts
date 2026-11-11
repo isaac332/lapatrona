@@ -16,6 +16,7 @@ function center(text: string, width = LINE_WIDTH): string {
 export function generateOrderThermalText(order: CustomerOrder, businessInfo?: BusinessInfo): string {
   const info = businessInfo || DEFAULT_BUSINESS_INFO;
   const line = '--------------------------------';
+  const doubleLine = '================================';
   const lines: string[] = [
     center(info.name.toUpperCase()),
     center(info.tagline),
@@ -33,6 +34,19 @@ export function generateOrderThermalText(order: CustomerOrder, businessInfo?: Bu
 
   lines.push(center('Comanda de Cocina / Mostrador'));
   lines.push(line);
+
+  if (order.isCancelled) {
+    lines.push(doubleLine);
+    lines.push(center('*** COMANDA ANULADA / CANCELADA ***'));
+    if (order.cancellationReason) {
+      lines.push(center(`Motivo: ${order.cancellationReason.toUpperCase()}`));
+    }
+    if (order.cancelledAt) {
+      lines.push(center(`Anulación: ${new Date(order.cancelledAt).toLocaleTimeString('es-MX')}`));
+    }
+    lines.push(doubleLine);
+  }
+
   lines.push(pad(`FOLIO: #${String(order.orderNumber).padStart(3, '0')}`, order.orderType === 'llevar' ? '[LLEVAR]' : '[AQUÍ]'));
   lines.push(`Fecha: ${new Date(order.timestamp).toLocaleString('es-MX')}`);
 

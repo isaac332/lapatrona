@@ -1077,4 +1077,86 @@ assert.equal(closedShiftZRecord.orderRange, '#001 a #034 (6 comandas)');
 
 console.log('✓ Official Corte Z daily closing, SAT 16% fiscal breakdown, and order range verified');
 
-console.log('\nAll 22 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, and Corte Z tests passed flawlessly!');
+// Test 23: Customer Order Cancellation, Payment Method Modification, and Kitchen Restock
+console.log('Test 23: Order Cancellation, Payment Method Modification, and Kitchen Restock');
+
+let simStock = {
+  'sandwich-fries': { currentStock: 20, trackStock: true },
+  'fries-cheese': { currentStock: 15, trackStock: true },
+};
+
+let simOrders = [
+  {
+    id: 'ord-cancel-1',
+    orderNumber: 55,
+    timestamp: new Date().toISOString(),
+    orderType: 'aqui',
+    paymentMethod: 'efectivo',
+    items: [
+      { productId: 'sandwich-fries', quantity: 2, unitPrice: 185, unitCost: 48, subtotal: 370 },
+      { productId: 'fries-cheese', quantity: 1, unitPrice: 85, unitCost: 24, subtotal: 85 },
+    ],
+    total: 455,
+    status: 'pendiente',
+  },
+];
+
+let simSales = [
+  { id: 's-55-1', productId: 'sandwich-fries', quantity: 1, unitPrice: 185, unitCost: 48, paymentMethod: 'efectivo', orderId: 'ord-cancel-1', orderNumber: 55 },
+  { id: 's-55-2', productId: 'sandwich-fries', quantity: 1, unitPrice: 185, unitCost: 48, paymentMethod: 'efectivo', orderId: 'ord-cancel-1', orderNumber: 55 },
+  { id: 's-55-3', productId: 'fries-cheese', quantity: 1, unitPrice: 85, unitCost: 24, paymentMethod: 'efectivo', orderId: 'ord-cancel-1', orderNumber: 55 },
+  { id: 's-other', productId: 'fries-alone', quantity: 1, unitPrice: 65, unitCost: 16, paymentMethod: 'efectivo' },
+];
+
+// Initial stock after comanda was punched:
+simStock['sandwich-fries'].currentStock -= 2; // 18
+simStock['fries-cheese'].currentStock -= 1;   // 14
+assert.equal(simStock['sandwich-fries'].currentStock, 18);
+assert.equal(simStock['fries-cheese'].currentStock, 14);
+
+// 1. Change Payment Method of Order #55 from 'efectivo' to 'tarjeta'
+const targetOrderId = 'ord-cancel-1';
+const newMethod = 'tarjeta';
+simOrders = simOrders.map(o => o.id === targetOrderId ? { ...o, paymentMethod: newMethod } : o);
+simSales = simSales.map(s => s.orderId === targetOrderId ? { ...s, paymentMethod: newMethod } : s);
+
+assert.equal(simOrders[0].paymentMethod, 'tarjeta');
+const updatedCardSales = simSales.filter(s => s.orderId === targetOrderId);
+assert.equal(updatedCardSales.length, 3);
+assert.ok(updatedCardSales.every(s => s.paymentMethod === 'tarjeta'), 'All atomic sales must reflect new payment method');
+
+// 2. Annul/Cancel Order #55 with reason and kitchen restock
+const cancelReason = 'Error de captura del cajero';
+const restock = true;
+
+const targetOrderToCancel = simOrders.find(o => o.id === targetOrderId);
+simOrders = simOrders.map(o => o.id === targetOrderId ? {
+  ...o,
+  isCancelled: true,
+  cancellationReason: cancelReason,
+  cancelledAt: new Date().toISOString(),
+} : o);
+
+// Remove sales associated with cancelled comanda
+simSales = simSales.filter(s => s.orderId !== targetOrderId && s.orderNumber !== targetOrderToCancel.orderNumber);
+
+assert.equal(simSales.length, 1, 'Only non-cancelled sales must remain in active ledger');
+assert.equal(simSales[0].id, 's-other');
+
+// Restock kitchen portions back into inventory
+if (restock) {
+  for (const item of targetOrderToCancel.items) {
+    if (simStock[item.productId]?.trackStock) {
+      simStock[item.productId].currentStock += item.quantity;
+    }
+  }
+}
+
+assert.equal(simStock['sandwich-fries'].currentStock, 20, 'Sandwich portions must be fully restored to 20');
+assert.equal(simStock['fries-cheese'].currentStock, 15, 'Fries portions must be fully restored to 15');
+assert.equal(simOrders[0].isCancelled, true);
+assert.equal(simOrders[0].cancellationReason, 'Error de captura del cajero');
+
+console.log('✓ Order cancellation, payment method retro-switch, and inventory restock verified');
+
+console.log('\nAll 23 accounting, POS, KDS, thermal, catalog, prep, split payment, discount, table management, kitchen waste, Corte Z, and order cancellation tests passed flawlessly!');

@@ -758,6 +758,89 @@ export default function SalesCounterPage() {
     setEditingOrderForTable(null);
   };
 
+  // Cancel / Annul customer order
+  const handleCancelOrder = (orderId: string, reason: string, restock: boolean) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return;
+
+    // 1. Mark order as cancelled
+    const updatedOrders = orders.map((o) =>
+      o.id === orderId
+        ? {
+            ...o,
+            isCancelled: true,
+            cancellationReason: reason,
+            cancelledAt: new Date().toISOString(),
+          }
+        : o
+    );
+    setOrders(updatedOrders);
+    try {
+      localStorage.setItem('philly_fry_orders', JSON.stringify(updatedOrders));
+    } catch (e) {
+      console.error('Failed to save orders to localStorage', e);
+    }
+
+    // 2. Remove associated sale records from accounting sales ledger
+    const updatedSales = sales.filter((s) => s.orderId !== orderId && s.orderNumber !== targetOrder.orderNumber);
+    handleSaveSales(updatedSales);
+
+    // 3. Optionally restock kitchen portions
+    if (restock) {
+      setStockMap((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const item of targetOrder.items) {
+          const prodStock = next[item.productId];
+          if (prodStock && prodStock.trackStock) {
+            next[item.productId] = {
+              ...prodStock,
+              currentStock: prodStock.currentStock + item.quantity,
+            };
+            changed = true;
+          }
+        }
+        if (changed) {
+          try {
+            localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+          } catch {}
+        }
+        return changed ? next : prev;
+      });
+    }
+
+    showToast(`✓ Comanda #${targetOrder.orderNumber} anulada. ${restock ? 'Porciones reingresadas al inventario.' : ''}`);
+  };
+
+  // Change payment method for entire comanda
+  const handleChangeOrderPaymentMethod = (orderId: string, newMethod: PaymentMethod) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return;
+
+    const updatedOrders = orders.map((o) =>
+      o.id === orderId ? { ...o, paymentMethod: newMethod } : o
+    );
+    setOrders(updatedOrders);
+    try {
+      localStorage.setItem('philly_fry_orders', JSON.stringify(updatedOrders));
+    } catch {}
+
+    const updatedSales = sales.map((s) =>
+      s.orderId === orderId || s.orderNumber === targetOrder.orderNumber
+        ? { ...s, paymentMethod: newMethod }
+        : s
+    );
+    handleSaveSales(updatedSales);
+
+    const methodNames: Record<PaymentMethod, string> = {
+      efectivo: 'Efectivo',
+      tarjeta: 'Tarjeta / Clip',
+      transferencia: 'Transferencia SPEI',
+      mixto: 'Pago Mixto',
+    };
+    showToast(`✓ Método de pago de comanda #${targetOrder.orderNumber} cambiado a ${methodNames[newMethod]}.`);
+  };
+
   // ZERO OUT THE WHOLE ACCOUNTING
   const handleConfirmZeroOut = () => {
     handleSaveSales([]);
@@ -1607,6 +1690,8 @@ export default function SalesCounterPage() {
         isOpen={isHistorialComandasOpen}
         onClose={() => setIsHistorialComandasOpen(false)}
         orders={orders}
+        onCancelOrder={handleCancelOrder}
+        onChangeOrderPaymentMethod={handleChangeOrderPaymentMethod}
       />
 
       {/* Pantalla de Cocina / KDS en Vivo */}

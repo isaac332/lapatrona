@@ -1,32 +1,58 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { CustomerOrder } from '@/types/accounting';
+import { CustomerOrder, PaymentMethod } from '@/types/accounting';
 import { generateEscPosComandaTicket, formatCurrencyMXN } from '@/utils/escpos';
-import { X, Search, Receipt, Printer, Copy, Check, UtensilsCrossed, ShoppingBag, Banknote, CreditCard, Smartphone } from 'lucide-react';
+import {
+  X,
+  Search,
+  Receipt,
+  Printer,
+  Copy,
+  Check,
+  UtensilsCrossed,
+  ShoppingBag,
+  Banknote,
+  CreditCard,
+  Smartphone,
+  AlertTriangle,
+  RefreshCw,
+  Ban,
+} from 'lucide-react';
 
 interface HistorialComandasModalProps {
   isOpen: boolean;
   onClose: () => void;
   orders: CustomerOrder[];
+  onCancelOrder?: (orderId: string, reason: string, restock: boolean) => void;
+  onChangeOrderPaymentMethod?: (orderId: string, newMethod: PaymentMethod) => void;
 }
 
 export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
   isOpen,
   onClose,
   orders,
+  onCancelOrder,
+  onChangeOrderPaymentMethod,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'aqui' | 'llevar'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'aqui' | 'llevar' | 'canceladas'>('all');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [copiedEscPos, setCopiedEscPos] = useState(false);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Error de captura del cajero');
+  const [customReasonText, setCustomReasonText] = useState('');
+  const [restockOnCancel, setRestockOnCancel] = useState(true);
+  const [isChangingPayment, setIsChangingPayment] = useState(false);
   const printAreaRef = useRef<HTMLDivElement>(null);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       // Type filter
-      if (filterType !== 'all' && order.orderType !== filterType) {
-        return false;
+      if (filterType === 'canceladas') {
+        if (!order.isCancelled) return false;
+      } else if (filterType !== 'all') {
+        if (order.orderType !== filterType) return false;
       }
       // Query filter
       if (!searchQuery.trim()) return true;
@@ -147,6 +173,17 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
               <ShoppingBag className="w-3 h-3" />
               <span>Llevar</span>
             </button>
+            <button
+              onClick={() => setFilterType('canceladas')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                filterType === 'canceladas'
+                  ? 'bg-red-500 text-white font-bold shadow-md shadow-red-500/20'
+                  : 'bg-white/[0.04] text-neutral-400 hover:text-red-400'
+              }`}
+            >
+              <Ban className="w-3 h-3" />
+              <span>Canceladas ({orders.filter((o) => o.isCancelled).length})</span>
+            </button>
           </div>
         </div>
 
@@ -161,7 +198,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                 <p className="text-xs mt-1">
                   {orders.length === 0
                     ? 'Aún no se han cobrado comandas en este turno.'
-                    : 'Intenta con otro término de búsqueda.'}
+                    : 'Intenta con otro término de búsqueda o filtro.'}
                 </p>
               </div>
             ) : (
@@ -175,16 +212,22 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                 return (
                   <div
                     key={order.id}
-                    onClick={() => setSelectedOrderId(order.id)}
+                    onClick={() => {
+                      setSelectedOrderId(order.id);
+                      setIsCancelConfirmOpen(false);
+                      setIsChangingPayment(false);
+                    }}
                     className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                       isSelected
                         ? 'bg-[#e59b38]/10 border-[#e59b38]/50 shadow-md'
+                        : order.isCancelled
+                        ? 'bg-red-950/10 border-red-900/30 opacity-70 hover:opacity-100 hover:border-red-500/40'
                         : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] hover:border-white/[0.12]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-sm text-[#e59b38]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`font-mono font-black text-sm ${order.isCancelled ? 'line-through text-red-400' : 'text-[#e59b38]'}`}>
                           #{order.orderNumber.toString().padStart(3, '0')}
                         </span>
                         <span
@@ -196,9 +239,14 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                         >
                           {order.orderType === 'aqui' ? 'Aquí' : 'Llevar'}
                         </span>
+                        {order.isCancelled && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40">
+                            Cancelada
+                          </span>
+                        )}
                       </div>
 
-                      <span className="font-mono font-bold text-sm text-white">
+                      <span className={`font-mono font-bold text-sm ${order.isCancelled ? 'line-through text-neutral-500' : 'text-white'}`}>
                         {formatCurrencyMXN(order.total)}
                       </span>
                     </div>
@@ -225,13 +273,192 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
           <div className="lg:col-span-7 overflow-y-auto p-4 sm:p-6 bg-[#0a0a0c]">
             {activeOrder ? (
               <div className="max-w-md mx-auto space-y-4">
+                {/* Cancellation Warning Banner */}
+                {activeOrder.isCancelled && (
+                  <div className="p-3.5 rounded-2xl bg-red-950/40 border border-red-500/40 text-xs flex items-start gap-3 shadow-lg">
+                    <div className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0 text-red-400">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold uppercase tracking-wider text-red-300">
+                          Comanda Anulada / Cancelada
+                        </span>
+                        {activeOrder.cancelledAt && (
+                          <span className="text-[10px] text-neutral-400 font-mono">
+                            {new Date(activeOrder.cancelledAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-300 mt-0.5">
+                        Motivo: <span className="font-semibold text-white">{activeOrder.cancellationReason || 'Cancelación directa'}</span>
+                      </p>
+                      <p className="text-[10px] text-red-400/80 mt-1">
+                        Esta comanda está excluida de los ingresos brutos, corte de caja y SAT.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Correction Modals */}
+                {isChangingPayment && !activeOrder.isCancelled && (
+                  <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between text-xs text-neutral-300">
+                      <span className="font-bold uppercase tracking-wider text-neutral-400">Seleccionar nuevo método de pago:</span>
+                      <button onClick={() => setIsChangingPayment(false)} className="text-neutral-500 hover:text-white text-xs">Cerrar</button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => {
+                          onChangeOrderPaymentMethod?.(activeOrder.id, 'efectivo');
+                          setIsChangingPayment(false);
+                        }}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                          activeOrder.paymentMethod === 'efectivo'
+                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                            : 'bg-white/[0.04] border-white/[0.08] text-neutral-300 hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        <Banknote className="w-3.5 h-3.5" />
+                        <span>Efectivo</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          onChangeOrderPaymentMethod?.(activeOrder.id, 'tarjeta');
+                          setIsChangingPayment(false);
+                        }}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                          activeOrder.paymentMethod === 'tarjeta'
+                            ? 'bg-sky-500/20 border-sky-500 text-sky-300'
+                            : 'bg-white/[0.04] border-white/[0.08] text-neutral-300 hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>Tarjeta</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          onChangeOrderPaymentMethod?.(activeOrder.id, 'transferencia');
+                          setIsChangingPayment(false);
+                        }}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                          activeOrder.paymentMethod === 'transferencia'
+                            ? 'bg-purple-500/20 border-purple-500 text-purple-300'
+                            : 'bg-white/[0.04] border-white/[0.08] text-neutral-300 hover:bg-white/[0.08]'
+                        }`}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span>SPEI</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {isCancelConfirmOpen && !activeOrder.isCancelled && (
+                  <div className="p-4 rounded-2xl bg-red-950/20 border border-red-500/40 space-y-3 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-2 text-red-400">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span className="font-bold text-xs uppercase tracking-wider text-red-300">
+                        Confirmar Anulación de Comanda #{activeOrder.orderNumber.toString().padStart(3, '0')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-300">
+                      Al anular la comanda, se revertirán los ingresos (${activeOrder.total.toFixed(2)} MXN) de la contabilidad y arqueo de caja.
+                    </p>
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                        Motivo de la anulación:
+                      </label>
+                      <select
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        className="w-full bg-[#121215] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
+                      >
+                        <option value="Error de captura del cajero">Error de captura del cajero</option>
+                        <option value="Cliente canceló / se retiró">Cliente canceló / se retiró</option>
+                        <option value="Comanda duplicada">Comanda duplicada</option>
+                        <option value="Producto devuelto / queja">Producto devuelto / queja</option>
+                        <option value="Otro">Otro (especificar)</option>
+                      </select>
+                    </div>
+                    {cancelReason === 'Otro' && (
+                      <input
+                        type="text"
+                        placeholder="Escribe el motivo..."
+                        value={customReasonText}
+                        onChange={(e) => setCustomReasonText(e.target.value)}
+                        className="w-full bg-[#121215] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-red-500"
+                      />
+                    )}
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-neutral-300">
+                      <input
+                        type="checkbox"
+                        checked={restockOnCancel}
+                        onChange={(e) => setRestockOnCancel(e.target.checked)}
+                        className="rounded bg-white/[0.08] border-white/20 text-[#e59b38] focus:ring-0"
+                      />
+                      <span>Regresar porciones de platillos al inventario de cocina</span>
+                    </label>
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsCancelConfirmOpen(false)}
+                        className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-semibold text-neutral-400 hover:text-white"
+                      >
+                        Cerrar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const finalReason = cancelReason === 'Otro' && customReasonText.trim() ? customReasonText.trim() : cancelReason;
+                          onCancelOrder?.(activeOrder.id, finalReason, restockOnCancel);
+                          setIsCancelConfirmOpen(false);
+                        }}
+                        className="px-4 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95"
+                      >
+                        Confirmar Anulación
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
                     Vista de Comanda • #{activeOrder.orderNumber.toString().padStart(3, '0')}
                   </span>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {!activeOrder.isCancelled && onChangeOrderPaymentMethod && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsChangingPayment((prev) => !prev);
+                          setIsCancelConfirmOpen(false);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white transition-all active:scale-95"
+                        title="Cambiar método de pago (Efectivo, Tarjeta, Transferencia)"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-[#e59b38]" />
+                        <span className="hidden sm:inline">Cambiar Pago</span>
+                      </button>
+                    )}
+
+                    {!activeOrder.isCancelled && onCancelOrder && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCancelConfirmOpen((prev) => !prev);
+                          setIsChangingPayment(false);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-semibold text-red-300 hover:text-red-200 transition-all active:scale-95"
+                        title="Anular comanda y revertir venta"
+                      >
+                        <Ban className="w-3.5 h-3.5 text-red-400" />
+                        <span className="hidden sm:inline">Anular</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={handleCopyEscPos}
@@ -283,6 +510,12 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                     <div className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/[0.08] text-white print:border print:border-black print:text-black">
                       SERVICIO: {activeOrder.orderType === 'aqui' ? 'COMER AQUÍ' : 'PARA LLEVAR'}
                     </div>
+
+                    {activeOrder.isCancelled && (
+                      <div className="py-1 px-3 bg-red-600 text-white font-black text-center tracking-widest uppercase text-xs rounded my-1 print:border print:border-black print:text-black">
+                        *** COMANDA ANULADA / CANCELADA ***
+                      </div>
+                    )}
                   </div>
 
                   {activeOrder.customerName && (

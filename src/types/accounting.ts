@@ -25,6 +25,7 @@ export interface SaleRecord {
   cardAmount?: number;
   orderId?: string;
   orderNumber?: number;
+  isCancelled?: boolean;
 }
 
 export interface CustomerOrderItem {
@@ -75,6 +76,9 @@ export interface CustomerOrder {
   amountReceived?: number;
   change?: number;
   status?: 'pendiente' | 'preparando' | 'listo' | 'entregado';
+  isCancelled?: boolean;
+  cancellationReason?: string;
+  cancelledAt?: string;
 }
 
 export interface ExpenseRecord {
