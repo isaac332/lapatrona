@@ -127,11 +127,26 @@ export interface PurchaseTicketItem {
   id: string;
   description: string;
   quantity: number;
-  unit: 'kg' | 'L' | 'pza';
+  unit: 'kg' | 'L' | 'pza' | 'paq' | 'serv' | string;
   regularUnitPrice: number;
   effectiveUnitPrice: number;
   lineTotal?: number;
-  ingredientKey?: 'sirloin' | 'queso' | 'papa' | 'chile_caribe' | 'cebolla' | 'aceite' | 'gas_lp' | 'leche' | 'doritos' | 'mayonesa' | 'limpieza' | 'otro';
+  ingredientKey?:
+    | 'sirloin'
+    | 'pan'
+    | 'queso'
+    | 'papa'
+    | 'chile_caribe'
+    | 'cebolla'
+    | 'aceite'
+    | 'gas_lp'
+    | 'leche'
+    | 'doritos'
+    | 'mayonesa'
+    | 'limpieza'
+    | 'desechables'
+    | 'equipo'
+    | 'otro';
 }
 
 export interface PurchaseTicketRecord {
@@ -142,11 +157,13 @@ export interface PurchaseTicketRecord {
   folio?: string;
   timestamp: string;
   paymentMethod: PaymentMethod;
-  category: 'carne' | 'quesos' | 'verduras_abarrotes' | 'gas' | 'insumos';
+  category: 'carne' | 'quesos' | 'verduras_abarrotes' | 'gas' | 'insumos' | 'pan' | 'desechables' | 'equipo' | 'otro';
   amountPaid?: number;
   changeGiven?: number;
   iva?: number;
   items: PurchaseTicketItem[];
+  investor?: 'Mónica' | 'Isaac' | 'Caja';
+  isInitialInvestment?: boolean;
 }
 
 export interface ExpenseRecord {
@@ -162,6 +179,34 @@ export interface ExpenseRecord {
   paymentMethod?: PaymentMethod;
   items?: PurchaseTicketItem[];
   savedDiscount?: number;
+  investor?: 'Mónica' | 'Isaac' | 'Caja';
+  isInitialInvestment?: boolean;
+}
+
+export interface PartnerInvestment {
+  partnerName: 'Mónica' | 'Isaac';
+  total: number;
+  percentage: number;
+  itemsCount: number;
+  items: {
+    description: string;
+    amount: number;
+    category?: string;
+    detail?: string;
+  }[];
+}
+
+export interface InitialInvestmentSummary {
+  monica: PartnerInvestment;
+  isaac: PartnerInvestment;
+  totalInitialInvestment: number;
+  totalOperationalExpenses: number;
+  totalAllExpenses: number;
+  recoveredAmount: number;
+  recoveredPercentage: number;
+  remainingToRecover: number;
+  isFullyRecovered: boolean;
+  netProfitAfterInitialInvestment: number;
 }
 
 export type WasteReason = 'quemado' | 'caida' | 'caducidad' | 'error_comanda' | 'merma_corte' | 'otro';

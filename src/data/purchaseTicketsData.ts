@@ -5,7 +5,7 @@ import { PurchaseTicketRecord, PurchaseTicketItem, ExpenseRecord } from '@/types
  * El sistema calcula dinámicamente los importes por línea, ahorros, totales y costos promedio por insumo.
  */
 export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
-  // TICKET 1: SuKarne 08/10/2026
+  // TICKET 1: SuKarne 08/10/2026 (Inversión Mónica)
   {
     id: 'ticket-sukarne-2026-10-08',
     storeName: 'SuKarne (TSK Nogales Sur)',
@@ -15,6 +15,8 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
     timestamp: '2026-10-08T12:03:28.000Z',
     paymentMethod: 'tarjeta',
     category: 'carne',
+    investor: 'Mónica',
+    isInitialInvestment: true,
     items: [
       {
         id: 'item-sk-1',
@@ -29,7 +31,7 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
     ],
   },
 
-  // TICKET 2: Rivera Gas 08/10/2026
+  // TICKET 2: Rivera Gas 08/10/2026 (Inversión Mónica)
   {
     id: 'ticket-rivera-gas-2026-10-08',
     storeName: 'Rivera Gas S.A. de C.V.',
@@ -39,6 +41,8 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
     timestamp: '2026-10-08T12:05:00.000Z',
     paymentMethod: 'efectivo',
     category: 'gas',
+    investor: 'Mónica',
+    isInitialInvestment: true,
     items: [
       {
         id: 'item-gas-1',
@@ -53,7 +57,7 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
     ],
   },
 
-  // TICKET 3: Abastos Esperanza 08/10/2026
+  // TICKET 3: Abastos Esperanza 08/10/2026 (Inversión Mónica)
   {
     id: 'ticket-abastos-esperanza-2026-10-08',
     storeName: 'Abastos Esperanza de Nogales',
@@ -62,6 +66,8 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
     timestamp: '2026-10-08T12:48:00.000Z',
     paymentMethod: 'efectivo',
     category: 'quesos',
+    investor: 'Mónica',
+    isInitialInvestment: true,
     amountPaid: 207.90,
     changeGiven: 0.00,
     iva: 0.00,
@@ -187,15 +193,17 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
     ],
   },
 
-  // TICKET 7: Bodega Aurrera / Walmart
+  // TICKET 7: Bodega Aurrera / Walmart (Inversión Mónica: Aceite y Mozzarella)
   {
     id: 'ticket-aurrera-insumos',
     storeName: 'Bodega Aurrera (Walmart México)',
     branchAddress: 'Nogales, Sonora',
     folio: 'Ticket Bodega Aurrera',
-    timestamp: '2026-11-05T14:10:00.000Z',
+    timestamp: '2026-10-08T13:10:00.000Z',
     paymentMethod: 'efectivo',
     category: 'insumos',
+    investor: 'Mónica',
+    isInitialInvestment: true,
     amountPaid: 300.00,
     changeGiven: 51.00,
     items: [
@@ -228,6 +236,131 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
         effectiveUnitPrice: 131.00,
         lineTotal: 131.00,
         ingredientKey: 'queso',
+      },
+    ],
+  },
+
+  // TICKET PAN: Panadería La Espiga 08/10/2026 (Inversión Mónica: 20 panes)
+  {
+    id: 'ticket-pan-2026-10-08',
+    storeName: 'Panadería La Espiga (Pan Philly)',
+    branchAddress: 'Nogales, Sonora',
+    folio: 'Nota Pan-001',
+    timestamp: '2026-10-08T13:30:00.000Z',
+    paymentMethod: 'efectivo',
+    category: 'pan',
+    investor: 'Mónica',
+    isInitialInvestment: true,
+    items: [
+      {
+        id: 'item-pan-1',
+        description: 'Pan Philly Artesanal Especial (20 pzas)',
+        quantity: 20,
+        unit: 'pza',
+        regularUnitPrice: 10.00,
+        effectiveUnitPrice: 10.00,
+        lineTotal: 200.00,
+        ingredientKey: 'pan',
+      },
+    ],
+  },
+
+  // INVERSIÓN ISAAC 1: Dulcería El Payaso 08/10/2026
+  {
+    id: 'ticket-dulceria-isaac',
+    storeName: 'Dulcería El Payaso (Inversión Isaac)',
+    branchAddress: 'Centro, Nogales, Sonora',
+    folio: 'Nota Dulcería-153',
+    timestamp: '2026-10-08T14:00:00.000Z',
+    paymentMethod: 'efectivo',
+    category: 'desechables',
+    investor: 'Isaac',
+    isInitialInvestment: true,
+    items: [
+      {
+        id: 'item-dulceria-1',
+        description: 'Bolsas, papel grado alimenticio y empaques',
+        quantity: 1,
+        unit: 'paq',
+        regularUnitPrice: 153.50,
+        effectiveUnitPrice: 153.50,
+        lineTotal: 153.50,
+        ingredientKey: 'desechables',
+      },
+    ],
+  },
+
+  // INVERSIÓN ISAAC 2: Economax Nogales 08/10/2026 ($406)
+  {
+    id: 'ticket-economax-1-isaac',
+    storeName: 'Economax Nogales (Inversión Isaac)',
+    branchAddress: 'Av. Alvaro Obregón, Nogales, Sonora',
+    folio: 'Ticket Economax-406',
+    timestamp: '2026-10-08T14:20:00.000Z',
+    paymentMethod: 'efectivo',
+    category: 'desechables',
+    investor: 'Isaac',
+    isInitialInvestment: true,
+    items: [
+      {
+        id: 'item-economax-1',
+        description: 'Charolas térmicas y contenedores para sándwich y papas',
+        quantity: 1,
+        unit: 'paq',
+        regularUnitPrice: 406.00,
+        effectiveUnitPrice: 406.00,
+        lineTotal: 406.00,
+        ingredientKey: 'desechables',
+      },
+    ],
+  },
+
+  // INVERSIÓN ISAAC 3: Economax Nogales 08/10/2026 ($215)
+  {
+    id: 'ticket-economax-2-isaac',
+    storeName: 'Economax Nogales (Inversión Isaac)',
+    branchAddress: 'Av. Alvaro Obregón, Nogales, Sonora',
+    folio: 'Ticket Economax-215',
+    timestamp: '2026-10-08T14:40:00.000Z',
+    paymentMethod: 'efectivo',
+    category: 'desechables',
+    investor: 'Isaac',
+    isInitialInvestment: true,
+    items: [
+      {
+        id: 'item-economax-2',
+        description: 'Bolsas para despacho, servilletas y guantes de preparación',
+        quantity: 1,
+        unit: 'paq',
+        regularUnitPrice: 215.00,
+        effectiveUnitPrice: 215.00,
+        lineTotal: 215.00,
+        ingredientKey: 'desechables',
+      },
+    ],
+  },
+
+  // INVERSIÓN ISAAC 4: Aporte de Capital y Equipo 08/10/2026 ($589)
+  {
+    id: 'ticket-inversion-isaac-efectivo',
+    storeName: 'Aporte de Inversión Inicial (Isaac)',
+    branchAddress: 'Los Phillys de La Patrona, Nogales, Sonora',
+    folio: 'Aporte-Isaac-589',
+    timestamp: '2026-10-08T15:00:00.000Z',
+    paymentMethod: 'efectivo',
+    category: 'equipo',
+    investor: 'Isaac',
+    isInitialInvestment: true,
+    items: [
+      {
+        id: 'item-inversion-isaac-1',
+        description: 'Aporte de capital / utensilios y equipo de plancha',
+        quantity: 1,
+        unit: 'serv',
+        regularUnitPrice: 589.00,
+        effectiveUnitPrice: 589.00,
+        lineTotal: 589.00,
+        ingredientKey: 'equipo',
       },
     ],
   },
@@ -340,6 +473,41 @@ export function calculateTicketSavings(ticket: PurchaseTicketRecord): number {
 }
 
 /**
+ * Datos exactos de la Inversión Inicial (Capital Semilla de Socios) extraídos directamente
+ * de la libreta contable manuscrita ("Inversión"):
+ * - Mónica: $1,493.00 (Gas $200, Queso chih. $208, Sirloin 4.04kg $673, Aceite $81, Pan 20 $200, Queso Mozzarella $131)
+ * - Isaac: $1,363.50 (Dulcería $153.50, Economax $406, Economax $215, Aporte de Inversión $589)
+ * Total Inversión Inicial: $2,856.50
+ */
+export const INITIAL_INVESTMENTS = {
+  monica: {
+    partnerName: 'Mónica' as const,
+    total: 1493.00,
+    percentage: 52.27,
+    items: [
+      { description: 'Gas LP', amount: 200.00, store: 'Rivera Gas', category: 'gas', detail: '18 L Gas LP para cocina' },
+      { description: 'Queso Chihuahua', amount: 208.00, store: 'Abastos Esperanza', category: 'quesos', detail: '0.99 kg Queso Los Ojos' },
+      { description: 'Carne Steak de Sirloin', amount: 673.00, store: 'SuKarne', category: 'carne', detail: '4.04 kg Sirloin SK en paquete' },
+      { description: 'Aceite Vegetal', amount: 81.00, store: 'Bodega Aurrera', category: 'insumos', detail: '3 pzas Aceite 800ml ($27 c/u)' },
+      { description: 'Pan Philly Artesanal', amount: 200.00, store: 'Panadería La Espiga', category: 'pan', detail: '20 piezas de pan ($10 c/u)' },
+      { description: 'Queso Mozzarella', amount: 131.00, store: 'Bodega Aurrera', category: 'quesos', detail: '1 pza Queso La Villita' },
+    ],
+  },
+  isaac: {
+    partnerName: 'Isaac' as const,
+    total: 1363.50,
+    percentage: 47.73,
+    items: [
+      { description: 'Dulcería (Empaques y Desechables)', amount: 153.50, store: 'Dulcería El Payaso', category: 'desechables', detail: 'Bolsas, papel grado alimenticio y empaques' },
+      { description: 'Economax (Charolas Térmicas)', amount: 406.00, store: 'Economax Nogales', category: 'desechables', detail: 'Charolas y contenedores sándwich/papas' },
+      { description: 'Economax (Bolsas y Suministros)', amount: 215.00, store: 'Economax Nogales', category: 'desechables', detail: 'Bolsas de despacho, servilletas y guantes' },
+      { description: 'Aporte de Capital / Equipo', amount: 589.00, store: 'Aporte Inicial Isaac', category: 'equipo', detail: 'Utensilios de cocina y aporte inicial' },
+    ],
+  },
+  total: 2856.50,
+};
+
+/**
  * Convierte los tickets físicos crudos en registros ExpenseRecord calculados dinámicamente
  * para integrarse de forma nativa con toda la contabilidad del programa.
  */
@@ -363,5 +531,7 @@ export const INITIAL_TICKET_EXPENSES: ExpenseRecord[] = RAW_PURCHASE_TICKETS.map
     paymentMethod: ticket.paymentMethod,
     items: ticket.items,
     savedDiscount: calculatedSavings,
+    investor: ticket.investor || 'Caja',
+    isInitialInvestment: ticket.isInitialInvestment || false,
   };
 }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

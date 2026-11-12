@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ExpenseRecord, TimeframeFilter, PaymentMethod } from '@/types/accounting';
-import { calculateExpensesAnalytics, getCalculatedExpenseAmount } from '@/utils/accountingCalculations';
-import { calculateTicketItemSubtotal, calculateTicketItemSavings } from '@/data/purchaseTicketsData';
+import { ExpenseRecord, TimeframeFilter, PaymentMethod, SaleRecord } from '@/types/accounting';
+import { calculateExpensesAnalytics, getCalculatedExpenseAmount, calculateInitialInvestmentSummary } from '@/utils/accountingCalculations';
+import { calculateTicketItemSubtotal, calculateTicketItemSavings, INITIAL_INVESTMENTS } from '@/data/purchaseTicketsData';
 import { VERIFIED_PROVIDERS } from '@/data/initialProviders';
 import {
   X,
@@ -18,12 +18,15 @@ import {
   Banknote,
   Scale,
   Tag,
+  Coins,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface GastosModalProps {
   isOpen: boolean;
   onClose: () => void;
   expenses?: ExpenseRecord[];
+  sales?: SaleRecord[];
   timeframe: TimeframeFilter;
   onAddExpense: (description: string, amount: number, category: string, paymentMethod?: PaymentMethod, storeName?: string) => void;
   onDeleteExpense: (expenseId: string) => void;
@@ -33,12 +36,14 @@ export const GastosModal: React.FC<GastosModalProps> = ({
   isOpen,
   onClose,
   expenses = [],
+  sales = [],
   timeframe,
   onAddExpense,
   onDeleteExpense,
 }) => {
   const safeExpenses = Array.isArray(expenses) ? expenses : [];
-  const [activeTab, setActiveTab] = useState<'tickets' | 'insumos' | 'nuevo'>('tickets');
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const [activeTab, setActiveTab] = useState<'tickets' | 'inversion' | 'insumos' | 'nuevo'>('tickets');
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(safeExpenses[0]?.id || null);
 
   // Form states for adding a new ticket/expense
@@ -49,6 +54,7 @@ export const GastosModal: React.FC<GastosModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo');
 
   const analytics = useMemo(() => calculateExpensesAnalytics(safeExpenses), [safeExpenses]);
+  const investmentSummary = useMemo(() => calculateInitialInvestmentSummary(safeSales, safeExpenses), [safeSales, safeExpenses]);
 
   if (!isOpen) return null;
 
@@ -106,10 +112,23 @@ export const GastosModal: React.FC<GastosModalProps> = ({
 
         {/* Calculated Financial Summary Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 sm:px-6 py-3 bg-[#111114] border-b border-white/[0.06] shrink-0">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+            <span className="text-[10px] uppercase font-bold text-amber-300 block">Inversión Inicial</span>
+            <span className="font-mono text-base sm:text-lg font-extrabold text-[#e59b38]">
+              ${analytics.initialInvestmentTotal > 0 ? analytics.initialInvestmentTotal.toFixed(2) : '2,856.50'}
+            </span>
+            <span className="text-[9px] text-neutral-400 block truncate">
+              Mónica $1,493 • Isaac $1,363.50
+            </span>
+          </div>
+
           <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
-            <span className="text-[10px] uppercase font-bold text-rose-300 block">Total Tickets</span>
+            <span className="text-[10px] uppercase font-bold text-rose-300 block">Total Compras</span>
             <span className="font-mono text-base sm:text-lg font-extrabold text-rose-400">
               -${analytics.totalExpenses.toFixed(2)}
+            </span>
+            <span className="text-[9px] text-neutral-400 block truncate">
+              Inversión + Reabasto
             </span>
           </div>
 
@@ -118,6 +137,9 @@ export const GastosModal: React.FC<GastosModalProps> = ({
             <span className="font-mono text-base sm:text-lg font-bold text-emerald-400">
               ${analytics.cashExpenses.toFixed(2)}
             </span>
+            <span className="text-[9px] text-neutral-400 block truncate">
+              Caja y efectivo socios
+            </span>
           </div>
 
           <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20">
@@ -125,12 +147,8 @@ export const GastosModal: React.FC<GastosModalProps> = ({
             <span className="font-mono text-base sm:text-lg font-bold text-sky-400">
               ${analytics.cardExpenses.toFixed(2)}
             </span>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <span className="text-[10px] uppercase font-bold text-amber-300 block">Ahorro en Ofertas</span>
-            <span className="font-mono text-base sm:text-lg font-bold text-[#e59b38]">
-              +${analytics.totalSavingsFromOffers.toFixed(2)}
+            <span className="text-[9px] text-neutral-400 block truncate">
+              SuKarne y compras
             </span>
           </div>
         </div>
@@ -147,7 +165,20 @@ export const GastosModal: React.FC<GastosModalProps> = ({
             }`}
           >
             <Receipt className="w-3.5 h-3.5" />
-            <span>Tickets Desglosados ({safeExpenses.length})</span>
+            <span>Tickets ({safeExpenses.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('inversion')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeTab === 'inversion'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'text-amber-400 hover:text-white bg-amber-500/10 border border-amber-500/25'
+            }`}
+          >
+            <Coins className="w-3.5 h-3.5" />
+            <span>Inversión Inicial ($2,856.50)</span>
           </button>
 
           <button
@@ -160,7 +191,7 @@ export const GastosModal: React.FC<GastosModalProps> = ({
             }`}
           >
             <Scale className="w-3.5 h-3.5" />
-            <span>Cálculo por Insumo (Kilos / Costo Promedio)</span>
+            <span>Cálculo Insumos</span>
           </button>
 
           <button
@@ -173,7 +204,7 @@ export const GastosModal: React.FC<GastosModalProps> = ({
             }`}
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Registrar Nuevo Ticket / Gasto</span>
+            <span>+ Registrar Gasto</span>
           </button>
         </div>
 
@@ -231,6 +262,20 @@ export const GastosModal: React.FC<GastosModalProps> = ({
                               {isCard ? <CreditCard className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
                               <span>{isCard ? 'Tarjeta Débito' : 'Efectivo'}</span>
                             </span>
+
+                            {expense.investor && (
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  expense.investor === 'Mónica'
+                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/35'
+                                    : expense.investor === 'Isaac'
+                                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/35'
+                                    : 'bg-neutral-500/20 text-neutral-300 border-neutral-500/35'
+                                }`}
+                              >
+                                {expense.investor}
+                              </span>
+                            )}
                           </div>
 
                           <div className="text-[11px] text-neutral-400 mt-0.5 flex items-center gap-2 flex-wrap">
@@ -360,7 +405,127 @@ export const GastosModal: React.FC<GastosModalProps> = ({
           </div>
         )}
 
-        {/* Tab 2: Cálculo por Insumo */}
+        {/* Tab 2: Inversión Inicial por Socio (Libreta Contable) */}
+        {activeTab === 'inversion' && (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            {/* Header Card with Notebook Citation */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#18181c] to-emerald-500/15 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30">
+                    Libreta Contable • Folio Inversión
+                  </span>
+                  <span className="text-[11px] text-neutral-400">Jueves 8 de Octubre 2026</span>
+                </div>
+                <h3 className="font-serif text-lg sm:text-xl font-bold text-white mt-1">
+                  Capital Inicial de Socios: ${INITIAL_INVESTMENTS.total.toFixed(2)}
+                </h3>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Gastos de arranque y provisiones pagadas por Mónica e Isaac antes de la apertura.
+                </p>
+              </div>
+
+              <div className="flex flex-col items-start sm:items-end gap-1">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  100% Recuperada
+                </span>
+                <span className="text-[11px] text-neutral-400 font-mono">
+                  {investmentSummary.isFullyRecovered
+                    ? `Ganancia neta sobre capital: +$${investmentSummary.netProfitAfterInitialInvestment.toFixed(2)}`
+                    : `Recuperado: ${investmentSummary.recoveredPercentage}%`}
+                </span>
+              </div>
+            </div>
+
+            {/* Side-by-side Partner Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Partner 1: Mónica */}
+              <div className="rounded-2xl bg-[#19191d] border border-rose-500/25 overflow-hidden flex flex-col">
+                <div className="p-4 bg-rose-500/10 border-b border-rose-500/20 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-rose-300 tracking-wider">Socia Fundadora</span>
+                    <h4 className="font-serif text-lg font-bold text-white">Mónica</h4>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono text-xl font-extrabold text-rose-400">
+                      ${INITIAL_INVESTMENTS.monica.total.toFixed(2)}
+                    </span>
+                    <span className="block text-[10px] text-neutral-400 font-mono">
+                      {INITIAL_INVESTMENTS.monica.percentage}% del capital
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-2.5 flex-1">
+                  {INITIAL_INVESTMENTS.monica.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors"
+                    >
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="text-xs font-semibold text-neutral-200 truncate">{item.description}</span>
+                        <span className="text-[10px] text-neutral-400 truncate">{item.store} • {item.detail}</span>
+                      </div>
+                      <span className="font-mono font-bold text-xs text-rose-300 shrink-0">
+                        ${item.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-3 bg-white/[0.02] border-t border-white/[0.06] text-center">
+                  <span className="text-[11px] text-neutral-400">
+                    Total comprobado en libreta: <strong className="text-white">${INITIAL_INVESTMENTS.monica.total.toFixed(2)}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Partner 2: Isaac */}
+              <div className="rounded-2xl bg-[#19191d] border border-sky-500/25 overflow-hidden flex flex-col">
+                <div className="p-4 bg-sky-500/10 border-b border-sky-500/20 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-sky-300 tracking-wider">Socio Fundador</span>
+                    <h4 className="font-serif text-lg font-bold text-white">Isaac</h4>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono text-xl font-extrabold text-sky-400">
+                      ${INITIAL_INVESTMENTS.isaac.total.toFixed(2)}
+                    </span>
+                    <span className="block text-[10px] text-neutral-400 font-mono">
+                      {INITIAL_INVESTMENTS.isaac.percentage}% del capital
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-2.5 flex-1">
+                  {INITIAL_INVESTMENTS.isaac.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors"
+                    >
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="text-xs font-semibold text-neutral-200 truncate">{item.description}</span>
+                        <span className="text-[10px] text-neutral-400 truncate">{item.store} • {item.detail}</span>
+                      </div>
+                      <span className="font-mono font-bold text-xs text-sky-300 shrink-0">
+                        ${item.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-3 bg-white/[0.02] border-t border-white/[0.06] text-center">
+                  <span className="text-[11px] text-neutral-400">
+                    Total comprobado en libreta: <strong className="text-white">${INITIAL_INVESTMENTS.isaac.total.toFixed(2)}</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Cálculo por Insumo */}
         {activeTab === 'insumos' && (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
             <div className="text-xs text-neutral-300">

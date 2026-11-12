@@ -65,6 +65,9 @@ const getClientDate = (): Date => {
 };
 
 export default function SalesCounterPage() {
+  // Hide Nueva Orden, Cocina, Órdenes, Porciones for now
+  const HIDE_ORDER_MODULES = true;
+
   const isHydrated = useSyncExternalStore(
     subscribe,
     () => true,
@@ -116,16 +119,16 @@ export default function SalesCounterPage() {
     }
   });
 
-  // Load the 9 physical purchase tickets calculated from raw items
+  // Load the physical purchase tickets and initial partner investments calculated from raw items
   const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
     if (typeof window === 'undefined') return INITIAL_TICKET_EXPENSES;
     try {
-      const saved = localStorage.getItem('lapatrona_v4_expenses');
+      const saved = localStorage.getItem('lapatrona_v5_expenses');
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-      localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(INITIAL_TICKET_EXPENSES));
+      localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(INITIAL_TICKET_EXPENSES));
       return INITIAL_TICKET_EXPENSES;
     } catch {
       return INITIAL_TICKET_EXPENSES;
@@ -506,7 +509,7 @@ export default function SalesCounterPage() {
   const handleSaveExpenses = (updatedExpenses: ExpenseRecord[]) => {
     setExpenses(updatedExpenses);
     try {
-      localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(updatedExpenses));
+      localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(updatedExpenses));
     } catch (e) {
       console.error('Failed to save expenses to localStorage', e);
     }
@@ -765,7 +768,7 @@ export default function SalesCounterPage() {
           localStorage.setItem('lapatrona_v4_sales', JSON.stringify(res.data.sales));
           if (Array.isArray(res?.data?.expenses) && res.data.expenses.length > 0) {
             setExpenses(res.data.expenses);
-            localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(res.data.expenses));
+            localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(res.data.expenses));
           }
           if (Array.isArray(res?.data?.closedShifts)) {
             setClosedShifts(res.data.closedShifts);
@@ -780,7 +783,7 @@ export default function SalesCounterPage() {
     if (!isHydrated || typeof window === 'undefined') return;
     try {
       localStorage.setItem('lapatrona_v4_sales', JSON.stringify(sales));
-      localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(expenses));
+      localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(expenses));
       localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(closedShifts));
       localStorage.setItem('lapatrona_v4_products', JSON.stringify(products));
     } catch {}
@@ -859,19 +862,19 @@ export default function SalesCounterPage() {
         return;
       }
 
-      if (e.key === ' ' || e.key.toLowerCase() === 'o' || e.key.toLowerCase() === 'n') {
+      if (!HIDE_ORDER_MODULES && (e.key === ' ' || e.key.toLowerCase() === 'o' || e.key.toLowerCase() === 'n')) {
         e.preventDefault();
         setIsNuevaOrdenOpen(true);
         return;
       }
 
-      if (e.key.toLowerCase() === 'b') {
+      if (!HIDE_ORDER_MODULES && e.key.toLowerCase() === 'b') {
         e.preventDefault();
         setIsHistorialComandasOpen(true);
         return;
       }
 
-      if (e.key.toLowerCase() === 's') {
+      if (!HIDE_ORDER_MODULES && e.key.toLowerCase() === 's') {
         e.preventDefault();
         setIsStockModalOpen(true);
         return;
@@ -925,7 +928,7 @@ export default function SalesCounterPage() {
         return;
       }
 
-      if (e.key.toLowerCase() === 'd') {
+      if (!HIDE_ORDER_MODULES && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         setIsPantallaCocinaOpen(true);
         return;
@@ -1477,6 +1480,7 @@ export default function SalesCounterPage() {
         isOpen={isGastosModalOpen}
         onClose={() => setIsGastosModalOpen(false)}
         expenses={filteredExpenses}
+        sales={sales}
         timeframe={timeframe}
         onAddExpense={handleAddExpense}
         onDeleteExpense={handleDeleteExpense}
@@ -1504,7 +1508,7 @@ export default function SalesCounterPage() {
       />
 
       {/* Nueva Orden (Para Llevar) Modal */}
-      {isNuevaOrdenOpen && (
+      {!HIDE_ORDER_MODULES && isNuevaOrdenOpen && (
         <NuevaOrdenModal
           isOpen={isNuevaOrdenOpen}
           onClose={() => setIsNuevaOrdenOpen(false)}
@@ -1516,50 +1520,60 @@ export default function SalesCounterPage() {
       )}
 
       {/* Ticket de Orden Modal */}
-      <TicketComandaModal
-        isOpen={isTicketComandaOpen}
-        onClose={() => setIsTicketComandaOpen(false)}
-        order={activeTicketOrder}
-        businessInfo={businessInfo}
-        onNewOrder={() => setIsNuevaOrdenOpen(true)}
-      />
+      {!HIDE_ORDER_MODULES && (
+        <TicketComandaModal
+          isOpen={isTicketComandaOpen}
+          onClose={() => setIsTicketComandaOpen(false)}
+          order={activeTicketOrder}
+          businessInfo={businessInfo}
+          onNewOrder={() => setIsNuevaOrdenOpen(true)}
+        />
+      )}
 
       {/* Control de Stock y Porciones Modal */}
-      <StockManagerModal
-        isOpen={isStockModalOpen}
-        onClose={() => setIsStockModalOpen(false)}
-        products={products}
-        stockMap={stockMap}
-        onUpdateStock={handleUpdateStockQuantity}
-        onAddStock={handleAddStock}
-        onToggleTrackStock={handleToggleTrackStock}
-        onResetAllStock={handleResetAllStock}
-        onOpenMiseEnPlace={() => setIsMiseEnPlaceOpen(true)}
-      />
+      {!HIDE_ORDER_MODULES && (
+        <StockManagerModal
+          isOpen={isStockModalOpen}
+          onClose={() => setIsStockModalOpen(false)}
+          products={products}
+          stockMap={stockMap}
+          onUpdateStock={handleUpdateStockQuantity}
+          onAddStock={handleAddStock}
+          onToggleTrackStock={handleToggleTrackStock}
+          onResetAllStock={handleResetAllStock}
+          onOpenMiseEnPlace={() => setIsMiseEnPlaceOpen(true)}
+        />
+      )}
 
       {/* Mise en Place y Prep de Cocina Modal */}
-      <MiseEnPlaceModal
-        isOpen={isMiseEnPlaceOpen}
-        onClose={() => setIsMiseEnPlaceOpen(false)}
-        stockMap={stockMap}
-      />
+      {!HIDE_ORDER_MODULES && (
+        <MiseEnPlaceModal
+          isOpen={isMiseEnPlaceOpen}
+          onClose={() => setIsMiseEnPlaceOpen(false)}
+          stockMap={stockMap}
+        />
+      )}
 
       {/* Historial y Reimpresión de Órdenes Modal */}
-      <HistorialComandasModal
-        isOpen={isHistorialComandasOpen}
-        onClose={() => setIsHistorialComandasOpen(false)}
-        orders={orders}
-        onCancelOrder={handleCancelOrder}
-        onChangeOrderPaymentMethod={handleChangeOrderPaymentMethod}
-      />
+      {!HIDE_ORDER_MODULES && (
+        <HistorialComandasModal
+          isOpen={isHistorialComandasOpen}
+          onClose={() => setIsHistorialComandasOpen(false)}
+          orders={orders}
+          onCancelOrder={handleCancelOrder}
+          onChangeOrderPaymentMethod={handleChangeOrderPaymentMethod}
+        />
+      )}
 
       {/* Pantalla de Cocina / KDS en Vivo */}
-      <PantallaCocinaModal
-        isOpen={isPantallaCocinaOpen}
-        onClose={() => setIsPantallaCocinaOpen(false)}
-        orders={orders}
-        onUpdateOrderStatus={handleUpdateOrderStatus}
-      />
+      {!HIDE_ORDER_MODULES && (
+        <PantallaCocinaModal
+          isOpen={isPantallaCocinaOpen}
+          onClose={() => setIsPantallaCocinaOpen(false)}
+          orders={orders}
+          onUpdateOrderStatus={handleUpdateOrderStatus}
+        />
+      )}
 
       {/* Membrete y Datos del Negocio Modal */}
       <ConfiguracionNegocioModal

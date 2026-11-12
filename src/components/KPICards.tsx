@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { TimeframeFilter, ProductItem, SaleRecord, ExpenseRecord } from '@/types/accounting';
-import { getPaymentBreakdown, calculateExpensesAnalytics } from '@/utils/accountingCalculations';
+import { getPaymentBreakdown, calculateExpensesAnalytics, calculateInitialInvestmentSummary } from '@/utils/accountingCalculations';
 import { ShoppingBag, DollarSign, Award, Wallet, Calculator, Download, Trash2, TrendingUp } from 'lucide-react';
 
 interface KPICardsProps {
@@ -41,6 +41,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
   const totalUnits = safeSales.reduce((acc, curr) => acc + (curr?.quantity || 0), 0);
   const totalRevenue = safeSales.reduce((acc, curr) => acc + (curr?.quantity || 0) * (curr?.unitPrice || 0), 0);
   const expenseAnalytics = calculateExpensesAnalytics(safeExpenses);
+  const investmentSummary = calculateInitialInvestmentSummary(safeSales, safeExpenses);
   const totalTicketsExpenses = expenseAnalytics.totalExpenses;
   const netRealProfit = totalRevenue - totalTicketsExpenses - totalWasteCost;
   const netMarginPct = totalRevenue > 0 ? Math.round((netRealProfit / totalRevenue) * 100) : 0;
@@ -137,6 +138,35 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
       </div>
 
+      {/* Initial Investment Partner Banner */}
+      {investmentSummary.totalInitialInvestment > 0 && (
+        <div
+          onClick={onOpenGastos}
+          className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-emerald-500/10 border border-amber-500/30 cursor-pointer hover:border-amber-500/50 transition-all text-xs shadow-sm"
+          title="Ver desglose de inversión inicial por socio (Mónica y Isaac)"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-bold text-white uppercase tracking-wider text-[11px]">
+              Inversión Inicial Socios:
+            </span>
+            <span className="font-mono font-extrabold text-[#e59b38]">
+              ${investmentSummary.totalInitialInvestment.toFixed(2)}
+            </span>
+            <span className="text-neutral-400 text-[11px] hidden md:inline">
+              (Mónica: <strong className="text-neutral-200">${investmentSummary.monica.total.toFixed(2)}</strong> • Isaac: <strong className="text-neutral-200">${investmentSummary.isaac.total.toFixed(2)}</strong>)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px] border border-emerald-500/30">
+              ✓ Inversión 100% Recuperada (+${investmentSummary.netProfitAfterInitialInvestment.toFixed(2)} libre)
+            </span>
+            <span className="text-[10px] text-neutral-400 hover:text-white underline">Ver detalle ➔</span>
+          </div>
+        </div>
+      )}
+
       {/* 5 Sleek KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         
@@ -188,7 +218,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs uppercase tracking-wider text-rose-300 font-medium">
-              Tickets Insumos ({expenses.length})
+              Inversión + Gastos ({safeExpenses.length})
             </span>
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/25">
               <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-rose-400" />
@@ -200,7 +230,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
             </span>
           </div>
           <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-400 group-hover:text-rose-300 transition-colors truncate">
-            Efec: ${expenseAnalytics.cashExpenses.toFixed(0)} • Tarj: ${expenseAnalytics.cardExpenses.toFixed(0)}
+            Inversión: ${expenseAnalytics.initialInvestmentTotal.toFixed(0)} • Reabasto: ${expenseAnalytics.operationalExpensesTotal.toFixed(0)}
           </div>
         </div>
 

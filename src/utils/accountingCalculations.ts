@@ -12,6 +12,7 @@ import {
   TipStaffMember,
   TipStaffRole,
   TipSettlementPayout,
+  InitialInvestmentSummary,
 } from '@/types/accounting';
 import { calculateTicketItemSubtotal } from '@/data/purchaseTicketsData';
 
@@ -139,6 +140,10 @@ export interface ExpenseAnalyticsSummary {
   cashExpenses: number;
   cardExpenses: number;
   totalSavingsFromOffers: number;
+  initialInvestmentTotal: number;
+  monicaInvestmentTotal: number;
+  isaacInvestmentTotal: number;
+  operationalExpensesTotal: number;
   byCategory: Record<string, number>;
   ingredientMetrics: {
     key: string;
@@ -156,6 +161,10 @@ export function calculateExpensesAnalytics(expenses: ExpenseRecord[] = []): Expe
   let cashExpenses = 0;
   let cardExpenses = 0;
   let totalSavingsFromOffers = 0;
+  let initialInvestmentTotal = 0;
+  let monicaInvestmentTotal = 0;
+  let isaacInvestmentTotal = 0;
+  let operationalExpensesTotal = 0;
   const byCategory: Record<string, number> = {};
 
   const ingMap: Record<
@@ -164,11 +173,14 @@ export function calculateExpensesAnalytics(expenses: ExpenseRecord[] = []): Expe
   > = {
     sirloin: { label: 'Carne Steak de Sirloin', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
     queso: { label: 'Quesos (Los Ojos / Mozzarella)', totalQuantity: 0, unit: 'kg/pza', totalSpent: 0 },
+    pan: { label: 'Pan Philly Artesanal', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
     papa: { label: 'Papa Russet', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
     aceite: { label: 'Aceite Vegetal', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
     gas_lp: { label: 'Gas LP', totalQuantity: 0, unit: 'L', totalSpent: 0 },
     chile_caribe: { label: 'Chile Caribe', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
     cebolla: { label: 'Cebolla Blanca', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
+    desechables: { label: 'Desechables, Charolas y Empaques', totalQuantity: 0, unit: 'paq', totalSpent: 0 },
+    equipo: { label: 'Equipo y Utensilios de Cocina', totalQuantity: 0, unit: 'serv', totalSpent: 0 },
     doritos: { label: 'Doritos Nacho (Papas Lokas)', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
     leche: { label: 'Leche (Champurro)', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
     mayonesa: { label: 'Mayonesa', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
@@ -179,6 +191,17 @@ export function calculateExpensesAnalytics(expenses: ExpenseRecord[] = []): Expe
     if (!exp) continue;
     const amt = getCalculatedExpenseAmount(exp);
     totalExpenses += amt;
+
+    if (exp.isInitialInvestment || exp.investor === 'Mónica' || exp.investor === 'Isaac') {
+      initialInvestmentTotal += amt;
+      if (exp.investor === 'Mónica') {
+        monicaInvestmentTotal += amt;
+      } else if (exp.investor === 'Isaac') {
+        isaacInvestmentTotal += amt;
+      }
+    } else {
+      operationalExpensesTotal += amt;
+    }
 
     if (exp.paymentMethod === 'tarjeta' || exp.paymentMethod === 'transferencia') {
       cardExpenses += amt;
@@ -226,8 +249,89 @@ export function calculateExpensesAnalytics(expenses: ExpenseRecord[] = []): Expe
     cashExpenses: Math.round(cashExpenses * 100) / 100,
     cardExpenses: Math.round(cardExpenses * 100) / 100,
     totalSavingsFromOffers: Math.round(totalSavingsFromOffers * 100) / 100,
+    initialInvestmentTotal: Math.round(initialInvestmentTotal * 100) / 100,
+    monicaInvestmentTotal: Math.round(monicaInvestmentTotal * 100) / 100,
+    isaacInvestmentTotal: Math.round(isaacInvestmentTotal * 100) / 100,
+    operationalExpensesTotal: Math.round(operationalExpensesTotal * 100) / 100,
     byCategory,
     ingredientMetrics,
+  };
+}
+
+/**
+ * Calcula el resumen y desglose de la Inversión Inicial por socio (Mónica y Isaac)
+ * y el estado de retorno de inversión (ROI / Recuperación)
+ */
+export function calculateInitialInvestmentSummary(
+  sales: SaleRecord[] = [],
+  expenses: ExpenseRecord[] = []
+): InitialInvestmentSummary {
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
+  const totalRevenue = safeSales.reduce((acc, curr) => acc + (curr?.quantity || 0) * (curr?.unitPrice || 0), 0);
+
+  const monicaItems: { description: string; amount: number; category?: string; detail?: string }[] = [];
+  const isaacItems: { description: string; amount: number; category?: string; detail?: string }[] = [];
+  let monicaTotal = 0;
+  let isaacTotal = 0;
+  let operationalTotal = 0;
+
+  for (const exp of safeExpenses) {
+    if (!exp) continue;
+    const amt = getCalculatedExpenseAmount(exp);
+    if (exp.investor === 'Mónica') {
+      monicaTotal += amt;
+      monicaItems.push({
+        description: exp.description,
+        amount: amt,
+        category: exp.category,
+        detail: exp.storeName,
+      });
+    } else if (exp.investor === 'Isaac') {
+      isaacTotal += amt;
+      isaacItems.push({
+        description: exp.description,
+        amount: amt,
+        category: exp.category,
+        detail: exp.storeName,
+      });
+    } else {
+      operationalTotal += amt;
+    }
+  }
+
+  const totalInitial = Math.round((monicaTotal + isaacTotal) * 100) / 100;
+  const totalAllExp = Math.round((totalInitial + operationalTotal) * 100) / 100;
+  const recoveredAmount = Math.min(totalRevenue, totalInitial);
+  const recoveredPercentage = totalInitial > 0 ? Math.min(100, Math.round((totalRevenue / totalInitial) * 100)) : 100;
+  const remainingToRecover = Math.max(0, Math.round((totalInitial - totalRevenue) * 100) / 100);
+  const isFullyRecovered = totalRevenue >= totalInitial;
+  const netProfitAfterInitialInvestment = Math.round((totalRevenue - totalAllExp) * 100) / 100;
+
+  return {
+    monica: {
+      partnerName: 'Mónica',
+      total: Math.round(monicaTotal * 100) / 100,
+      percentage: totalInitial > 0 ? Math.round((monicaTotal / totalInitial) * 10000) / 100 : 50,
+      itemsCount: monicaItems.length,
+      items: monicaItems,
+    },
+    isaac: {
+      partnerName: 'Isaac',
+      total: Math.round(isaacTotal * 100) / 100,
+      percentage: totalInitial > 0 ? Math.round((isaacTotal / totalInitial) * 10000) / 100 : 50,
+      itemsCount: isaacItems.length,
+      items: isaacItems,
+    },
+    totalInitialInvestment: totalInitial,
+    totalOperationalExpenses: Math.round(operationalTotal * 100) / 100,
+    totalAllExpenses: totalAllExp,
+    recoveredAmount,
+    recoveredPercentage,
+    remainingToRecover,
+    isFullyRecovered,
+    netProfitAfterInitialInvestment,
   };
 }
 
