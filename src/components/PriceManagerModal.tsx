@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ProductItem, CategoryType } from '@/types/accounting';
 import { X, DollarSign, Save, Info, Sparkles, ChevronDown, ChevronUp, Calculator, Plus, Trash2 } from 'lucide-react';
+import { ModalShell } from './ModalShell';
 
 export interface RawIngredientCosts {
   sirloinKg: number;
@@ -256,111 +257,115 @@ function PriceManagerModalDialog({
   const dynamicRecipes = computeEscandalloFromRaw(rawCosts);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-3xl max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#141417] border border-white/[0.12] shadow-2xl overflow-hidden pb-safe sm:pb-0">
-        
-        {/* Mobile handle indicator */}
-        <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
-
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/[0.08] bg-[#19191d] shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#e59b38]/15 border border-[#e59b38]/30 flex items-center justify-center shrink-0">
-              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#e59b38]" />
-            </div>
-            <div>
-              <h2 className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
-                Precios y Costeo de Alimentos
-              </h2>
-              <p className="text-[11px] sm:text-xs text-neutral-400">
-                Ajusta precios de venta y costos de insumo por receta.
-              </p>
-            </div>
+    <ModalShell
+      isOpen={true}
+      onClose={onClose}
+      labelledBy="price-manager-title"
+      maxWidthClass="max-w-3xl"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 p-4 sm:p-6 border-b border-white/[0.08] bg-[#19191d] shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#e59b38]/15 border border-[#e59b38]/30 flex items-center justify-center shrink-0">
+            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#e59b38]" />
           </div>
+          <div className="min-w-0">
+            <h2 id="price-manager-title" className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
+              Precios y Costeo de Alimentos
+            </h2>
+            <p className="text-[11px] sm:text-xs text-neutral-400">
+              Ajusta precios de venta y costos de insumo por receta.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar gestor de precios"
+          className="w-11 h-11 sm:w-9 sm:h-9 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 transition-colors shrink-0 touch-manipulation"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Action Controls Bar */}
+      <div className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#e59b38]/10 border-b border-[#e59b38]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[11px] sm:text-xs text-[#f5f0eb] shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Info className="w-4 h-4 text-[#e59b38] shrink-0" />
+          <span>Ingresa precios y costos unitarios para calcular tu margen bruto.</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 transition-colors touch-manipulation"
+            type="button"
+            onClick={() => setShowNewProductForm((prev) => !prev)}
+            className="min-h-[44px] sm:min-h-[34px] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-semibold text-xs sm:text-[11px] transition-all shadow-sm active:scale-95 touch-manipulation"
           >
-            <X className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5 shrink-0" />
+            <span>{showNewProductForm ? 'Ocultar Creador' : '+ Nuevo Platillo'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRawCosts((prev) => !prev)}
+            className="min-h-[44px] sm:min-h-[34px] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-[11px] transition-all shadow-sm active:scale-95 touch-manipulation"
+          >
+            <Calculator className="w-3.5 h-3.5 text-[#e59b38] shrink-0" />
+            <span>{showRawCosts ? 'Ocultar Insumos' : 'Precios Proveedor'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleApplyEscandallos}
+            className="min-h-[44px] sm:min-h-[34px] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-xs sm:text-[11px] transition-all shadow-sm active:scale-95 touch-manipulation"
+            title="Cargar costos sugeridos basados en insumos reales de tickets (Sirloin SuKarne, Papa Russet Ley, Queso Los Ojos)"
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Autocompletar Escandallos</span>
           </button>
         </div>
+      </div>
 
-        {/* Informative notice with Autocomplete Escandallos Button */}
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#e59b38]/10 border-b border-[#e59b38]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] sm:text-xs text-[#f5f0eb] shrink-0">
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-[#e59b38] shrink-0" />
-            <span>Ingresa precios y costos unitarios para calcular tu margen bruto.</span>
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setShowNewProductForm((prev) => !prev)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-semibold text-[11px] transition-all shadow-sm active:scale-95"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{showNewProductForm ? 'Ocultar Creador' : '+ Nuevo Platillo / Bebida'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowRawCosts((prev) => !prev)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-[11px] transition-all shadow-sm active:scale-95"
-            >
-              <Calculator className="w-3.5 h-3.5 text-[#e59b38]" />
-              <span>{showRawCosts ? 'Ocultar Insumos' : 'Precios Proveedor'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleApplyEscandallos}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-[11px] transition-all shadow-sm active:scale-95"
-              title="Cargar costos sugeridos basados en insumos reales de tickets (Sirloin SuKarne, Papa Russet Ley, Queso Los Ojos)"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Autocompletar Escandallos</span>
-            </button>
-          </div>
-        </div>
-
+      {/* Unified Scrollable Area (prevents accordions from crushing the list on mobile) */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {/* Dynamic New Product Creator Form */}
         {showNewProductForm && (
-          <div className="p-4 bg-[#16161c] border-b border-white/[0.08] text-xs space-y-3 shrink-0 animate-fade-in">
-            <div className="flex items-center justify-between">
+          <form onSubmit={handleAddNewProduct} className="p-4 sm:p-5 bg-[#16161c] border-b border-white/[0.08] text-xs space-y-3 animate-fade-in">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-bold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <Plus className="w-4 h-4 text-emerald-400" />
+                <Plus className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>Agregar Nuevo Platillo o Bebida al Menú</span>
               </span>
               <span className="text-[10px] text-neutral-400">Se agregará al punto de venta y comanda</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="sm:col-span-2">
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Nombre del Producto</label>
+                <label className="text-[11px] text-neutral-400 block mb-1">Nombre del Producto</label>
                 <input
                   type="text"
                   required
                   value={newProdName}
                   onChange={(e) => setNewProdName(e.target.value)}
                   placeholder="Ej. Refresco Lata 355ml"
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-3 py-2 text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Variante / Tamaño</label>
+                <label className="text-[11px] text-neutral-400 block mb-1">Variante / Tamaño</label>
                 <input
                   type="text"
                   value={newProdVariant}
                   onChange={(e) => setNewProdVariant(e.target.value)}
                   placeholder="Ej. 355ml / Frío"
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-3 py-2 text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Categoría</label>
+                <label className="text-[11px] text-neutral-400 block mb-1">Categoría</label>
                 <select
                   value={newProdCategory}
                   onChange={(e) => setNewProdCategory(e.target.value as CategoryType)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-3 py-2 text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 >
                   <option value="sandwiches">Sándwiches</option>
                   <option value="quesadillas">Quesadillas</option>
@@ -374,186 +379,197 @@ function PriceManagerModalDialog({
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Precio de Venta ($ MXN)</label>
+                <label className="text-[11px] text-neutral-400 block mb-1">Precio de Venta ($ MXN)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="any"
                   value={newProdPrice}
                   onChange={(e) => setNewProdPrice(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-3 py-2 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Costo Unitario ($ MXN)</label>
+                <label className="text-[11px] text-neutral-400 block mb-1">Costo Unitario ($ MXN)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="any"
                   value={newProdCost}
                   onChange={(e) => setNewProdCost(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-3 py-2 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div className="sm:col-span-2 flex items-end">
                 <button
-                  type="button"
-                  onClick={handleAddNewProduct}
-                  className="w-full py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+                  type="submit"
+                  className="w-full min-h-[44px] sm:min-h-[36px] py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors shadow-sm active:scale-95 flex items-center justify-center gap-1.5 touch-manipulation"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Agregar al Catálogo</span>
                 </button>
               </div>
             </div>
-          </div>
+          </form>
         )}
 
         {/* Dynamic Raw Ingredients Costing Accordion */}
         {showRawCosts && (
-          <div className="p-4 bg-[#121215] border-b border-white/[0.08] text-xs space-y-3 shrink-0 animate-fade-in">
-            <div className="flex items-center justify-between">
+          <div className="p-4 sm:p-5 bg-[#121215] border-b border-white/[0.08] text-xs space-y-3 animate-fade-in">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-bold text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <Calculator className="w-4 h-4 text-[#e59b38]" />
-                <span>Precios Base de Insumos (Costo de Materia Prima)</span>
+                <Calculator className="w-4 h-4 text-[#e59b38] shrink-0" />
+                <span>Precios Base de Insumos (Materia Prima)</span>
               </span>
               <button
                 type="button"
                 onClick={handleApplyEscandallos}
-                className="text-[11px] text-[#e59b38] hover:underline font-bold"
+                className="min-h-[44px] sm:min-h-0 px-2 sm:px-0 text-xs sm:text-[11px] text-[#e59b38] hover:underline font-bold touch-manipulation"
               >
                 Aplicar a Todas las Recetas
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Sirloin SK SuKarne ($/kg)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Sirloin SK SuKarne ($/kg)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="1"
                   value={rawCosts.sirloinKg}
                   onChange={(e) => handleUpdateRawCost('sirloinKg', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Pan Hoagie Philly ($/pz)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Pan Hoagie Philly ($/pz)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.5"
                   value={rawCosts.panHoagiePiece}
                   onChange={(e) => handleUpdateRawCost('panHoagiePiece', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Tortilla Harina ($/pz)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Tortilla Harina ($/pz)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.5"
                   value={rawCosts.tortillaPiece}
                   onChange={(e) => handleUpdateRawCost('tortillaPiece', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Queso Los Ojos ($/kg)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Queso Los Ojos ($/kg)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="5"
                   value={rawCosts.cheeseKg}
                   onChange={(e) => handleUpdateRawCost('cheeseKg', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Papa Russet Ley ($/kg)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Papa Russet Ley ($/kg)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.5"
                   value={rawCosts.friesKg}
                   onChange={(e) => handleUpdateRawCost('friesKg', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Doritos Nacho Ley ($/pz)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Doritos Nacho Ley ($/pz)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="1"
                   value={rawCosts.doritosPiece}
                   onChange={(e) => handleUpdateRawCost('doritosPiece', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Leche Champurro ($/pz)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Leche Champurro ($/pz)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="1"
                   value={rawCosts.lecheChampurroPiece}
                   onChange={(e) => handleUpdateRawCost('lecheChampurroPiece', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Queso Amarillo ($/kg)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Queso Amarillo ($/kg)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="5"
                   value={rawCosts.cheddarCheeseKg}
                   onChange={(e) => handleUpdateRawCost('cheddarCheeseKg', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Chile y Cebolla ($/kg)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Chile y Cebolla ($/kg)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="1"
                   value={rawCosts.veggiesKg}
                   onChange={(e) => handleUpdateRawCost('veggiesKg', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Empaques Llevar ($/pz)</label>
+                <label className="text-[11px] sm:text-[10px] text-neutral-400 block mb-1">Empaques Llevar ($/pz)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.5"
                   value={rawCosts.packagingPiece}
                   onChange={(e) => handleUpdateRawCost('packagingPiece', parseFloat(e.target.value) || 0)}
-                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                  className="w-full min-h-[44px] sm:min-h-[36px] bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-base sm:text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
-              <div className="sm:col-span-5 flex justify-end">
+              <div className="min-[360px]:col-span-2 sm:col-span-3 md:col-span-5 flex justify-end pt-1">
                 <button
                   type="button"
                   onClick={handleApplyEscandallos}
-                  className="px-6 py-2 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-xs transition-colors shadow-sm"
+                  className="w-full sm:w-auto min-h-[44px] sm:min-h-[36px] px-6 py-2 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-xs transition-colors shadow-sm touch-manipulation"
                 >
                   Recalcular Costos y Escandallos
                 </button>
@@ -562,12 +578,12 @@ function PriceManagerModalDialog({
           </div>
         )}
 
-        {/* Scrollable Form Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-3 sm:space-y-4">
-          <div className="grid grid-cols-12 gap-2 sm:gap-3 pb-2 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-400 border-b border-white/[0.06]">
-            <div className="col-span-6 sm:col-span-6">Producto y Variante</div>
-            <div className="col-span-3 sm:col-span-3 text-right">Precio ($)</div>
-            <div className="col-span-3 sm:col-span-3 text-right">Costo ($)</div>
+        {/* Product List Form */}
+        <form id="price-manager-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+          <div className="hidden sm:grid sm:grid-cols-12 gap-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-400 border-b border-white/[0.06]">
+            <div className="col-span-6">Producto y Variante</div>
+            <div className="col-span-3 text-right">Precio ($)</div>
+            <div className="col-span-3 text-right">Costo ($)</div>
           </div>
 
           {formData.map((item) => {
@@ -590,101 +606,110 @@ function PriceManagerModalDialog({
             return (
               <div
                 key={item.id}
-                className="rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] transition-colors overflow-hidden"
+                className="rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.1] transition-colors overflow-hidden"
               >
-                <div className="grid grid-cols-12 gap-2 sm:gap-3 items-center p-2.5 sm:p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3">
                   {/* Product Name & Variant */}
-                  <div className="col-span-6 sm:col-span-6">
-                    <div className="flex items-center gap-2">
-                      <div className="font-semibold text-xs sm:text-sm text-[#f5f0eb] leading-tight truncate">
+                  <div className="sm:col-span-6 min-w-0">
+                    <div className="flex items-start justify-between sm:justify-start gap-2">
+                      <div className="font-semibold text-sm text-[#f5f0eb] leading-snug">
                         {item.name}
                       </div>
                       {!isBaseProduct && (
                         <button
                           type="button"
                           onClick={() => handleDeleteProduct(item.id)}
-                          className="text-neutral-500 hover:text-red-400 p-0.5 rounded transition-colors shrink-0"
+                          className="w-11 h-11 sm:w-auto sm:h-auto sm:p-1 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 flex items-center justify-center transition-colors shrink-0 touch-manipulation"
                           title="Eliminar producto del catálogo"
+                          aria-label={`Eliminar ${item.name}`}
                         >
-                          <Trash2 className="w-3 h-3 text-red-400" />
+                          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-red-400" />
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] sm:text-[11px] text-[#e59b38] font-mono truncate">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className="text-[11px] text-[#e59b38] font-mono">
                         {item.variantLabel}
                       </span>
                       {margin !== null && (
-                        <span className="text-[9px] sm:text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1 rounded shrink-0">
-                          {margin}%
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded tabular-nums shrink-0">
+                          {margin}% margen
                         </span>
                       )}
                       {recipe && (
                         <button
                           type="button"
                           onClick={() => setExpandedRecipeId(isExpanded ? null : item.id)}
-                          className="text-[9px] text-neutral-400 hover:text-white flex items-center gap-0.5 underline decoration-white/20"
+                          aria-expanded={isExpanded}
+                          className="min-h-[36px] sm:min-h-0 px-2 sm:px-0 py-1 sm:py-0 text-[11px] sm:text-[10px] text-neutral-300 hover:text-white flex items-center gap-0.5 underline decoration-white/25 touch-manipulation"
                         >
                           <span>Receta</span>
-                          {isExpanded ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+                          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Selling Price Input */}
-                  <div className="col-span-3 sm:col-span-3">
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-mono">
-                        $
-                      </span>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        min="0"
-                        value={item.defaultPrice || ''}
-                        onChange={(e) =>
-                          handlePriceChange(item.id, parseFloat(e.target.value) || 0)
-                        }
-                        placeholder="0.00"
-                        className="w-full bg-[#1e1e23] border border-white/10 rounded-lg pl-5 pr-2 py-2 text-xs sm:text-sm text-right font-mono text-white focus:outline-none focus:border-[#e59b38]"
-                      />
+                  {/* Selling Price & Cost Inputs */}
+                  <div className="grid grid-cols-2 gap-2.5 sm:contents">
+                    <div className="sm:col-span-3">
+                      <label className="block sm:hidden text-[10px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">
+                        Precio Venta ($)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-mono">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="any"
+                          min="0"
+                          value={item.defaultPrice || ''}
+                          onChange={(e) =>
+                            handlePriceChange(item.id, parseFloat(e.target.value) || 0)
+                          }
+                          placeholder="0.00"
+                          className="w-full min-h-[44px] sm:min-h-[38px] bg-[#1e1e23] border border-white/10 rounded-lg pl-6 pr-2.5 py-2 text-base sm:text-sm text-right font-mono text-white focus:outline-none focus:border-[#e59b38] tabular-nums"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Unit Cost Input */}
-                  <div className="col-span-3 sm:col-span-3">
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-mono">
-                        $
-                      </span>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        min="0"
-                        value={item.cost || ''}
-                        onChange={(e) =>
-                          handleCostChange(item.id, parseFloat(e.target.value) || 0)
-                        }
-                        placeholder="Pendiente"
-                        className="w-full bg-[#1e1e23] border border-white/10 rounded-lg pl-5 pr-2 py-2 text-xs sm:text-sm text-right font-mono text-neutral-200 focus:outline-none focus:border-[#e59b38]"
-                      />
+                    <div className="sm:col-span-3">
+                      <label className="block sm:hidden text-[10px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">
+                        Costo Unitario ($)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-mono">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="any"
+                          min="0"
+                          value={item.cost || ''}
+                          onChange={(e) =>
+                            handleCostChange(item.id, parseFloat(e.target.value) || 0)
+                          }
+                          placeholder="Pendiente"
+                          className="w-full min-h-[44px] sm:min-h-[38px] bg-[#1e1e23] border border-white/10 rounded-lg pl-6 pr-2.5 py-2 text-base sm:text-sm text-right font-mono text-neutral-200 focus:outline-none focus:border-[#e59b38] tabular-nums"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Expandable Recipe Insumos Breakdown */}
                 {isExpanded && recipe && (
-                  <div className="px-3 pb-3 pt-1 border-t border-white/[0.04] bg-black/20 text-[10px] text-neutral-400 space-y-1 animate-fade-in">
-                    <div className="font-semibold text-neutral-300 uppercase tracking-wider">
+                  <div className="px-3 pb-3 pt-2 border-t border-white/[0.04] bg-black/20 text-[11px] text-neutral-400 space-y-1.5 animate-fade-in">
+                    <div className="font-semibold text-neutral-300 uppercase tracking-wider text-[10px]">
                       Desglose de Escandallo (Insumos Base):
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {recipe.ingredients.map((ing, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-[#e59b38]" />
+                        <div key={idx} className="flex items-start gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#e59b38] mt-1.5 shrink-0" />
                           <span>{ing}</span>
                         </div>
                       ))}
@@ -695,27 +720,26 @@ function PriceManagerModalDialog({
             );
           })}
         </form>
-
-        {/* Footer Actions */}
-        <div className="p-3.5 sm:p-5 border-t border-white/[0.08] bg-[#19191d] flex items-center justify-between shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border border-white/10 text-xs font-semibold text-neutral-300 hover:text-white transition-colors touch-manipulation active:scale-95"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="flex items-center gap-2 bg-[#e59b38] hover:bg-[#d48b28] text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 sm:px-6 sm:py-2.5 rounded-full transition-all shadow-md active:scale-95 touch-manipulation"
-          >
-            <Save className="w-4 h-4" />
-            <span>Guardar Precios</span>
-          </button>
-        </div>
-
       </div>
-    </div>
+
+      {/* Footer Actions */}
+      <div className="p-4 sm:p-5 border-t border-white/[0.08] bg-[#19191d] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 sm:flex-none min-h-[44px] px-4 py-2.5 sm:px-5 rounded-full border border-white/10 text-xs font-semibold text-neutral-300 hover:text-white transition-colors touch-manipulation active:scale-95"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          form="price-manager-form"
+          className="flex-1 sm:flex-none min-h-[44px] flex items-center justify-center gap-2 bg-[#e59b38] hover:bg-[#d48b28] text-black font-bold text-xs uppercase tracking-wider px-5 py-2.5 sm:px-6 rounded-full transition-all shadow-md active:scale-95 touch-manipulation"
+        >
+          <Save className="w-4 h-4 shrink-0" />
+          <span>Guardar Precios</span>
+        </button>
+      </div>
+    </ModalShell>
   );
 }

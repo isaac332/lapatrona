@@ -11,6 +11,7 @@ import {
   Send,
   Check,
 } from 'lucide-react';
+import { ModalShell } from '@/components/ModalShell';
 
 interface MermasModalProps {
   isOpen: boolean;
@@ -160,269 +161,273 @@ export const MermasModal: React.FC<MermasModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-4xl max-h-[90dvh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#141417] border border-white/[0.12] shadow-2xl overflow-hidden pb-safe sm:pb-0">
-        
-        {/* Mobile handle indicator */}
-        <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
-
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/[0.08] bg-[#19191d] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0">
-              <Trash2 className="w-5 h-5 text-rose-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif text-lg sm:text-xl font-bold text-white">
-                  Mermas y Desperdicios de Cocina
-                </h2>
-                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  {wasteRecords.length} registros
-                </span>
-              </div>
-              <p className="text-[11px] text-neutral-400">
-                Control de costo de insumos perdidos por quemado, caída o caducidad
-              </p>
-            </div>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      labelledBy="mermas-modal-title"
+      maxWidthClass="max-w-4xl"
+      maxHeightClass="max-h-[92dvh]"
+    >
+      {/* Modal Header */}
+      <div className="flex items-center justify-between gap-2 p-4 sm:p-5 border-b border-white/[0.08] bg-[#19191d] shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0" aria-hidden="true">
+            <Trash2 className="w-5 h-5 text-rose-400" />
           </div>
-
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Executive Summary Bar */}
-        <div className="grid grid-cols-3 gap-2 px-4 sm:px-6 py-3 border-b border-white/[0.06] bg-[#121215] shrink-0 text-center">
-          <div className="bg-white/[0.02] border border-white/5 p-2 rounded-xl">
-            <span className="block text-[10px] text-neutral-400 uppercase font-semibold">Costo Total de Merma</span>
-            <span className="font-serif text-lg sm:text-xl font-bold text-rose-400">
-              ${totalWasteCost.toFixed(2)} <span className="text-[10px] font-sans text-neutral-500">MXN</span>
-            </span>
-          </div>
-          <div className="bg-white/[0.02] border border-white/5 p-2 rounded-xl">
-            <span className="block text-[10px] text-neutral-400 uppercase font-semibold">Impacto s/ Venta</span>
-            <span className="font-mono text-lg sm:text-xl font-bold text-[#e59b38]">
-              {wastePercentage}%
-            </span>
-          </div>
-          <div className="bg-white/[0.02] border border-white/5 p-2 rounded-xl">
-            <span className="block text-[10px] text-neutral-400 uppercase font-semibold">Incidentes</span>
-            <span className="font-mono text-lg sm:text-xl font-bold text-white">
-              {wasteRecords.length}
-            </span>
-          </div>
-        </div>
-
-        {/* Modal Body: Split 2 Columns */}
-        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/[0.08]">
-          
-          {/* Left Column: Form to Record New Waste (5 cols) */}
-          <form onSubmit={handleSubmit} className="lg:col-span-5 p-4 sm:p-5 overflow-y-auto space-y-3.5 bg-[#16161a]">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5 text-rose-400" />
-              <span>Registrar Nueva Merma</span>
-            </h3>
-
-            {/* Item Type: Dish vs Raw Ingredient */}
-            <div className="grid grid-cols-2 gap-1.5 bg-[#121215] p-1 rounded-xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => setItemType('product')}
-                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  itemType === 'product'
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                Platillo del Menú
-              </button>
-              <button
-                type="button"
-                onClick={() => setItemType('ingredient')}
-                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  itemType === 'ingredient'
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                Insumo / Materia Prima
-              </button>
-            </div>
-
-            {/* Select Item */}
-            <div>
-              <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                {itemType === 'product' ? 'Seleccionar Platillo Afectado' : 'Seleccionar Insumo'}
-              </label>
-              {itemType === 'product' ? (
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-400 font-medium"
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.variantLabel}) - Costo: ${p.cost.toFixed(2)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <select
-                  value={selectedIngredientId}
-                  onChange={(e) => setSelectedIngredientId(e.target.value)}
-                  className="w-full bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-400 font-medium"
-                >
-                  {RAW_INGREDIENTS.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name} (${i.unitCost.toFixed(2)}/{i.unit})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Quantity */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                  Cantidad ({currentUnit})
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  min="0.01"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-rose-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                  Costo Calculado
-                </label>
-                <div className="w-full bg-[#121215] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono font-bold text-rose-400">
-                  ${calculatedTotalCost.toFixed(2)} MXN
-                </div>
-              </div>
-            </div>
-
-            {/* Reason */}
-            <div>
-              <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                Motivo del Desperdicio
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {(Object.keys(REASON_LABELS) as WasteReason[]).map((r) => {
-                  const isActive = reason === r;
-                  return (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic('light');
-                        setReason(r);
-                      }}
-                      className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-all border ${
-                        isActive
-                          ? 'bg-rose-500 text-black border-rose-500 font-black shadow-sm'
-                          : 'bg-white/5 border-white/5 text-neutral-400 hover:text-white'
-                      }`}
-                    >
-                      {REASON_LABELS[r].label.split('/')[0]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Responsible and Notes */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                  Cocinero / Responsable
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej. Parrillero Juan"
-                  value={responsible}
-                  onChange={(e) => setResponsible(e.target.value)}
-                  className="w-full bg-[#1b1b20] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-rose-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                  Nota / Observación
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej. Se cayó al voltear"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-[#1b1b20] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-rose-400"
-                />
-              </div>
-            </div>
-
-            {/* Deduct from portion stock checkbox */}
-            {itemType === 'product' && (
-              <label className="flex items-center gap-2 text-xs text-neutral-300 bg-[#121215] p-2.5 rounded-xl border border-white/5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={deductStock}
-                  onChange={(e) => setDeductStock(e.target.checked)}
-                  className="w-4 h-4 rounded text-rose-500 focus:ring-rose-500 focus:ring-offset-0 bg-[#1b1b20] border-white/20"
-                />
-                <span className="text-[11px]">
-                  Descontar <b className="text-white">{numQty} porciones</b> del stock disponible de cocina
-                </span>
-              </label>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-98 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Guardar Registro de Merma</span>
-            </button>
-          </form>
-
-          {/* Right Column: Historical Waste Log (7 cols) */}
-          <div className="lg:col-span-7 p-4 sm:p-5 flex flex-col overflow-hidden bg-[#111114]">
-            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] shrink-0">
-              <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                Historial de Mermas del Turno ({wasteRecords.length})
+          <div className="min-w-0">
+            <div className="flex items-center flex-wrap gap-2">
+              <h2 id="mermas-modal-title" className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
+                Mermas y Desperdicios de Cocina
+              </h2>
+              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+                {wasteRecords.length} registros
               </span>
+            </div>
+            <p className="text-[11px] text-neutral-400">
+              Control de costo de insumos perdidos por quemado, caída o caducidad
+            </p>
+          </div>
+        </div>
 
-              <button
-                type="button"
-                onClick={handleShareWhatsApp}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition-all active:scale-95"
-                title="Compartir reporte de mermas por WhatsApp"
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar mermas de cocina"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 transition-colors shrink-0 active:scale-95"
+        >
+          <X className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      {/* Executive Summary Bar */}
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border-b border-white/[0.06] bg-[#121215] shrink-0 text-center">
+        <div className="bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+          <span className="block text-[10px] text-neutral-400 uppercase font-semibold">Costo Total de Merma</span>
+          <span className="font-serif text-base sm:text-xl font-bold text-rose-400 tabular-nums">
+            ${totalWasteCost.toFixed(2)} <span className="text-[10px] font-sans text-neutral-500">MXN</span>
+          </span>
+        </div>
+        <div className="bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+          <span className="block text-[10px] text-neutral-400 uppercase font-semibold">Impacto s/ Venta</span>
+          <span className="font-mono text-base sm:text-xl font-bold text-[#e59b38] tabular-nums">
+            {wastePercentage}%
+          </span>
+        </div>
+        <div className="bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+          <span className="block text-[10px] text-neutral-400 uppercase font-semibold">Incidentes</span>
+          <span className="font-mono text-base sm:text-xl font-bold text-white tabular-nums">
+            {wasteRecords.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Modal Body: Vertical Scroll on Mobile, Independent Split on Desktop */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/[0.08]">
+        
+        {/* Left Column: Form to Record New Waste (5 cols) */}
+        <form onSubmit={handleSubmit} className="lg:col-span-5 p-4 sm:p-5 lg:overflow-y-auto lg:overscroll-contain space-y-3.5 bg-[#16161a]">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5 text-rose-400" aria-hidden="true" />
+            <span>Registrar Nueva Merma</span>
+          </h3>
+
+          {/* Item Type: Dish vs Raw Ingredient */}
+          <div className="grid grid-cols-2 gap-1.5 bg-[#121215] p-1 rounded-xl border border-white/10">
+            <button
+              type="button"
+              onClick={() => setItemType('product')}
+              className={`min-h-[44px] sm:min-h-[36px] py-1.5 rounded-lg text-xs font-bold transition-all ${
+                itemType === 'product'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Platillo del Menú
+            </button>
+            <button
+              type="button"
+              onClick={() => setItemType('ingredient')}
+              className={`min-h-[44px] sm:min-h-[36px] py-1.5 rounded-lg text-xs font-bold transition-all ${
+                itemType === 'ingredient'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Insumo / Materia Prima
+            </button>
+          </div>
+
+          {/* Select Item */}
+          <div>
+            <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+              {itemType === 'product' ? 'Seleccionar Platillo Afectado' : 'Seleccionar Insumo'}
+            </label>
+            {itemType === 'product' ? (
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="w-full min-h-[44px] sm:min-h-[38px] bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-base sm:text-xs text-white focus:outline-none focus:border-rose-400 font-medium"
               >
-                {copiedWhatsApp ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>¡Enviando!</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Reporte WhatsApp</span>
-                  </>
-                )}
-              </button>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.variantLabel}) - Costo: ${p.cost.toFixed(2)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={selectedIngredientId}
+                onChange={(e) => setSelectedIngredientId(e.target.value)}
+                className="w-full min-h-[44px] sm:min-h-[38px] bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-base sm:text-xs text-white focus:outline-none focus:border-rose-400 font-medium"
+              >
+                {RAW_INGREDIENTS.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name} (${i.unitCost.toFixed(2)}/{i.unit})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Quantity */}
+          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                Cantidad ({currentUnit})
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="any"
+                min="0.01"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-full min-h-[44px] sm:min-h-[38px] bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-base sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-rose-400"
+              />
             </div>
 
-            {/* Waste List */}
-            <div className="flex-1 overflow-y-auto pt-3 space-y-2 pr-1">
+            <div>
+              <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                Costo Calculado
+              </label>
+              <div className="w-full min-h-[44px] sm:min-h-[38px] flex items-center bg-[#121215] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono font-bold text-rose-400">
+                ${calculatedTotalCost.toFixed(2)} MXN
+              </div>
+            </div>
+          </div>
+
+          {/* Reason */}
+          <div>
+            <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+              Motivo del Desperdicio
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(REASON_LABELS) as WasteReason[]).map((r) => {
+                const isActive = reason === r;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setReason(r);
+                    }}
+                    className={`min-h-[44px] sm:min-h-[34px] px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-left transition-all border ${
+                      isActive
+                        ? 'bg-rose-500 text-black border-rose-500 font-black shadow-sm'
+                        : 'bg-white/5 border-white/5 text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    {REASON_LABELS[r].label.split('/')[0]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Responsible and Notes */}
+          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                Cocinero / Responsable
+              </label>
+              <input
+                type="text"
+                placeholder="Ej. Parrillero Juan"
+                value={responsible}
+                onChange={(e) => setResponsible(e.target.value)}
+                className="w-full min-h-[44px] sm:min-h-[38px] bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-base sm:text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-rose-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
+                Nota / Observación
+              </label>
+              <input
+                type="text"
+                placeholder="Ej. Se cayó al voltear"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full min-h-[44px] sm:min-h-[38px] bg-[#1b1b20] border border-white/10 rounded-xl px-3 py-2 text-base sm:text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-rose-400"
+              />
+            </div>
+          </div>
+
+          {/* Deduct from portion stock checkbox */}
+          {itemType === 'product' && (
+            <label className="flex items-center gap-2.5 text-xs text-neutral-300 bg-[#121215] p-3 min-h-[44px] rounded-xl border border-white/5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={deductStock}
+                onChange={(e) => setDeductStock(e.target.checked)}
+                className="w-5 h-5 sm:w-4 sm:h-4 rounded text-rose-500 focus:ring-rose-500 focus:ring-offset-0 bg-[#1b1b20] border-white/20 shrink-0"
+              />
+              <span className="text-[11px] leading-snug">
+                Descontar <b className="text-white">{numQty} porciones</b> del stock disponible de cocina
+              </span>
+            </label>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full min-h-[44px] py-3 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all"
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span>Guardar Registro de Merma</span>
+          </button>
+        </form>
+
+        {/* Right Column: Historical Waste Log (7 cols) */}
+        <div className="lg:col-span-7 p-4 sm:p-5 flex flex-col lg:overflow-hidden bg-[#111114]">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/[0.08] shrink-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+              Historial de Mermas del Turno ({wasteRecords.length})
+            </span>
+
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="flex items-center gap-1.5 px-3 min-h-[44px] sm:min-h-[36px] rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition-all active:scale-95"
+              title="Compartir reporte de mermas por WhatsApp"
+            >
+              {copiedWhatsApp ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
+                  <span>¡Enviando!</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Reporte WhatsApp</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Waste List */}
+          <div className="lg:flex-1 lg:overflow-y-auto lg:overscroll-contain pt-3 space-y-2 pr-1">
               {wasteRecords.length === 0 ? (
                 <div className="text-center py-12 px-4 text-neutral-500 space-y-2">
                   <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-400/50" />
@@ -482,7 +487,7 @@ export const MermasModal: React.FC<MermasModalProps> = ({
                             triggerHaptic('medium');
                             onDeleteWasteRecord(w.id);
                           }}
-                          className="text-[10px] text-neutral-500 hover:text-red-400 transition-colors"
+                          className="text-xs text-neutral-400 hover:text-red-400 transition-colors min-h-[44px] sm:min-h-0 px-2 flex items-center"
                           title="Eliminar registro"
                         >
                           Eliminar
@@ -496,8 +501,6 @@ export const MermasModal: React.FC<MermasModalProps> = ({
           </div>
 
         </div>
-
-      </div>
-    </div>
+    </ModalShell>
   );
 };

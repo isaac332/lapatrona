@@ -25,13 +25,14 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "La Patrona POS",
   },
+  other: {
+    "text-scale": "scale",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#0d0d0f",
 };
@@ -46,7 +47,7 @@ export default function RootLayout({
       lang="es-MX"
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full bg-[#0d0d0f] text-[#f5f0eb] flex flex-col font-sans selection:bg-[#e59b38] selection:text-black touch-manipulation">
+      <body className="min-h-dvh bg-[#0d0d0f] text-[#f5f0eb] flex flex-col font-sans selection:bg-[#e59b38] selection:text-black touch-manipulation overflow-x-clip">
         {children}
       </body>
     </html>

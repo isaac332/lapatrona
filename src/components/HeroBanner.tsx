@@ -37,15 +37,15 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-12 items-center">
           
           {/* Left Column: Bold Editorial Typography */}
-          <div className="lg:col-span-7 flex flex-col justify-center space-y-3 sm:space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] w-fit">
-              <Sparkles className="w-3.5 h-3.5 text-[#e59b38]" />
-              <span className="text-[10px] sm:text-xs uppercase tracking-widest text-neutral-300 font-medium">
+          <div className="lg:col-span-7 flex flex-col justify-center space-y-3 sm:space-y-6 min-w-0">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] max-w-full w-fit">
+              <Sparkles className="w-3.5 h-3.5 text-[#e59b38] shrink-0" aria-hidden="true" />
+              <span className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-neutral-300 font-medium leading-snug">
                 Los Phillys de La Patrona • Aguilas #1 • {timeframeLabel}
               </span>
             </div>
 
-            <h1 className="font-serif text-2xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#f5f0eb] leading-[1.1] uppercase">
+            <h1 className="font-serif text-[clamp(1.75rem,5vw+0.5rem,3.75rem)] font-bold tracking-tight text-[#f5f0eb] leading-[1.08] uppercase">
               LOS PHILLYS DE <br />
               <span className="text-[#e59b38]">LA PATRONA.</span>
             </h1>
@@ -55,18 +55,20 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             </p>
 
             {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
+            <div className="flex flex-col min-[380px]:flex-row flex-wrap items-stretch min-[380px]:items-center gap-2.5 sm:gap-3 pt-1">
               <button
+                type="button"
                 onClick={onScrollToProducts}
-                className="flex-1 sm:flex-initial bg-[#e59b38] active:bg-[#d48b28] hover:bg-[#d48b28] text-black font-extrabold text-xs sm:text-sm uppercase tracking-wider px-5 sm:px-7 py-3 sm:py-3.5 rounded-full shadow-lg transition-all duration-150 active:scale-95 flex items-center justify-center gap-2 touch-manipulation select-none"
+                className="flex-1 sm:flex-initial min-h-[44px] bg-[#e59b38] active:bg-[#d48b28] hover:bg-[#d48b28] text-black font-extrabold text-xs sm:text-sm uppercase tracking-wider px-5 sm:px-7 py-3 rounded-full shadow-lg transition-all duration-150 active:scale-95 flex items-center justify-center gap-2 touch-manipulation select-none"
               >
                 <span>Ir al Menú</span>
-                <ArrowDown className="w-4 h-4" />
+                <ArrowDown className="w-4 h-4 shrink-0" aria-hidden="true" />
               </button>
 
               <button
+                type="button"
                 onClick={onOpenHistory}
-                className="flex-1 sm:flex-initial border border-[#e59b38]/50 active:border-[#e59b38] hover:border-[#e59b38] bg-transparent active:bg-white/[0.05] hover:bg-white/[0.03] text-[#f5f0eb] font-semibold text-xs sm:text-sm uppercase tracking-wider px-5 sm:px-7 py-3 sm:py-3.5 rounded-full transition-all duration-150 active:scale-95 text-center touch-manipulation select-none"
+                className="flex-1 sm:flex-initial min-h-[44px] border border-[#e59b38]/50 active:border-[#e59b38] hover:border-[#e59b38] bg-transparent active:bg-white/[0.05] hover:bg-white/[0.03] text-[#f5f0eb] font-semibold text-xs sm:text-sm uppercase tracking-wider px-5 sm:px-7 py-3 rounded-full transition-all duration-150 active:scale-95 flex items-center justify-center text-center touch-manipulation select-none"
               >
                 Ver Registro de Ventas
               </button>
@@ -120,23 +122,39 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
 
         {/* Section Ticker Footer */}
-        <div className="mt-4 sm:mt-10 pt-3 sm:pt-6 border-t border-white/[0.08] flex items-center justify-between text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.2em] text-neutral-400">
-          <div className="flex items-center gap-3 sm:gap-8 font-medium overflow-x-auto no-scrollbar whitespace-nowrap py-1">
-            <span className="hover:text-white transition-colors cursor-pointer shrink-0" onClick={onScrollToProducts}>
-              <strong className="text-white">01</strong> / Sándwiches
-            </span>
-            <span className="text-neutral-600 shrink-0">•</span>
-            <span className="hover:text-white transition-colors cursor-pointer shrink-0" onClick={onScrollToProducts}>
-              <strong className="text-white">02</strong> / Quesadillas
-            </span>
-            <span className="text-neutral-600 shrink-0">•</span>
-            <span className="hover:text-white transition-colors cursor-pointer shrink-0" onClick={onScrollToProducts}>
-              <strong className="text-white">03</strong> / Papas Lokas
-            </span>
-            <span className="text-neutral-600 shrink-0">•</span>
-            <span className="hover:text-white transition-colors cursor-pointer shrink-0" onClick={onScrollToProducts}>
-              <strong className="text-white">04</strong> / Champurro
-            </span>
+        <div className="mt-4 sm:mt-10 pt-3 sm:pt-6 border-t border-white/[0.08] flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.18em] text-neutral-400">
+          <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 sm:gap-x-6 font-medium">
+            <button
+              type="button"
+              className="hover:text-white transition-colors min-h-[44px] flex items-center shrink-0"
+              onClick={onScrollToProducts}
+            >
+              <span><strong className="text-white">01</strong> / Sándwiches</span>
+            </button>
+            <span className="text-neutral-600 shrink-0" aria-hidden="true">•</span>
+            <button
+              type="button"
+              className="hover:text-white transition-colors min-h-[44px] flex items-center shrink-0"
+              onClick={onScrollToProducts}
+            >
+              <span><strong className="text-white">02</strong> / Quesadillas</span>
+            </button>
+            <span className="text-neutral-600 shrink-0" aria-hidden="true">•</span>
+            <button
+              type="button"
+              className="hover:text-white transition-colors min-h-[44px] flex items-center shrink-0"
+              onClick={onScrollToProducts}
+            >
+              <span><strong className="text-white">03</strong> / Papas Lokas</span>
+            </button>
+            <span className="text-neutral-600 shrink-0" aria-hidden="true">•</span>
+            <button
+              type="button"
+              className="hover:text-white transition-colors min-h-[44px] flex items-center shrink-0"
+              onClick={onScrollToProducts}
+            >
+              <span><strong className="text-white">04</strong> / Champurro</span>
+            </button>
           </div>
 
           <div className="hidden sm:flex items-center gap-2 shrink-0">

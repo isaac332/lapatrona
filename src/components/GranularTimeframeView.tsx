@@ -232,29 +232,29 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 sm:gap-3 overflow-x-auto no-scrollbar">
+                <div className="flex sm:grid sm:grid-cols-7 gap-2 sm:gap-3 overflow-x-auto snap-x snap-mandatory pb-1 no-scrollbar">
                   {dailyStats.map((day) => {
                     const heightPct = Math.round((day.count / maxDayCount) * 100);
                     return (
                       <div
                         key={day.dateStr}
-                        className={`p-1.5 sm:p-3.5 rounded-lg sm:rounded-xl border flex flex-col justify-between transition-all min-w-[42px] sm:min-w-0 ${
+                        className={`flex-none w-[74px] sm:w-auto snap-start p-2.5 sm:p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
                           day.isPeak && day.count > 0
                             ? 'bg-[#e59b38]/10 border-[#e59b38]/40 ring-1 ring-[#e59b38]/30 shadow-md'
                             : 'bg-black/40 border-white/[0.05] hover:border-white/[0.1]'
                         }`}
                       >
-                        <div className="text-center pb-1 sm:pb-2 border-b border-white/[0.04]">
-                          <div className="text-[10px] sm:text-xs font-semibold text-white truncate">
+                        <div className="text-center pb-1.5 sm:pb-2 border-b border-white/[0.04]">
+                          <div className="text-xs font-semibold text-white">
                             {day.dayName.slice(0, 3)}
                           </div>
-                          <div className="text-[8px] sm:text-[10px] text-neutral-400 font-mono mt-0.5 truncate">
+                          <div className="text-[10px] text-neutral-400 font-mono mt-0.5">
                             {day.formattedDate.split(' ')[0]}
                           </div>
                         </div>
 
                         <div className="my-2 sm:my-3 h-16 sm:h-24 flex items-end justify-center">
-                          <div className="w-4 sm:w-7 bg-neutral-800 rounded-t-md overflow-hidden flex items-end h-full">
+                          <div className="w-5 sm:w-7 bg-neutral-800 rounded-t-md overflow-hidden flex items-end h-full">
                             <div
                               className={`w-full rounded-t-md transition-all duration-700 ${
                                 day.isPeak && day.count > 0
@@ -266,11 +266,11 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
                           </div>
                         </div>
 
-                        <div className="text-center pt-1 sm:pt-2 border-t border-white/[0.04]">
-                          <div className="font-serif text-xs sm:text-lg font-bold text-white">
+                        <div className="text-center pt-1.5 sm:pt-2 border-t border-white/[0.04]">
+                          <div className="font-serif text-sm sm:text-lg font-bold text-white tabular-nums">
                             {day.count}
                           </div>
-                          <div className="text-[9px] sm:text-[11px] font-mono text-[#e59b38] font-semibold mt-0.5 truncate">
+                          <div className="text-[10px] sm:text-[11px] font-mono text-[#e59b38] font-semibold mt-0.5">
                             ${day.revenue.toFixed(0)}
                           </div>
                         </div>
@@ -371,24 +371,24 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
       {timeframe === 'all' && (
         <div className="space-y-6">
           {/* Financial Balance Card: Ventas vs Tickets de Compra = Utilidad Neta */}
-          <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] grid grid-cols-2 lg:grid-cols-4 gap-3 text-center">
-            <div className="p-2">
+          <div className="p-3 sm:p-4 rounded-2xl bg-black/40 border border-white/[0.08] grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-center">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
               <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold">
                 Ventas Libreta ({totalUnits} pzs)
               </div>
-              <div className="font-serif text-2xl sm:text-3xl font-bold text-white mt-0.5">
+              <div className="font-serif text-xl sm:text-3xl font-bold text-white mt-0.5 tabular-nums">
                 ${totalRevenue.toFixed(2)}
               </div>
-              <div className="text-[10px] text-neutral-500 mt-0.5">
+              <div className="text-[10px] text-neutral-400 mt-0.5">
                 {historicalDays.length} días con venta
               </div>
             </div>
 
-            <div className="p-2 border-l border-white/[0.06]">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
               <div className="text-[10px] uppercase tracking-wider text-rose-300 font-semibold">
                 Gastos en Tickets ({safeExpenses.length})
               </div>
-              <div className="font-serif text-2xl sm:text-3xl font-bold text-rose-400 mt-0.5">
+              <div className="font-serif text-xl sm:text-3xl font-bold text-rose-400 mt-0.5 tabular-nums">
                 -${expenseAnalytics.totalExpenses.toFixed(2)}
               </div>
               <div className="text-[10px] text-neutral-400 mt-0.5">
@@ -396,26 +396,26 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
               </div>
             </div>
 
-            <div className="p-2 border-t lg:border-t-0 lg:border-l border-white/[0.06]">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
               <div className="text-[10px] uppercase tracking-wider text-amber-300 font-semibold">
                 Ahorro en Ofertas (Ley/Aurrera)
               </div>
-              <div className="font-serif text-2xl sm:text-3xl font-bold text-[#e59b38] mt-0.5">
+              <div className="font-serif text-xl sm:text-3xl font-bold text-[#e59b38] mt-0.5 tabular-nums">
                 +${expenseAnalytics.totalSavingsFromOffers.toFixed(2)}
               </div>
-              <div className="text-[10px] text-neutral-500 mt-0.5">
+              <div className="text-[10px] text-neutral-400 mt-0.5">
                 Descuentos en tickets
               </div>
             </div>
 
-            <div className="p-2 border-t lg:border-t-0 border-l border-white/[0.06] bg-emerald-500/5 rounded-xl">
+            <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10">
               <div className="text-[10px] uppercase tracking-wider text-emerald-300 font-bold">
                 Utilidad Neta Real
               </div>
-              <div className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-0.5">
+              <div className="font-serif text-xl sm:text-3xl font-extrabold text-emerald-400 mt-0.5 tabular-nums">
                 ${netRealProfit.toFixed(2)}
               </div>
-              <div className="text-[10px] text-emerald-400/80 font-mono mt-0.5">
+              <div className="text-[10px] text-emerald-300/80 font-mono mt-0.5">
                 Ventas - Tickets de Compra
               </div>
             </div>
@@ -469,15 +469,16 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
 
           {/* Raw Purchase Tickets Summary Section */}
           <div className="space-y-2.5 pt-2">
-            <div className="flex items-center justify-between">
-              <div className="text-[11px] sm:text-xs uppercase tracking-wider text-rose-300 font-bold flex items-center gap-1.5">
-                <Receipt className="w-4 h-4 text-rose-400" />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-[11px] sm:text-xs uppercase tracking-wider text-rose-300 font-bold flex items-center gap-1.5 min-w-0">
+                <Receipt className="w-4 h-4 text-rose-400 shrink-0" aria-hidden="true" />
                 <span>2. Tickets Físicos de Compra e Insumos ({safeExpenses.length} tickets = -${expenseAnalytics.totalExpenses.toFixed(2)})</span>
               </div>
               {onOpenGastos && (
                 <button
+                  type="button"
                   onClick={onOpenGastos}
-                  className="text-xs font-bold text-[#e59b38] hover:underline"
+                  className="text-xs font-bold text-[#e59b38] hover:underline min-h-[44px] flex items-center shrink-0"
                 >
                   Ver Detalle Completo →
                 </button>
@@ -495,10 +496,11 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
                   timeZone: 'UTC',
                 });
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={exp.id}
                     onClick={onOpenGastos}
-                    className="p-3.5 rounded-xl bg-black/35 border border-white/[0.07] hover:border-rose-500/40 cursor-pointer transition-all flex flex-col justify-between space-y-2"
+                    className="text-left p-3.5 rounded-xl bg-black/35 border border-white/[0.07] hover:border-rose-500/40 transition-all flex flex-col justify-between space-y-2 active:scale-[0.99]"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
@@ -531,7 +533,7 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
                         ))}
                       </div>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -540,11 +542,11 @@ export const GranularTimeframeView: React.FC<GranularTimeframeViewProps> = ({
           {/* Ingredient Volume & Average Cost Summary */}
           <div className="space-y-2.5 pt-2">
             <div className="text-[11px] sm:text-xs uppercase tracking-wider text-neutral-300 font-bold flex items-center gap-1.5">
-              <Scale className="w-4 h-4 text-[#e59b38]" />
+              <Scale className="w-4 h-4 text-[#e59b38] shrink-0" aria-hidden="true" />
               <span>3. Insumos Calculados desde los Tickets (Kilos, Litros y Costo Promedio)</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
               {expenseAnalytics.ingredientMetrics.map((m) => (
                 <div
                   key={m.key}

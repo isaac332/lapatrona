@@ -129,13 +129,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-white/[0.08] bg-[#0d0d0f]/95 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+    <header className="sticky top-0 z-30 w-full border-b border-white/[0.08] bg-[#0d0d0f]/95 backdrop-blur-md pt-[env(safe-area-inset-top,0px)]">
+      <div className="max-w-7xl mx-auto px-safe sm:px-6 min-h-14 sm:min-h-16 py-1.5 flex items-center justify-between gap-2">
         {/* Brand / Logo */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-sans font-black tracking-[0.12em] sm:tracking-[0.16em] text-sm sm:text-lg text-[#f5f0eb] uppercase leading-tight">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="font-sans font-black tracking-[0.1em] sm:tracking-[0.16em] text-sm sm:text-lg text-[#f5f0eb] uppercase leading-tight">
                 LA PATRONA
               </span>
               {isOnline ? (
@@ -256,7 +256,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Vista Avanzada Button */}
           {onToggleAdvancedView && (
             <button
+              type="button"
               onClick={onToggleAdvancedView}
+              aria-pressed={isAdvancedView}
+              aria-label={isAdvancedView ? 'Ocultar vista avanzada de utilidad' : 'Mostrar vista avanzada de utilidad'}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
                 isAdvancedView
                   ? 'bg-amber-500/20 text-[#e59b38] border-amber-500/40 shadow-sm'
@@ -264,8 +267,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
               title="Activar / Desactivar Vista Avanzada (Utilidad & Insights)"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>{isAdvancedView ? 'Avanzada' : 'Avanzada'}</span>
+              <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Avanzada</span>
             </button>
           )}
 
@@ -399,52 +402,61 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Header Quick Stats */}
-        <div className="flex lg:hidden items-center gap-1.5">
+        <div className="flex lg:hidden items-center gap-1.5 shrink-0">
           {onToggleAdvancedView && (
             <button
+              type="button"
               onClick={onToggleAdvancedView}
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+              aria-label={isAdvancedView ? 'Ocultar vista avanzada de utilidad' : 'Mostrar vista avanzada de utilidad'}
+              aria-pressed={isAdvancedView}
+              className={`flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] px-2.5 py-2 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
                 isAdvancedView
                   ? 'bg-amber-500/20 text-[#e59b38] border-amber-500/40 shadow-sm'
                   : 'bg-white/[0.04] text-neutral-400 border-white/[0.08]'
               }`}
               title="Vista Avanzada (Utilidad & Insights)"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span className="text-[10px] hidden xs:inline">{isAdvancedView ? 'Avanzada' : 'Avanzada'}</span>
+              <SlidersHorizontal className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span className="text-[11px] hidden xs:inline">Avanzada</span>
             </button>
           )}
 
           {onToggleSound && (
             <button
+              type="button"
               onClick={onToggleSound}
-              className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all ${
+              aria-label={soundEnabled ? 'Silenciar sonido de cobro' : 'Activar sonido de cobro'}
+              aria-pressed={soundEnabled}
+              className={`min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg border flex items-center justify-center transition-all active:scale-95 ${
                 soundEnabled
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                  : 'bg-white/[0.04] border-white/[0.08] text-neutral-500'
+                  : 'bg-white/[0.04] border-white/[0.08] text-neutral-400'
               }`}
               title="Sonido de cobro"
             >
-              {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4" aria-hidden="true" /> : <VolumeX className="w-4 h-4" aria-hidden="true" />}
             </button>
           )}
 
           {!HIDE_ORDER_MODULES && (
             <button
+              type="button"
               onClick={onOpenNuevaOrden}
-              className="flex items-center gap-1 bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold px-2.5 py-1.5 rounded-lg text-xs shadow-sm active:scale-95"
+              className="flex items-center justify-center gap-1 bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold px-3 min-h-[44px] rounded-lg text-xs shadow-sm active:scale-95"
               title="Armar nueva orden"
             >
-              <ShoppingBag className="w-3.5 h-3.5 text-black" />
+              <ShoppingBag className="w-4 h-4 text-black shrink-0" aria-hidden="true" />
               <span>+ Orden</span>
             </button>
           )}
 
           <button
+            type="button"
             onClick={onOpenHistory}
-            className="flex items-center gap-1.5 bg-[#1a1a1f] border border-white/10 px-2.5 py-1.5 rounded-lg text-xs"
+            aria-label={`Ver libro de ventas (${timeframeLabels[timeframe]}: ${totalUnitsInTimeframe})`}
+            className="flex items-center justify-center gap-1.5 bg-[#1a1a1f] border border-white/10 px-2.5 min-h-[44px] rounded-lg text-xs active:scale-95 transition-transform"
           >
-            <span className="text-[10px] text-neutral-400 uppercase font-medium">{timeframeLabels[timeframe]}:</span>
+            <span className="text-[11px] text-neutral-400 uppercase font-medium">{timeframeLabels[timeframe]}:</span>
             <span className="font-mono font-bold text-[#e59b38]">{totalUnitsInTimeframe}</span>
           </button>
         </div>

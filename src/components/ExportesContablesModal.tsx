@@ -34,6 +34,7 @@ import {
   Landmark,
   ArrowDownToLine,
 } from 'lucide-react';
+import { ModalShell } from '@/components/ModalShell';
 
 interface ExportesContablesModalProps {
   isOpen: boolean;
@@ -152,76 +153,83 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div
-        className="relative w-full max-w-4xl bg-[#0d0d0f] border border-white/[0.1] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] pb-safe sm:pb-0"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
-              <FileSpreadsheet className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif text-lg sm:text-xl font-bold text-white tracking-wide">
-                  Centro de Exportaciones Contables e Informes SAT
-                </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                  Excel / CSV
-                </span>
-              </div>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Genera libros contables con formato UTF-8 oficial y desglose fiscal del 16% IVA para tu contador
-              </p>
-            </div>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      labelledBy="exportes-modal-title"
+      maxWidthClass="max-w-4xl"
+      maxHeightClass="max-h-[90dvh]"
+      panelClassName="bg-[#0d0d0f] border-white/[0.1] sm:rounded-3xl"
+    >
+      {/* Header */}
+      <div className="p-4 sm:px-6 sm:py-5 border-b border-white/[0.08] flex items-start sm:items-center justify-between gap-3 bg-white/[0.02] shrink-0">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0" aria-hidden="true">
+            <FileSpreadsheet className="w-5 h-5" />
           </div>
-
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/[0.05] hover:bg-white/[0.1] flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="min-w-0">
+            <div className="flex items-center flex-wrap gap-2">
+              <h2 id="exportes-modal-title" className="font-serif text-lg sm:text-xl font-bold text-white tracking-wide leading-tight">
+                Centro de Exportaciones Contables e Informes SAT
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-500/30 shrink-0">
+                Excel / CSV
+              </span>
+            </div>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              Genera libros contables con formato UTF-8 oficial y desglose fiscal del 16% IVA para tu contador
+            </p>
+          </div>
         </div>
 
-        {/* Success Feedback Alert */}
-        {downloadSuccessMessage && (
-          <div className="px-6 py-2.5 bg-emerald-950/40 border-b border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="font-semibold">{downloadSuccessMessage}</span>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar exportaciones contables"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/[0.05] hover:bg-white/[0.1] flex items-center justify-center text-neutral-400 hover:text-white transition-colors shrink-0 active:scale-95"
+        >
+          <X className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
 
-        {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-          {/* Period Selector Tabs */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-            <div className="flex items-center gap-2 text-xs text-neutral-400">
-              <Calendar className="w-4 h-4 text-[#e59b38]" />
-              <span className="font-bold uppercase tracking-wider">Periodo Contable:</span>
-            </div>
+      {/* Success Feedback Alert */}
+      {downloadSuccessMessage && (
+        <div className="px-4 sm:px-6 py-2.5 bg-emerald-950/40 border-b border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300 shrink-0">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" />
+          <span className="font-semibold">{downloadSuccessMessage}</span>
+        </div>
+      )}
 
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {(['today', 'week', 'month', 'all'] as TimeframeFilter[]).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setSelectedTimeframe(tf)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    selectedTimeframe === tf
-                      ? 'bg-[#e59b38] text-black font-bold shadow-md shadow-[#e59b38]/20'
-                      : 'bg-white/[0.04] text-neutral-400 hover:text-white hover:bg-white/[0.08]'
-                  }`}
-                >
-                  {TIMEFRAME_LABELS[tf]}
-                </button>
-              ))}
-            </div>
+      {/* Scrollable Content Body */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 sm:space-y-6">
+        {/* Period Selector Tabs */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+          <div className="flex items-center gap-2 text-xs text-neutral-400">
+            <Calendar className="w-4 h-4 text-[#e59b38]" aria-hidden="true" />
+            <span className="font-bold uppercase tracking-wider">Periodo Contable:</span>
           </div>
 
-          {/* KPI Fiscal & Financial Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
+            {(['today', 'week', 'month', 'all'] as TimeframeFilter[]).map((tf) => (
+              <button
+                key={tf}
+                type="button"
+                aria-pressed={selectedTimeframe === tf}
+                onClick={() => setSelectedTimeframe(tf)}
+                className={`px-3 min-h-[44px] sm:min-h-[34px] rounded-xl text-xs font-semibold transition-all ${
+                  selectedTimeframe === tf
+                    ? 'bg-[#e59b38] text-black font-bold shadow-md shadow-[#e59b38]/20'
+                    : 'bg-white/[0.04] text-neutral-400 hover:text-white hover:bg-white/[0.08]'
+                }`}
+              >
+                {TIMEFRAME_LABELS[tf]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* KPI Fiscal & Financial Grid */}
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
             <div className="p-3.5 rounded-2xl bg-[#141417] border border-white/[0.08]">
               <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block truncate">
                 Venta Bruta
@@ -296,13 +304,13 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
           </div>
 
           {/* Primary Master Export Banner */}
-          <div className="p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-sky-950/40 via-[#141417] to-amber-950/30 border border-sky-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
+          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-sky-950/40 via-[#141417] to-amber-950/30 border border-sky-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center flex-wrap gap-2">
                 <span className="font-serif font-bold text-white text-base sm:text-lg">
                   Reporte Integral Maestro para el Contador
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#e59b38] text-black">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#e59b38] text-black shrink-0">
                   Recomendado
                 </span>
               </div>
@@ -312,10 +320,11 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
             </div>
 
             <button
+              type="button"
               onClick={handleExportMaster}
-              className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 bg-[#e59b38] hover:bg-[#f0aa49] text-black font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-lg shadow-[#e59b38]/20 active:scale-95"
+              className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 bg-[#e59b38] hover:bg-[#f0aa49] text-black font-black text-xs uppercase tracking-wider px-5 min-h-[44px] py-3 rounded-xl transition-all shadow-lg shadow-[#e59b38]/20 active:scale-95"
             >
-              <ArrowDownToLine className="w-4 h-4" />
+              <ArrowDownToLine className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>Descargar Reporte Maestro (.csv)</span>
             </button>
           </div>
@@ -323,18 +332,18 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
           {/* Specific Individual Books Grid */}
           <div className="space-y-3">
             <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#e59b38]" />
+              <ShieldCheck className="w-4 h-4 text-[#e59b38] shrink-0" aria-hidden="true" />
               <span>Libros y Reportes Específicos por Módulo</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {/* Libro de Ventas */}
-              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#e59b38]/10 border border-[#e59b38]/25 flex items-center justify-center text-[#e59b38] shrink-0 mt-0.5">
+              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex flex-col min-[400px]:flex-row items-stretch min-[400px]:items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#e59b38]/10 border border-[#e59b38]/25 flex items-center justify-center text-[#e59b38] shrink-0 mt-0.5" aria-hidden="true">
                     <Receipt className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h4 className="text-xs font-bold text-white uppercase tracking-wide">
                       Libro Diario de Ventas
                     </h4>
@@ -345,22 +354,23 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleExportSales}
-                  className="px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-all active:scale-95"
+                  className="px-3.5 min-h-[44px] rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-95"
                   title="Descargar libro de ventas en CSV"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#e59b38]" />
+                  <Download className="w-3.5 h-3.5 text-[#e59b38]" aria-hidden="true" />
                   <span>CSV</span>
                 </button>
               </div>
 
               {/* Reporte Fiscal SAT */}
-              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0 mt-0.5">
+              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex flex-col min-[400px]:flex-row items-stretch min-[400px]:items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0 mt-0.5" aria-hidden="true">
                     <Landmark className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h4 className="text-xs font-bold text-white uppercase tracking-wide">
                       Reporte Fiscal SAT (IVA 16%)
                     </h4>
@@ -371,22 +381,23 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleExportFiscalSAT}
-                  className="px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-all active:scale-95"
+                  className="px-3.5 min-h-[44px] rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-95"
                   title="Descargar reporte de impuestos SAT en CSV"
                 >
-                  <Download className="w-3.5 h-3.5 text-sky-400" />
+                  <Download className="w-3.5 h-3.5 text-sky-400" aria-hidden="true" />
                   <span>CSV</span>
                 </button>
               </div>
 
               {/* Libro de Gastos */}
-              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-400 shrink-0 mt-0.5">
+              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex flex-col min-[400px]:flex-row items-stretch min-[400px]:items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-400 shrink-0 mt-0.5" aria-hidden="true">
                     <Wallet className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h4 className="text-xs font-bold text-white uppercase tracking-wide">
                       Salidas y Gastos de Caja Menor
                     </h4>
@@ -397,22 +408,23 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleExportExpenses}
-                  className="px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-all active:scale-95"
+                  className="px-3.5 min-h-[44px] rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-95"
                   title="Descargar libro de gastos en CSV"
                 >
-                  <Download className="w-3.5 h-3.5 text-rose-400" />
+                  <Download className="w-3.5 h-3.5 text-rose-400" aria-hidden="true" />
                   <span>CSV</span>
                 </button>
               </div>
 
               {/* Bitácora de Mermas */}
-              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex flex-col min-[400px]:flex-row items-stretch min-[400px]:items-center justify-between gap-3 hover:border-white/[0.15] transition-all">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0 mt-0.5" aria-hidden="true">
                     <TrendingDown className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h4 className="text-xs font-bold text-white uppercase tracking-wide">
                       Bitácora de Mermas de Cocina
                     </h4>
@@ -423,22 +435,23 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleExportWaste}
-                  className="px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-all active:scale-95"
+                  className="px-3.5 min-h-[44px] rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-95"
                   title="Descargar bitácora de mermas en CSV"
                 >
-                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <Download className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
                   <span>CSV</span>
                 </button>
               </div>
 
               {/* Historial de Cortes Z */}
-              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex items-center justify-between gap-3 hover:border-white/[0.15] transition-all md:col-span-2">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+              <div className="p-4 rounded-2xl bg-[#121215] border border-white/[0.08] flex flex-col min-[400px]:flex-row items-stretch min-[400px]:items-center justify-between gap-3 hover:border-white/[0.15] transition-all md:col-span-2">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5" aria-hidden="true">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h4 className="text-xs font-bold text-white uppercase tracking-wide">
                       Historial de Cierres Diarios y Cortes Z ({closedShifts.length} turnos archivados)
                     </h4>
@@ -449,11 +462,12 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleExportCortesZ}
-                  className="px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-all active:scale-95"
+                  className="px-3.5 min-h-[44px] rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-95"
                   title="Descargar historial de cortes Z en CSV"
                 >
-                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  <Download className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
                   <span>CSV</span>
                 </button>
               </div>
@@ -462,19 +476,19 @@ export const ExportesContablesModal: React.FC<ExportesContablesModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/[0.02]">
-          <div className="text-[11px] text-neutral-500 text-center sm:text-left">
+        <div className="px-4 sm:px-6 py-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/[0.02] shrink-0">
+          <div className="text-[11px] text-neutral-400 text-center sm:text-left">
             Exportaciones optimizadas para Excel, Google Sheets, Contpaqi y Aspel en codificación UTF-8 con BOM.
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all active:scale-95"
+            className="w-full sm:w-auto px-5 min-h-[44px] rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-bold uppercase tracking-wider text-neutral-300 hover:text-white transition-all active:scale-95"
           >
             Cerrar
           </button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 };

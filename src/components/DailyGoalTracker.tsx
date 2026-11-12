@@ -82,49 +82,58 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-center">
+        <div className="flex items-center gap-2 self-stretch sm:self-center justify-end">
           {isEditing ? (
-            <div className="flex items-center gap-1 bg-[#1c1c22] border border-[#e59b38] rounded-xl px-2 py-1 shadow-md">
-              <span className="text-xs text-[#e59b38] font-mono font-bold">$</span>
-              <input
-                type="number"
-                min="100"
-                step="100"
-                value={tempGoal}
-                onChange={(e) => setTempGoal(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSave();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                className="w-20 bg-transparent text-xs font-mono font-bold text-white focus:outline-none"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={handleSave}
-                className="w-5 h-5 rounded bg-[#e59b38] text-black flex items-center justify-center hover:bg-[#d48b28]"
-              >
-                <Check className="w-3 h-3 stroke-[3]" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="w-5 h-5 rounded bg-white/10 text-neutral-400 flex items-center justify-center hover:bg-white/20"
-              >
-                <X className="w-3 h-3" />
-              </button>
+            <div className="flex items-center gap-1.5 bg-[#1c1c22] border border-[#e59b38] rounded-xl pl-3 pr-1.5 py-1 shadow-md w-full sm:w-auto justify-between">
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <span className="text-sm text-[#e59b38] font-mono font-bold">$</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="100"
+                  step="100"
+                  value={tempGoal}
+                  onChange={(e) => setTempGoal(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSave();
+                    if (e.key === 'Escape') setIsEditing(false);
+                  }}
+                  aria-label="Nueva meta de venta diaria en pesos"
+                  className="w-full sm:w-24 bg-transparent text-base sm:text-xs font-mono font-bold text-white focus:outline-none min-h-[36px]"
+                  autoFocus
+                />
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  aria-label="Guardar meta diaria"
+                  className="min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] rounded-lg bg-[#e59b38] text-black flex items-center justify-center hover:bg-[#d48b28] active:scale-95"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  aria-label="Cancelar edición de meta"
+                  className="min-w-[44px] min-h-[44px] sm:min-w-[32px] sm:min-h-[32px] rounded-lg bg-white/10 text-neutral-300 flex items-center justify-center hover:bg-white/20 active:scale-95"
+                >
+                  <X className="w-4 h-4" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => {
                 setTempGoal(goalAmount.toString());
                 setIsEditing(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono font-bold text-neutral-300 hover:text-white transition-all active:scale-95"
+              className="flex items-center justify-center gap-1.5 px-3.5 min-h-[44px] rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono font-bold text-neutral-300 hover:text-white transition-all active:scale-95 w-full sm:w-auto"
               title="Ajustar meta de venta del día"
             >
               <span>Meta: ${goalAmount.toLocaleString('es-MX')} MXN</span>
-              <Pencil className="w-3 h-3 text-[#e59b38]" />
+              <Pencil className="w-3.5 h-3.5 text-[#e59b38] shrink-0" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -142,18 +151,19 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
       </div>
 
       {isEditing && (
-        <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-mono mr-1">
+        <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex flex-wrap items-center gap-2">
+          <span className="text-[11px] text-neutral-400 uppercase tracking-wider font-mono mr-1">
             Metas rápidas:
           </span>
           {quickGoals.map((q) => (
             <button
               key={q}
+              type="button"
               onClick={() => {
                 onUpdateGoal(q);
                 setIsEditing(false);
               }}
-              className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-[#e59b38]/20 hover:text-[#e59b38] border border-white/[0.08] text-[11px] font-mono text-neutral-300 transition-colors"
+              className="px-3 min-h-[44px] sm:min-h-[34px] rounded-lg bg-white/[0.04] hover:bg-[#e59b38]/20 hover:text-[#e59b38] border border-white/[0.08] text-xs font-mono text-neutral-300 transition-colors active:scale-95"
             >
               ${q.toLocaleString('es-MX')}
             </button>

@@ -106,43 +106,53 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
         </div>
 
         {/* Mode Selector Tabs */}
-        <div className="flex items-center gap-1.5 bg-[#1b1b20] p-1.5 rounded-xl border border-white/[0.08] overflow-x-auto no-scrollbar self-start lg:self-auto">
+        <div
+          role="tablist"
+          aria-label="Vistas de rentabilidad"
+          className="flex items-center gap-1.5 bg-[#1b1b20] p-1.5 rounded-xl border border-white/[0.08] overflow-x-auto no-scrollbar w-full lg:w-auto max-w-full"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'anatomia'}
             onClick={() => setActiveTab('anatomia')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex-none flex items-center gap-1.5 px-3.5 min-h-[44px] sm:min-h-[36px] rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'anatomia'
                 ? 'bg-emerald-500 text-black shadow-sm'
                 : 'text-neutral-300 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>Anatomía de Utilidad</span>
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'insights'}
             onClick={() => setActiveTab('insights')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex-none flex items-center gap-1.5 px-3.5 min-h-[44px] sm:min-h-[36px] rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'insights'
                 ? 'bg-[#e59b38] text-black shadow-sm'
                 : 'text-neutral-300 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
-            <Lightbulb className="w-3.5 h-3.5" />
+            <Lightbulb className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>Insights 80/20 ({data.strategicInsights.length})</span>
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'pronosticos'}
             onClick={() => setActiveTab('pronosticos')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+            className={`flex-none flex items-center gap-1.5 px-3.5 min-h-[44px] sm:min-h-[36px] rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'pronosticos'
                 ? 'bg-sky-400 text-black shadow-sm'
                 : 'text-neutral-300 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
-            <Target className="w-3.5 h-3.5" />
+            <Target className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>Pronósticos y Simulador</span>
           </button>
         </div>
@@ -351,7 +361,12 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
             </div>
 
             {/* Desktop Table (hidden sm:block) */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="Desglose de rentabilidad por producto"
+              className="hidden sm:block table-scroll-region"
+            >
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-wider text-neutral-400 bg-white/[0.02]">
@@ -452,11 +467,11 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
               </p>
             </div>
 
-            <div className="flex items-center gap-2 bg-[#121215] p-1 rounded-xl border border-white/[0.08] text-xs">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-[#121215] p-1 rounded-xl border border-white/[0.08] text-xs w-full lg:w-auto">
               <button
                 type="button"
                 onClick={() => setSplitMode('capital')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                className={`px-3 min-h-[44px] sm:min-h-[36px] rounded-lg font-semibold transition-all text-center ${
                   splitMode === 'capital' ? 'bg-[#e59b38] text-black font-bold' : 'text-neutral-400 hover:text-white'
                 }`}
               >
@@ -465,7 +480,7 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
               <button
                 type="button"
                 onClick={() => setSplitMode('equal')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                className={`px-3 min-h-[44px] sm:min-h-[36px] rounded-lg font-semibold transition-all text-center ${
                   splitMode === 'equal' ? 'bg-[#e59b38] text-black font-bold' : 'text-neutral-400 hover:text-white'
                 }`}
               >
@@ -473,7 +488,7 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 w-full lg:w-auto">
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3 w-full lg:w-auto">
               <div className="px-3.5 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25">
                 <span className="text-[10px] uppercase font-bold text-rose-300 block">
                   Mónica ({monicaPct}%)
@@ -821,7 +836,7 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
                     key={preset}
                     type="button"
                     onClick={() => setTargetMonthlyProfit(preset)}
-                    className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all border ${
+                    className={`px-3 min-h-[44px] sm:min-h-[36px] rounded-lg font-mono text-xs font-bold transition-all border ${
                       targetMonthlyProfit === preset
                         ? 'bg-[#e59b38] text-black border-[#e59b38] shadow-md'
                         : 'bg-white/[0.04] text-neutral-300 border-white/10 hover:text-white hover:bg-white/[0.08]'
@@ -834,13 +849,13 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
             </div>
 
             {/* Range Slider */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-mono">
-                <span className="text-neutral-400">Meta mínima: $2,000/mes</span>
-                <span className="text-[#e59b38] font-extrabold text-sm">
+            <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs font-mono">
+                <span className="text-neutral-400 order-2 sm:order-1">Meta mínima: $2,000/mes</span>
+                <span className="text-[#e59b38] font-extrabold text-sm order-1 sm:order-2">
                   Meta seleccionada: ${targetMonthlyProfit.toLocaleString('es-MX')} MXN libres / mes
                 </span>
-                <span className="text-neutral-400">Meta alta: $20,000/mes</span>
+                <span className="text-neutral-400 order-3">Meta alta: $20,000/mes</span>
               </div>
               <input
                 type="range"
@@ -849,12 +864,13 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
                 step={500}
                 value={targetMonthlyProfit}
                 onChange={(e) => setTargetMonthlyProfit(Number(e.target.value))}
-                className="w-full accent-[#e59b38] cursor-pointer h-2 rounded-lg bg-black/50"
+                aria-label="Meta de ganancia mensual deseada en pesos"
+                className="w-full accent-[#e59b38] cursor-pointer min-h-[44px] sm:min-h-[28px] rounded-lg"
               />
             </div>
 
             {/* Calculated Target Requirements Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
               <div className="p-3.5 rounded-xl bg-black/35 border border-white/[0.08]">
                 <span className="text-[10px] uppercase font-bold text-neutral-400 block">
                   Meta por Noche (Jue–Dom)

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { ClosedShiftRecord } from '@/types/accounting';
-import { X, Receipt, Printer, CheckCircle2, AlertTriangle, AlertCircle, Calendar, Share2 } from 'lucide-react';
+import { X, Receipt, Printer, CheckCircle2, AlertTriangle, AlertCircle, Calendar, Share2, ArrowLeft } from 'lucide-react';
+import { ModalShell } from '@/components/ModalShell';
 
 interface HistorialCortesModalProps {
   isOpen: boolean;
@@ -57,141 +58,157 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-4xl max-h-[90dvh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#141417] border border-white/[0.12] shadow-2xl overflow-hidden pb-safe sm:pb-0">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/[0.08] bg-[#19191d] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#e59b38]/15 border border-[#e59b38]/30 flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-[#e59b38]" />
-            </div>
-            <div>
-              <h2 className="font-serif text-lg sm:text-xl font-bold text-white">
-                Historial de Cierres de Caja
-              </h2>
-              <p className="text-[11px] text-neutral-400">
-                Registro histórico de cierres y cortes ({shifts.length} guardados)
-              </p>
-            </div>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      labelledBy="historial-cortes-title"
+      maxWidthClass="max-w-4xl"
+      maxHeightClass="max-h-[90dvh]"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 p-4 sm:p-6 border-b border-white/[0.08] bg-[#19191d] shrink-0 print:hidden">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-[#e59b38]/15 border border-[#e59b38]/30 flex items-center justify-center shrink-0" aria-hidden="true">
+            <Receipt className="w-5 h-5 text-[#e59b38]" />
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="min-w-0">
+            <h2 id="historial-cortes-title" className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
+              Historial de Cierres de Caja
+            </h2>
+            <p className="text-[11px] text-neutral-400">
+              Registro histórico de cierres y cortes ({shifts.length} guardados)
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar historial de cierres"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 transition-colors shrink-0 active:scale-95"
+        >
+          <X className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      {/* Content Body */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 print:overflow-visible print:block print:p-0">
+        
+        {/* Left Column: Closed Shifts List (hidden on <lg when viewing a selected shift detail) */}
+        <div className={`${selectedShift ? 'hidden lg:block' : 'block'} lg:col-span-5 space-y-3 print:hidden`}>
+          <div className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
+            Cierres Guardados
+          </div>
+
+          {shifts.length === 0 ? (
+            <div className="p-8 text-center rounded-2xl bg-white/[0.02] border border-white/[0.06] text-neutral-400 text-xs">
+              Aún no hay cierres de caja en el historial.
+            </div>
+          ) : (
+            shifts.map((s) => {
+              const isSelected = selectedShift?.id === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSelectedShift(s)}
+                  className={`w-full text-left p-3.5 min-h-[56px] rounded-xl border transition-all ${
+                    isSelected
+                      ? 'bg-[#1e1e24] border-[#e59b38] shadow-md'
+                      : 'bg-[#18181c] border-white/[0.06] hover:border-white/[0.15]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs font-semibold text-white">
+                    <span>Cierre #{s.shiftNumber}</span>
+                    <span className="font-mono text-[#e59b38] font-bold">
+                      ${s.totalGrossRevenue.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 mt-1">
+                    <Calendar className="w-3 h-3 text-neutral-500 shrink-0" aria-hidden="true" />
+                    <span>{new Date(s.closedAt).toLocaleString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+
+                  {s.notes && (
+                    <div className="text-[10px] text-neutral-400 mt-1 line-clamp-2">
+                      {s.notes}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-white/[0.06] text-[10px]">
+                    <span className="text-neutral-400">
+                      {s.totalUnits} pzs • Cajón: ${s.expectedCashInDrawer.toFixed(0)}
+                    </span>
+                    {s.differenceStatus === 'cuadrada' ? (
+                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" aria-hidden="true" /> Cuadrada
+                      </span>
+                    ) : s.differenceStatus === 'sobrante' ? (
+                      <span className="text-amber-400 font-bold flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" aria-hidden="true" /> +${s.difference?.toFixed(0)}
+                      </span>
+                    ) : s.differenceStatus === 'faltante' ? (
+                      <span className="text-rose-400 font-bold flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" aria-hidden="true" /> -${Math.abs(s.difference || 0).toFixed(0)}
+                      </span>
+                    ) : (
+                      <span className="text-neutral-500">Sin arqueo</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })
+          )}
+
+          {shifts.length > 0 && onClearHistory && (
+            <button
+              type="button"
+              onClick={onClearHistory}
+              className="w-full text-center min-h-[44px] py-2 text-xs text-red-400/80 hover:text-red-300 transition-colors"
+            >
+              Limpiar historial de cierres
+            </button>
+          )}
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          {/* Left Column: Closed Shifts List */}
-          <div className="lg:col-span-5 space-y-3">
-            <div className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
-              Cierres Guardados
-            </div>
-
-            {shifts.length === 0 ? (
-              <div className="p-8 text-center rounded-2xl bg-white/[0.02] border border-white/[0.06] text-neutral-400 text-xs">
-                Aún no hay cierres de caja en el historial.
-              </div>
-            ) : (
-              shifts.map((s) => {
-                const isSelected = selectedShift?.id === s.id;
-                return (
+        {/* Right Column: Ticket Preview & Reprint */}
+        <div className={`${selectedShift ? 'block' : 'hidden lg:block'} lg:col-span-7 print:block`}>
+          {selectedShift ? (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
+                <div className="flex items-center gap-2">
                   <button
-                    key={s.id}
                     type="button"
-                    onClick={() => setSelectedShift(s)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                      isSelected
-                        ? 'bg-[#1e1e24] border-[#e59b38] shadow-md'
-                        : 'bg-[#18181c] border-white/[0.06] hover:border-white/[0.15]'
-                    }`}
+                    onClick={() => setSelectedShift(null)}
+                    className="lg:hidden flex items-center gap-1.5 px-3 min-h-[44px] rounded-lg bg-white/[0.06] border border-white/10 text-xs font-semibold text-white active:scale-95"
                   >
-                    <div className="flex items-center justify-between text-xs font-semibold text-white">
-                      <span>Cierre #{s.shiftNumber}</span>
-                      <span className="font-mono text-[#e59b38] font-bold">
-                        ${s.totalGrossRevenue.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 mt-1">
-                      <Calendar className="w-3 h-3 text-neutral-500" />
-                      <span>{new Date(s.closedAt).toLocaleString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
-
-                    {s.notes && (
-                      <div className="text-[10px] text-neutral-400 mt-1 line-clamp-2">
-                        {s.notes}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06] text-[10px]">
-                      <span className="text-neutral-400">
-                        {s.totalUnits} pzs • Cajón: ${s.expectedCashInDrawer.toFixed(0)}
-                      </span>
-                      {s.differenceStatus === 'cuadrada' ? (
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Cuadrada
-                        </span>
-                      ) : s.differenceStatus === 'sobrante' ? (
-                        <span className="text-amber-400 font-bold flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> +${s.difference?.toFixed(0)}
-                        </span>
-                      ) : s.differenceStatus === 'faltante' ? (
-                        <span className="text-rose-400 font-bold flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> -${Math.abs(s.difference || 0).toFixed(0)}
-                        </span>
-                      ) : (
-                        <span className="text-neutral-500">Sin arqueo</span>
-                      )}
-                    </div>
+                    <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Lista</span>
                   </button>
-                );
-              })
-            )}
-
-            {shifts.length > 0 && onClearHistory && (
-              <button
-                type="button"
-                onClick={onClearHistory}
-                className="w-full text-center py-2 text-xs text-red-400/80 hover:text-red-300 transition-colors"
-              >
-                Limpiar historial de cierres
-              </button>
-            )}
-          </div>
-
-          {/* Right Column: Ticket Preview & Reprint */}
-          <div className="lg:col-span-7">
-            {selectedShift ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
                   <span className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
                     Detalle • Cierre #{selectedShift.shiftNumber}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleShareWhatsApp(selectedShift)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-all active:scale-95"
-                    >
-                      <Share2 className="w-3.5 h-3.5" />
-                      <span>WhatsApp</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handlePrint}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white transition-all active:scale-95"
-                    >
-                      <Printer className="w-3.5 h-3.5 text-[#e59b38]" />
-                      <span>Reimprimir</span>
-                    </button>
-                  </div>
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleShareWhatsApp(selectedShift)}
+                    className="flex items-center gap-1.5 px-3 min-h-[44px] sm:min-h-[36px] rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-all active:scale-95"
+                  >
+                    <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="flex items-center gap-1.5 px-3 min-h-[44px] sm:min-h-[36px] rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white transition-all active:scale-95"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-[#e59b38]" aria-hidden="true" />
+                    <span>Reimprimir</span>
+                  </button>
+                </div>
+              </div>
 
                 {/* Printable Ticket Card */}
                 <div className="bg-[#0d0d0f] p-5 rounded-2xl border border-white/[0.08] shadow-inner font-mono text-xs text-neutral-300 space-y-3 print:bg-white print:text-black print:border-none print:p-0">
@@ -256,8 +273,6 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
           </div>
 
         </div>
-
-      </div>
-    </div>
+    </ModalShell>
   );
 };
