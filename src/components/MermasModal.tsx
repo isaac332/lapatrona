@@ -25,12 +25,19 @@ interface MermasModalProps {
 }
 
 const RAW_INGREDIENTS = [
-  { id: 'ing-ribeye', name: 'Carne Ribeye Cruda', unit: 'kg', unitCost: 280 },
-  { id: 'ing-hoagie', name: 'Pan Hoagie Artesanal', unit: 'piezas', unitCost: 9 },
-  { id: 'ing-tortilla', name: 'Tortilla de Harina', unit: 'piezas', unitCost: 3.5 },
-  { id: 'ing-papas', name: 'Papas Cortadas', unit: 'kg', unitCost: 15 },
-  { id: 'ing-queso', name: 'Queso Amarillo Fundido', unit: 'kg', unitCost: 85 },
-  { id: 'ing-provolone', name: 'Queso Provolone', unit: 'kg', unitCost: 190 },
+  { id: 'ing-sirloin', name: 'Steak de Sirloin SK (SuKarne)', unit: 'kg', unitCost: 156.40 },
+  { id: 'ing-queso-ojos', name: 'Queso Los Ojos Fundición (Abastos Esperanza)', unit: 'kg', unitCost: 210.00 },
+  { id: 'ing-queso-mozzarella', name: 'Queso Mozzarella La Villita (Bodega Aurrera)', unit: 'pza', unitCost: 131.00 },
+  { id: 'ing-papa-russet', name: 'Papa Russet Fresca (Casa Ley)', unit: 'kg', unitCost: 13.50 },
+  { id: 'ing-pan-philly', name: 'Pan Hoagie para Philly', unit: 'piezas', unitCost: 7.50 },
+  { id: 'ing-tortilla', name: 'Tortilla de Harina Sonorense', unit: 'piezas', unitCost: 3.50 },
+  { id: 'ing-chile-caribe', name: 'Chile Caribe Toreado (Super Villa / Ley)', unit: 'kg', unitCost: 57.90 },
+  { id: 'ing-cebolla', name: 'Cebolla Blanca (Casa Ley)', unit: 'kg', unitCost: 65.90 },
+  { id: 'ing-aceite', name: 'Aceite Vegetal (Aurrera / Ley)', unit: 'pza', unitCost: 24.00 },
+  { id: 'ing-doritos', name: 'Doritos Nacho S - Papas Lokas (Casa Ley)', unit: 'pza', unitCost: 52.90 },
+  { id: 'ing-leche', name: 'Leche sin Lactosa - Champurro (Casa Ley)', unit: 'pza', unitCost: 48.90 },
+  { id: 'ing-queso-amarillo', name: 'Queso Amarillo para Papas', unit: 'kg', unitCost: 65.00 },
+  { id: 'ing-gas', name: 'Gas LP Comercial (Rivera Gas)', unit: 'L', unitCost: 11.13 },
 ];
 
 const REASON_LABELS: Record<WasteReason, { label: string; color: string }> = {

@@ -8,12 +8,12 @@ import {
   DailyStat,
   MonthlyWeekStat,
   ProductPerformance,
-  PaymentMethod,
   PaymentBreakdown,
   TipStaffMember,
   TipStaffRole,
   TipSettlementPayout,
 } from '@/types/accounting';
+import { calculateTicketItemSubtotal } from '@/data/purchaseTicketsData';
 
 export function isSameDay(date1: Date, date2: Date): boolean {
   return (
@@ -42,13 +42,15 @@ export function isSameMonth(date1: Date, date2: Date): boolean {
 }
 
 export function filterSalesByTimeframe(
-  sales: SaleRecord[],
+  sales: SaleRecord[] = [],
   timeframe: TimeframeFilter,
   referenceDate?: Date
 ): SaleRecord[] {
-  if (!referenceDate) return sales;
+  const safeSales = Array.isArray(sales) ? sales : [];
+  if (!referenceDate) return safeSales;
 
-  return sales.filter((sale) => {
+  return safeSales.filter((sale) => {
+    if (!sale || !sale.timestamp) return false;
     const saleDate = new Date(sale.timestamp);
     if (isNaN(saleDate.getTime())) return false;
 
@@ -67,13 +69,15 @@ export function filterSalesByTimeframe(
 }
 
 export function filterExpensesByTimeframe(
-  expenses: ExpenseRecord[],
+  expenses: ExpenseRecord[] = [],
   timeframe: TimeframeFilter,
   referenceDate?: Date
 ): ExpenseRecord[] {
-  if (!referenceDate) return expenses;
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  if (!referenceDate) return safeExpenses;
 
-  return expenses.filter((exp) => {
+  return safeExpenses.filter((exp) => {
+    if (!exp || !exp.timestamp) return false;
     const expDate = new Date(exp.timestamp);
     if (isNaN(expDate.getTime())) return false;
 
@@ -92,13 +96,15 @@ export function filterExpensesByTimeframe(
 }
 
 export function filterWasteByTimeframe(
-  waste: WasteRecord[],
+  waste: WasteRecord[] = [],
   timeframe: TimeframeFilter,
   referenceDate?: Date
 ): WasteRecord[] {
-  if (!referenceDate) return waste;
+  const safeWaste = Array.isArray(waste) ? waste : [];
+  if (!referenceDate) return safeWaste;
 
-  return waste.filter((w) => {
+  return safeWaste.filter((w) => {
+    if (!w || !w.timestamp) return false;
     const wDate = new Date(w.timestamp);
     if (isNaN(wDate.getTime())) return false;
 
@@ -116,31 +122,113 @@ export function filterWasteByTimeframe(
   });
 }
 
-export function generateSampleExpenses(referenceDate?: Date): ExpenseRecord[] {
-  const now = referenceDate || new Date();
-  return [
-    {
-      id: 'exp-1',
-      description: '2 Bolsas de Hielo para Bebidas',
-      category: 'insumos',
-      amount: 70,
-      timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'exp-2',
-      description: 'Cebollas y Pimientos en el Mercado',
-      category: 'mercado',
-      amount: 145,
-      timestamp: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'exp-3',
-      description: 'Papel manteca y servilletas',
-      category: 'insumos',
-      amount: 95,
-      timestamp: new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
+/**
+ * Calcula dinámicamente el monto real de un gasto a partir de sus artículos (si proviene de un ticket desglosado)
+ */
+export function getCalculatedExpenseAmount(expense?: ExpenseRecord | null): number {
+  if (!expense) return 0;
+  if (expense.items && Array.isArray(expense.items) && expense.items.length > 0) {
+    const sum = expense.items.reduce((acc, item) => acc + (item ? calculateTicketItemSubtotal(item) : 0), 0);
+    return Math.round(sum * 100) / 100;
+  }
+  return typeof expense.amount === 'number' ? expense.amount : 0;
+}
+
+export interface ExpenseAnalyticsSummary {
+  totalExpenses: number;
+  cashExpenses: number;
+  cardExpenses: number;
+  totalSavingsFromOffers: number;
+  byCategory: Record<string, number>;
+  ingredientMetrics: {
+    key: string;
+    label: string;
+    totalQuantity: number;
+    unit: string;
+    totalSpent: number;
+    avgUnitCost: number;
+  }[];
+}
+
+export function calculateExpensesAnalytics(expenses: ExpenseRecord[] = []): ExpenseAnalyticsSummary {
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  let totalExpenses = 0;
+  let cashExpenses = 0;
+  let cardExpenses = 0;
+  let totalSavingsFromOffers = 0;
+  const byCategory: Record<string, number> = {};
+
+  const ingMap: Record<
+    string,
+    { label: string; totalQuantity: number; unit: string; totalSpent: number }
+  > = {
+    sirloin: { label: 'Carne Steak de Sirloin', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
+    queso: { label: 'Quesos (Los Ojos / Mozzarella)', totalQuantity: 0, unit: 'kg/pza', totalSpent: 0 },
+    papa: { label: 'Papa Russet', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
+    aceite: { label: 'Aceite Vegetal', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
+    gas_lp: { label: 'Gas LP', totalQuantity: 0, unit: 'L', totalSpent: 0 },
+    chile_caribe: { label: 'Chile Caribe', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
+    cebolla: { label: 'Cebolla Blanca', totalQuantity: 0, unit: 'kg', totalSpent: 0 },
+    doritos: { label: 'Doritos Nacho (Papas Lokas)', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
+    leche: { label: 'Leche (Champurro)', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
+    mayonesa: { label: 'Mayonesa', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
+    limpieza: { label: 'Insumos de Limpieza y Cocina', totalQuantity: 0, unit: 'pza', totalSpent: 0 },
+  };
+
+  for (const exp of safeExpenses) {
+    if (!exp) continue;
+    const amt = getCalculatedExpenseAmount(exp);
+    totalExpenses += amt;
+
+    if (exp.paymentMethod === 'tarjeta' || exp.paymentMethod === 'transferencia') {
+      cardExpenses += amt;
+    } else {
+      cashExpenses += amt;
+    }
+
+    const cat = exp.category || 'otro';
+    byCategory[cat] = Math.round(((byCategory[cat] || 0) + amt) * 100) / 100;
+
+    if (exp.savedDiscount) {
+      totalSavingsFromOffers += exp.savedDiscount;
+    }
+
+    if (exp.items && Array.isArray(exp.items) && exp.items.length > 0) {
+      for (const item of exp.items) {
+        if (!item) continue;
+        const sub = calculateTicketItemSubtotal(item);
+        const key = item.ingredientKey || 'otro';
+        if (ingMap[key]) {
+          ingMap[key].totalQuantity = Math.round((ingMap[key].totalQuantity + item.quantity) * 10000) / 10000;
+          ingMap[key].totalSpent = Math.round((ingMap[key].totalSpent + sub) * 100) / 100;
+        }
+      }
+    }
+  }
+
+  const ingredientMetrics = Object.entries(ingMap)
+    .filter(([, val]) => val.totalSpent > 0)
+    .map(([key, val]) => ({
+      key,
+      label: val.label,
+      totalQuantity: val.totalQuantity,
+      unit: val.unit,
+      totalSpent: val.totalSpent,
+      avgUnitCost:
+        val.totalQuantity > 0
+          ? Math.round((val.totalSpent / val.totalQuantity) * 100) / 100
+          : 0,
+    }))
+    .sort((a, b) => b.totalSpent - a.totalSpent);
+
+  return {
+    totalExpenses: Math.round(totalExpenses * 100) / 100,
+    cashExpenses: Math.round(cashExpenses * 100) / 100,
+    cardExpenses: Math.round(cardExpenses * 100) / 100,
+    totalSavingsFromOffers: Math.round(totalSavingsFromOffers * 100) / 100,
+    byCategory,
+    ingredientMetrics,
+  };
 }
 
 export function getProductCountsByTimeframe(
@@ -225,7 +313,6 @@ export function getPaymentBreakdown(sales: SaleRecord[]): PaymentBreakdown {
   };
 }
 
-// Granular Daily: Hourly Shift Breakdown
 export function getDailyHourlyBreakdown(todaySales: SaleRecord[]): HourlyBlock[] {
   const blocks: { id: string; label: string; timeRange: string; minHour: number; maxHour: number }[] = [
     { id: 'morning', label: 'Apertura y Almuerzo', timeRange: '11:00 - 13:59', minHour: 0, maxHour: 13 },
@@ -257,7 +344,6 @@ export function getDailyHourlyBreakdown(todaySales: SaleRecord[]): HourlyBlock[]
   });
 }
 
-// Granular Weekly: 7-Day Day-by-Day Breakdown
 export function getWeeklyDailyBreakdown(weekSales: SaleRecord[], referenceDate?: Date): DailyStat[] {
   if (!referenceDate) return [];
   const ref = referenceDate;
@@ -267,7 +353,6 @@ export function getWeeklyDailyBreakdown(weekSales: SaleRecord[], referenceDate?:
   const days: DailyStat[] = [];
   let maxCount = -1;
 
-  // Build last 7 days in chronological order
   for (let i = 6; i >= 0; i--) {
     const d = new Date(ref);
     d.setDate(ref.getDate() - i);
@@ -298,7 +383,6 @@ export function getWeeklyDailyBreakdown(weekSales: SaleRecord[], referenceDate?:
     });
   }
 
-  // Flag peak day if there are sales
   if (maxCount > 0) {
     for (const day of days) {
       if (day.count === maxCount) {
@@ -311,7 +395,6 @@ export function getWeeklyDailyBreakdown(weekSales: SaleRecord[], referenceDate?:
   return days;
 }
 
-// Granular Monthly: Week by Week Breakdown
 export function getMonthlyWeeklyBreakdown(monthSales: SaleRecord[], referenceDate?: Date): MonthlyWeekStat[] {
   if (!referenceDate) return [];
   const ref = referenceDate;
@@ -353,7 +436,6 @@ export function getMonthlyWeeklyBreakdown(monthSales: SaleRecord[], referenceDat
   });
 }
 
-// Product Performance Ranking
 export function getProductPerformanceRanking(
   sales: SaleRecord[],
   products: ProductItem[]
@@ -389,104 +471,6 @@ export function getProductPerformanceRanking(
   return list.sort((a, b) => b.units - a.units || b.revenue - a.revenue);
 }
 
-export function generateSampleSales(products: ProductItem[], referenceDate?: Date): SaleRecord[] {
-  const now = referenceDate || new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-  const sampleSales: SaleRecord[] = [];
-
-  const sampleDistribution: { productId: string; countToday: number; countEarlierWeek: number; countEarlierMonth: number }[] = [
-    { productId: 'sandwich-fries', countToday: 22, countEarlierWeek: 48, countEarlierMonth: 110 },
-    { productId: 'sandwich-alone', countToday: 14, countEarlierWeek: 30, countEarlierMonth: 75 },
-    { productId: 'fries-cheese', countToday: 18, countEarlierWeek: 38, countEarlierMonth: 90 },
-    { productId: 'steak-frites', countToday: 12, countEarlierWeek: 25, countEarlierMonth: 60 },
-    { productId: 'quesadilla-fries', countToday: 15, countEarlierWeek: 32, countEarlierMonth: 78 },
-    { productId: 'quesadilla-alone', countToday: 8, countEarlierWeek: 18, countEarlierMonth: 48 },
-    { productId: 'fries-alone', countToday: 16, countEarlierWeek: 35, countEarlierMonth: 82 },
-  ];
-
-  let idCounter = 1;
-
-  for (const item of sampleDistribution) {
-    const prod = products.find((p) => p.id === item.productId);
-    if (!prod) continue;
-
-    // 1. Today sales across restaurant shift hours (11:00 to 22:00)
-    for (let i = 0; i < item.countToday; i++) {
-      const hourOffset = 11 + Math.floor(Math.random() * 11); // between 11:00 and 22:00
-      const minuteOffset = Math.floor(Math.random() * 60);
-      const saleDate = new Date(now);
-      saleDate.setHours(hourOffset, minuteOffset, 0, 0);
-
-      // If simulated time is in future relative to now, adjust to earlier today
-      if (saleDate.getTime() > now.getTime()) {
-        saleDate.setTime(now.getTime() - Math.floor(Math.random() * 4 * 60 * 60 * 1000));
-      }
-
-      const methodRoll = Math.random();
-      const paymentMethod: PaymentMethod =
-        methodRoll < 0.65 ? 'efectivo' : methodRoll < 0.9 ? 'tarjeta' : 'transferencia';
-
-      sampleSales.push({
-        id: `sample-today-${idCounter++}`,
-        productId: prod.id,
-        timestamp: saleDate.toISOString(),
-        quantity: 1,
-        unitPrice: prod.defaultPrice,
-        unitCost: prod.cost,
-        paymentMethod,
-      });
-    }
-
-    // 2. Earlier this week sales (distributed over the last 6 days)
-    for (let i = 0; i < item.countEarlierWeek; i++) {
-      const daysAgo = 1 + (i % 6);
-      const hourOffset = 12 + Math.floor(Math.random() * 9);
-      const saleDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      saleDate.setHours(hourOffset, Math.floor(Math.random() * 60), 0, 0);
-
-      const methodRoll = Math.random();
-      const paymentMethod: PaymentMethod =
-        methodRoll < 0.65 ? 'efectivo' : methodRoll < 0.9 ? 'tarjeta' : 'transferencia';
-
-      sampleSales.push({
-        id: `sample-week-${idCounter++}`,
-        productId: prod.id,
-        timestamp: saleDate.toISOString(),
-        quantity: 1,
-        unitPrice: prod.defaultPrice,
-        unitCost: prod.cost,
-        paymentMethod,
-      });
-    }
-
-    // 3. Earlier this month sales (distributed across the current month so all 4 weeks are populated)
-    for (let i = 0; i < item.countEarlierMonth; i++) {
-      const dayOfMonth = 1 + (i % lastDayOfMonth);
-      const hourOffset = 12 + Math.floor(Math.random() * 9);
-      const saleDate = new Date(year, month, dayOfMonth, hourOffset, Math.floor(Math.random() * 60), 0);
-
-      const methodRoll = Math.random();
-      const paymentMethod: PaymentMethod =
-        methodRoll < 0.65 ? 'efectivo' : methodRoll < 0.9 ? 'tarjeta' : 'transferencia';
-
-      sampleSales.push({
-        id: `sample-month-${idCounter++}`,
-        productId: prod.id,
-        timestamp: saleDate.toISOString(),
-        quantity: 1,
-        unitPrice: prod.defaultPrice,
-        unitCost: prod.cost,
-        paymentMethod,
-      });
-    }
-  }
-
-  return sampleSales.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-}
-
-// Cash Drawer Shift & Arqueo Calculations
 export function calculateDenominationTotal(counts: {
   b1000?: number;
   b500?: number;
@@ -529,7 +513,6 @@ export function calculateArqueoDifference(
   return { difference: diff, status: 'faltante' };
 }
 
-// Tip Pool & Staff Settlement Calculations
 export interface TipDistributionResult {
   payouts: TipSettlementPayout[];
   totalDistributed: number;
@@ -600,7 +583,6 @@ export function calculateTipDistribution(
     };
   }
 
-  // Calculate weights based on mode
   let weights: number[] = [];
   if (mode === 'puesto') {
     weights = activeStaff.map((member) => {
@@ -619,12 +601,10 @@ export function calculateTipDistribution(
 
   const sumWeights = weights.reduce((acc, curr) => acc + curr, 0);
 
-  // If weights are 0, fall back to equal distribution
   if (sumWeights <= 0) {
     return calculateTipDistribution(totalTips, activeStaff, 'equitativo');
   }
 
-  // Hare-Niemeyer / Largest Remainder algorithm for penny-perfect zero-discrepancy distribution
   const rawCents = weights.map((w) => (w / sumWeights) * totalCents);
   const floorCents = rawCents.map((rc) => Math.floor(rc));
   const allocatedCents = floorCents.reduce((acc, fc) => acc + fc, 0);

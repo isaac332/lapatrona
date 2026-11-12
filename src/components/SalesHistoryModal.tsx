@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { SaleRecord, ProductItem, TimeframeFilter, PaymentMethod } from '@/types/accounting';
-import { X, Trash2, Download, History, RotateCcw } from 'lucide-react';
+import { X, Trash2, Download, History } from 'lucide-react';
 
 interface SalesHistoryModalProps {
   isOpen: boolean;
@@ -12,7 +12,6 @@ interface SalesHistoryModalProps {
   timeframe: TimeframeFilter;
   onDeleteSale: (saleId: string) => void;
   onUpdatePaymentMethod?: (saleId: string, method: PaymentMethod) => void;
-  onOpenZeroOut: () => void;
 }
 
 export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
@@ -23,7 +22,6 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
   timeframe,
   onDeleteSale,
   onUpdatePaymentMethod,
-  onOpenZeroOut,
 }) => {
   const [paymentFilter, setPaymentFilter] = useState<PaymentMethod | 'all'>('all');
 
@@ -36,13 +34,12 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
     return (s.paymentMethod || 'efectivo') === paymentFilter;
   });
 
-  // CSV Export feature for accounting in Mexican Spanish
   const handleExportCSV = () => {
     if (sales.length === 0) return;
 
     const headers = [
       'ID Venta',
-      'Folio Comanda',
+      'Folio Orden',
       'Fecha y Hora',
       'Producto',
       'Variante',
@@ -63,14 +60,14 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
       const total = subtotal.toFixed(2);
       const methodLabel =
         s.paymentMethod === 'tarjeta'
-          ? 'Tarjeta / Clip'
+          ? 'Tarjeta'
           : s.paymentMethod === 'transferencia'
-          ? 'Transferencia SPEI'
+          ? 'Transferencia'
           : 'Efectivo';
 
       return [
         s.id,
-        s.orderNumber ? `#${s.orderNumber}` : 'Directo',
+        s.orderNumber ? `#${s.orderNumber}` : 'Mostrador',
         new Date(s.timestamp).toLocaleString('es-MX'),
         `"${prod?.name || s.productId}"`,
         `"${prod?.variantLabel || ''}"`,
@@ -91,7 +88,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
     link.setAttribute('href', url);
     link.setAttribute(
       'download',
-      `ventas-lapatrona-pos-${timeframe}-${new Date().toISOString().split('T')[0]}.csv`
+      `ventas-lapatrona-${timeframe}-${new Date().toISOString().split('T')[0]}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -103,7 +100,6 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-3xl max-h-[88vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#141417] border border-white/[0.12] shadow-2xl overflow-hidden pb-safe sm:pb-0">
         
-        {/* Mobile handle indicator */}
         <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
 
         {/* Header */}
@@ -114,10 +110,10 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
             </div>
             <div>
               <h2 className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
-                Libro de Transacciones
+                Libro de Ventas
               </h2>
               <p className="text-[11px] sm:text-xs text-neutral-400">
-                Historial auditado • {sales.length} registros
+                Historial de transacciones • {sales.length} registros
               </p>
             </div>
           </div>
@@ -168,7 +164,6 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
           {displayedSales.length === 0 ? (
             <div className="text-center py-12 text-neutral-500">
               <p className="text-sm font-medium">No hay ventas registradas en esta categoría.</p>
-              <p className="text-xs mt-1">Presiona + en cualquier producto para registrar ventas.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -176,13 +171,11 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                 const prod = productMap.get(sale.productId);
                 const subtotal = sale.quantity * sale.unitPrice;
                 const dateObj = new Date(sale.timestamp);
-                const formattedTime = dateObj.toLocaleTimeString('es-MX', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
                 const formattedDate = dateObj.toLocaleDateString('es-MX', {
                   day: 'numeric',
                   month: 'short',
+                  year: 'numeric',
+                  timeZone: 'UTC',
                 });
                 const currentMethod = sale.paymentMethod || 'efectivo';
 
@@ -215,7 +208,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                           )}
                           <span className="text-[#e59b38]">{prod?.variantLabel}</span>
                           <span>•</span>
-                          <span>{formattedDate} {formattedTime}</span>
+                          <span>{formattedDate}</span>
                           <span>•</span>
                           <button
                             type="button"
@@ -270,19 +263,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-3.5 sm:p-5 border-t border-white/[0.08] bg-[#19191d] flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
-          <button
-            onClick={() => {
-              onClose();
-              onOpenZeroOut();
-            }}
-            disabled={sales.length === 0}
-            className="w-full sm:w-auto text-xs text-red-400 hover:text-red-300 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 py-1.5 touch-manipulation"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Poner en Ceros Toda la Contabilidad</span>
-          </button>
-
+        <div className="p-3.5 sm:p-5 border-t border-white/[0.08] bg-[#19191d] flex items-center justify-end shrink-0">
           <button
             onClick={onClose}
             className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#e59b38] active:bg-[#d48b28] text-black font-bold text-xs uppercase tracking-wider transition-colors touch-manipulation text-center"

@@ -112,7 +112,7 @@ function ConfiguracionNegocioDialog({
               type="text"
               value={formData.tagline}
               onChange={(e) => handleChange('tagline', e.target.value)}
-              placeholder="Ej. Philly & Fry • Ribeye & Quesadillas"
+              placeholder="Ej. Todo Para Llevar • Philly & Fry"
               className="w-full bg-[#1b1b20] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-[#e59b38] transition-colors"
             />
           </div>

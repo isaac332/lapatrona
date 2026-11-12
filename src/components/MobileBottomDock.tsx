@@ -2,27 +2,40 @@
 
 import React from 'react';
 import { TimeframeFilter } from '@/types/accounting';
-import { DollarSign, RotateCcw, Clock, Calendar, TrendingUp, BarChart3, Receipt, Wallet, Calculator, ShoppingBag, Package, FileSearch, Volume2, VolumeX, ChefHat, Store, Users, FileSpreadsheet, Coins } from 'lucide-react';
+import {
+  DollarSign,
+  Clock,
+  Calendar,
+  TrendingUp,
+  BarChart3,
+  Receipt,
+  Wallet,
+  Calculator,
+  ShoppingBag,
+  Package,
+  FileSearch,
+  Volume2,
+  VolumeX,
+  ChefHat,
+  Store,
+  FileSpreadsheet,
+} from 'lucide-react';
 
 interface MobileBottomDockProps {
   timeframe: TimeframeFilter;
   onTimeframeChange: (tf: TimeframeFilter) => void;
   onOpenPriceManager: () => void;
   onOpenHistory: () => void;
-  onOpenZeroOut: () => void;
   onOpenCorte: () => void;
   onOpenGastos: () => void;
   onOpenCalculadora: () => void;
   onOpenNuevaOrden: () => void;
-  onOpenMesas?: () => void;
-  openTabsCount?: number;
   onOpenHistorialCortes?: () => void;
   onOpenAtajos?: () => void;
   onOpenStockManager?: () => void;
   onOpenHistorialComandas?: () => void;
   onOpenPantallaCocina?: () => void;
   onOpenExportesContables?: () => void;
-  onOpenTipPool?: () => void;
   activeKitchenOrdersCount?: number;
   onOpenConfiguracionNegocio?: () => void;
   lowStockCount?: number;
@@ -36,18 +49,14 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   onTimeframeChange,
   onOpenPriceManager,
   onOpenHistory,
-  onOpenZeroOut,
   onOpenCorte,
   onOpenGastos,
   onOpenCalculadora,
   onOpenNuevaOrden,
-  onOpenMesas,
-  openTabsCount = 0,
   onOpenStockManager,
   onOpenHistorialComandas,
   onOpenPantallaCocina,
   onOpenExportesContables,
-  onOpenTipPool,
   activeKitchenOrdersCount = 0,
   onOpenConfiguracionNegocio,
   lowStockCount = 0,
@@ -55,6 +64,8 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
   soundEnabled = true,
   onToggleSound,
 }) => {
+  // Hide Nueva Orden, Cocina, Órdenes, Porciones for now
+  const HIDE_ORDER_MODULES = true;
   const tabs: { id: TimeframeFilter; label: string; icon: React.FC<{ className?: string }> }[] = [
     { id: 'today', label: 'Hoy', icon: Clock },
     { id: 'week', label: 'Semana', icon: Calendar },
@@ -66,7 +77,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
     <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[#121215]/95 backdrop-blur-xl border-t border-white/[0.1] px-2 pt-2 pb-safe shadow-[0_-10px_25px_rgba(0,0,0,0.5)]">
       <div className="flex items-center justify-between gap-1 max-w-md mx-auto">
         
-        {/* Timeframe Selector Pills (Thumb friendly) */}
+        {/* Timeframe Selector Pills */}
         <div className="flex items-center bg-[#1b1b20] p-1 rounded-xl border border-white/[0.06] flex-1 justify-between">
           {tabs.map((tab) => {
             const isActive = timeframe === tab.id;
@@ -88,38 +99,39 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
           })}
         </div>
 
-        {/* Vertical divider */}
         <div className="w-[1px] h-8 bg-white/[0.08] mx-1 shrink-0" />
 
-        {/* Action Icon Buttons for Thumb */}
+        {/* Action Icon Buttons */}
         <div className="flex items-center gap-1 shrink-0 overflow-x-auto no-scrollbar py-0.5">
-          <button
-            onClick={onOpenNuevaOrden}
-            aria-label="Armar nueva comanda"
-            title="Armar Comanda / Orden"
-            className="w-10 h-10 rounded-xl bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold flex flex-col items-center justify-center shadow-md active:scale-95 touch-manipulation select-none shrink-0"
-          >
-            <ShoppingBag className="w-4 h-4 text-black" />
-            <span className="text-[7.5px] font-black uppercase mt-0.5">+Orden</span>
-          </button>
-
-          {onOpenHistorialComandas && (
+          {!HIDE_ORDER_MODULES && (
             <button
-              onClick={onOpenHistorialComandas}
-              aria-label="Historial de comandas"
-              title="Buscar y reimprimir notas de consumo"
-              className="w-10 h-10 rounded-xl bg-white/[0.04] active:bg-white/[0.1] border border-white/[0.08] flex flex-col items-center justify-center text-neutral-300 active:scale-95 touch-manipulation select-none shrink-0"
+              onClick={onOpenNuevaOrden}
+              aria-label="Armar nueva orden"
+              title="Armar Nueva Orden"
+              className="w-10 h-10 rounded-xl bg-[#e59b38] active:bg-[#d48b28] text-black font-extrabold flex flex-col items-center justify-center shadow-md active:scale-95 touch-manipulation select-none shrink-0"
             >
-              <FileSearch className="w-4 h-4 text-[#e59b38]" />
-              <span className="text-[7.5px] uppercase mt-0.5">Notas</span>
+              <ShoppingBag className="w-4 h-4 text-black" />
+              <span className="text-[7.5px] font-black uppercase mt-0.5">+Orden</span>
             </button>
           )}
 
-          {onOpenPantallaCocina && (
+          {!HIDE_ORDER_MODULES && onOpenHistorialComandas && (
+            <button
+              onClick={onOpenHistorialComandas}
+              aria-label="Historial de órdenes"
+              title="Buscar y reimprimir órdenes"
+              className="w-10 h-10 rounded-xl bg-white/[0.04] active:bg-white/[0.1] border border-white/[0.08] flex flex-col items-center justify-center text-neutral-300 active:scale-95 touch-manipulation select-none shrink-0"
+            >
+              <FileSearch className="w-4 h-4 text-[#e59b38]" />
+              <span className="text-[7.5px] uppercase mt-0.5">Órdenes</span>
+            </button>
+          )}
+
+          {!HIDE_ORDER_MODULES && onOpenPantallaCocina && (
             <button
               onClick={onOpenPantallaCocina}
-              aria-label="Pantalla de Cocina / KDS"
-              title="Pantalla de Cocina KDS"
+              aria-label="Pantalla de Cocina"
+              title="Pantalla de Cocina"
               className={`w-10 h-10 rounded-xl border flex flex-col items-center justify-center active:scale-95 touch-manipulation select-none shrink-0 relative ${
                 activeKitchenOrdersCount > 0
                   ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
@@ -136,28 +148,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             </button>
           )}
 
-          {onOpenMesas && (
-            <button
-              onClick={onOpenMesas}
-              aria-label="Mesas y cuentas abiertas"
-              title="Mesas y Cuentas Abiertas"
-              className={`w-10 h-10 rounded-xl border flex flex-col items-center justify-center active:scale-95 touch-manipulation select-none shrink-0 relative ${
-                openTabsCount > 0
-                  ? 'bg-amber-500/20 border-amber-500/40 text-[#e59b38]'
-                  : 'bg-white/[0.04] active:bg-white/[0.1] border-white/[0.08] text-neutral-300'
-              }`}
-            >
-              <Users className="w-4 h-4 text-[#e59b38]" />
-              <span className="text-[7.5px] uppercase mt-0.5">Mesas</span>
-              {openTabsCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#e59b38] text-black text-[8px] font-black flex items-center justify-center font-mono">
-                  {openTabsCount}
-                </span>
-              )}
-            </button>
-          )}
-
-          {onOpenStockManager && (
+          {!HIDE_ORDER_MODULES && onOpenStockManager && (
             <button
               onClick={onOpenStockManager}
               aria-label="Control de stock"
@@ -181,24 +172,12 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
           <button
             onClick={onOpenCorte}
             aria-label="Corte de caja"
-            title="Ticket de Corte de Caja"
+            title="Abrir / Cerrar Caja"
             className="w-10 h-10 rounded-xl bg-[#e59b38]/15 active:bg-[#e59b38]/30 border border-[#e59b38]/30 flex flex-col items-center justify-center text-[#e59b38] active:scale-95 touch-manipulation select-none shrink-0"
           >
             <Receipt className="w-4 h-4" />
-            <span className="text-[8px] font-bold uppercase mt-0.5">Corte</span>
+            <span className="text-[8px] font-bold uppercase mt-0.5">Caja</span>
           </button>
-
-          {onOpenTipPool && (
-            <button
-              onClick={onOpenTipPool}
-              aria-label="Liquidación de propinas"
-              title="Liquidación de Propinas (Pool)"
-              className="w-10 h-10 rounded-xl bg-amber-500/15 active:bg-amber-500/30 border border-amber-500/30 flex flex-col items-center justify-center text-amber-400 active:scale-95 touch-manipulation select-none shrink-0"
-            >
-              <Coins className="w-4 h-4" />
-              <span className="text-[7.5px] font-bold uppercase mt-0.5">Propina</span>
-            </button>
-          )}
 
           <button
             onClick={onOpenGastos}
@@ -220,25 +199,15 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             <span className="text-[8px] font-bold uppercase mt-0.5">Cambio</span>
           </button>
 
-          <button
-            onClick={onOpenZeroOut}
-            aria-label="Poner en ceros"
-            title="Poner en Ceros"
-            className="w-10 h-10 rounded-xl bg-red-500/10 active:bg-red-500/25 border border-red-500/25 flex flex-col items-center justify-center text-red-400 active:scale-95 touch-manipulation select-none shrink-0"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span className="text-[8px] font-bold uppercase mt-0.5">Ceros</span>
-          </button>
-
           {onOpenExportesContables && (
             <button
               onClick={onOpenExportesContables}
-              aria-label="Exportar para contador SAT"
-              title="Contador SAT"
+              aria-label="Exportar CSV"
+              title="Exportar CSV"
               className="w-10 h-10 rounded-xl bg-sky-500/15 active:bg-sky-500/30 border border-sky-500/30 flex flex-col items-center justify-center text-sky-400 active:scale-95 touch-manipulation select-none shrink-0"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span className="text-[7.5px] font-bold uppercase mt-0.5">SAT</span>
+              <span className="text-[7.5px] font-bold uppercase mt-0.5">CSV</span>
             </button>
           )}
 
@@ -249,7 +218,7 @@ export const MobileBottomDock: React.FC<MobileBottomDockProps> = ({
             className="w-10 h-10 rounded-xl bg-white/[0.04] active:bg-white/[0.1] border border-white/[0.08] flex flex-col items-center justify-center text-neutral-300 active:scale-95 touch-manipulation select-none shrink-0"
           >
             <DollarSign className="w-4 h-4 text-[#e59b38]" />
-            <span className="text-[8px] uppercase mt-0.5">Costos</span>
+            <span className="text-[8px] uppercase mt-0.5">Precios</span>
           </button>
 
           {onOpenConfiguracionNegocio && (

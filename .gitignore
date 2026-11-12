@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.studio_history/
 
 # debug
 npm-debug.log*

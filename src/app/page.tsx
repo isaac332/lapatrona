@@ -1,21 +1,31 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useSyncExternalStore, useCallback, useEffect } from 'react';
-import { ProductItem, SaleRecord, ExpenseRecord, WasteRecord, TimeframeFilter, PaymentMethod, CustomerOrder, ClosedShiftRecord, ProductStockConfig, BusinessInfo, RestaurantTableConfig } from '@/types/accounting';
+import {
+  ProductItem,
+  SaleRecord,
+  ExpenseRecord,
+  WasteRecord,
+  TimeframeFilter,
+  PaymentMethod,
+  CustomerOrder,
+  ClosedShiftRecord,
+  ProductStockConfig,
+  BusinessInfo,
+} from '@/types/accounting';
 import { INITIAL_PRODUCTS, INITIAL_STOCK } from '@/data/initialProducts';
 import { DEFAULT_BUSINESS_INFO } from '@/data/initialBusinessInfo';
-import { INITIAL_TABLES } from '@/data/initialTables';
+import { NOTEBOOK_INITIAL_SALES, NOTEBOOK_CLOSED_SHIFTS } from '@/data/notebookSalesData';
+import { INITIAL_TICKET_EXPENSES } from '@/data/purchaseTicketsData';
 import {
   filterSalesByTimeframe,
   filterExpensesByTimeframe,
   filterWasteByTimeframe,
   getProductCountsByTimeframe,
-  generateSampleSales,
-  generateSampleExpenses,
-  getDailyHourlyBreakdown,
   getWeeklyDailyBreakdown,
   getMonthlyWeeklyBreakdown,
   getProductPerformanceRanking,
+  getCalculatedExpenseAmount,
 } from '@/utils/accountingCalculations';
 import { exportAccountingReportCSV } from '@/utils/csvExport';
 import { Navbar } from '@/components/Navbar';
@@ -26,7 +36,6 @@ import { GranularTimeframeView } from '@/components/GranularTimeframeView';
 import { ProductCard } from '@/components/ProductCard';
 import { PriceManagerModal } from '@/components/PriceManagerModal';
 import { SalesHistoryModal } from '@/components/SalesHistoryModal';
-import { ZeroOutModal } from '@/components/ZeroOutModal';
 import { CorteDeCajaModal } from '@/components/CorteDeCajaModal';
 import { GastosModal } from '@/components/GastosModal';
 import { CalculadoraCambioModal } from '@/components/CalculadoraCambioModal';
@@ -38,14 +47,12 @@ import { StockManagerModal } from '@/components/StockManagerModal';
 import { HistorialComandasModal } from '@/components/HistorialComandasModal';
 import { DailyGoalTracker } from '@/components/DailyGoalTracker';
 import { PantallaCocinaModal } from '@/components/PantallaCocinaModal';
-import { MesasModal } from '@/components/MesasModal';
 import { MermasModal } from '@/components/MermasModal';
 import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModal';
 import { MiseEnPlaceModal } from '@/components/MiseEnPlaceModal';
 import { ExportesContablesModal } from '@/components/ExportesContablesModal';
-import { PoolPropinasModal } from '@/components/PoolPropinasModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
-import { CheckCircle2, RotateCcw, Banknote, CreditCard, Smartphone } from 'lucide-react';
+import { CheckCircle2, Banknote, CreditCard, Smartphone } from 'lucide-react';
 
 const subscribe = () => () => {};
 
@@ -68,12 +75,15 @@ export default function SalesCounterPage() {
     return isHydrated ? getClientDate() : undefined;
   }, [isHydrated]);
 
-  // Sync products with Mexican Spanish texts while preserving user-configured prices/costs
+  // Load the exact 7 menu products from Los Phillys de La Patrona
   const [products, setProducts] = useState<ProductItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_PRODUCTS;
     try {
-      const saved = localStorage.getItem('philly_fry_products');
-      if (!saved) return INITIAL_PRODUCTS;
+      const saved = localStorage.getItem('lapatrona_v4_products');
+      if (!saved) {
+        localStorage.setItem('lapatrona_v4_products', JSON.stringify(INITIAL_PRODUCTS));
+        return INITIAL_PRODUCTS;
+      }
       const parsed: ProductItem[] = JSON.parse(saved);
       return INITIAL_PRODUCTS.map((init) => {
         const found = parsed.find((p) => p.id === init.id);
@@ -92,61 +102,61 @@ export default function SalesCounterPage() {
   });
 
   const [sales, setSales] = useState<SaleRecord[]>(() => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') return NOTEBOOK_INITIAL_SALES;
     try {
-      const saved = localStorage.getItem('philly_fry_sales');
-      if (saved !== null) return JSON.parse(saved);
-      const sample = generateSampleSales(INITIAL_PRODUCTS);
-      localStorage.setItem('philly_fry_sales', JSON.stringify(sample));
-      return sample;
+      const saved = localStorage.getItem('lapatrona_v4_sales');
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      localStorage.setItem('lapatrona_v4_sales', JSON.stringify(NOTEBOOK_INITIAL_SALES));
+      return NOTEBOOK_INITIAL_SALES;
     } catch {
-      return [];
+      return NOTEBOOK_INITIAL_SALES;
     }
   });
 
+  // Load the 9 physical purchase tickets calculated from raw items
   const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') return INITIAL_TICKET_EXPENSES;
     try {
-      const saved = localStorage.getItem('philly_fry_expenses');
-      if (saved !== null) return JSON.parse(saved);
-      const sample = generateSampleExpenses();
-      localStorage.setItem('philly_fry_expenses', JSON.stringify(sample));
-      return sample;
+      const saved = localStorage.getItem('lapatrona_v4_expenses');
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(INITIAL_TICKET_EXPENSES));
+      return INITIAL_TICKET_EXPENSES;
     } catch {
-      return [];
+      return INITIAL_TICKET_EXPENSES;
     }
   });
 
-  const [timeframe, setTimeframe] = useState<TimeframeFilter>('today');
+  const [timeframe, setTimeframe] = useState<TimeframeFilter>('all');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('efectivo');
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const [isZeroOutModalOpen, setIsZeroOutModalOpen] = useState(false);
   const [isCorteModalOpen, setIsCorteModalOpen] = useState(false);
   const [isGastosModalOpen, setIsGastosModalOpen] = useState(false);
   const [isCalculadoraModalOpen, setIsCalculadoraModalOpen] = useState(false);
   const [isNuevaOrdenOpen, setIsNuevaOrdenOpen] = useState(false);
-  const [isMesasModalOpen, setIsMesasModalOpen] = useState(false);
   const [isMermasModalOpen, setIsMermasModalOpen] = useState(false);
   const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      const saved = localStorage.getItem('philly_fry_waste');
+      const saved = localStorage.getItem('lapatrona_v4_waste');
       return saved !== null ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
-  const [tableForNewOrder, setTableForNewOrder] = useState<string | undefined>(undefined);
-  const [editingOrderForTable, setEditingOrderForTable] = useState<CustomerOrder | null>(null);
-  const [tables] = useState<RestaurantTableConfig[]>(INITIAL_TABLES);
   const [isTicketComandaOpen, setIsTicketComandaOpen] = useState(false);
   const [activeTicketOrder, setActiveTicketOrder] = useState<CustomerOrder | null>(null);
   const [orderCounter, setOrderCounter] = useState<number>(() => {
     if (typeof window === 'undefined') return 1;
     try {
-      const saved = localStorage.getItem('philly_fry_order_counter');
+      const saved = localStorage.getItem('lapatrona_v4_order_counter');
       return saved !== null ? parseInt(saved, 10) : 1;
     } catch {
       return 1;
@@ -155,37 +165,39 @@ export default function SalesCounterPage() {
   const [orders, setOrders] = useState<CustomerOrder[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      const saved = localStorage.getItem('philly_fry_orders');
+      const saved = localStorage.getItem('lapatrona_v4_orders');
       return saved !== null ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
   const [startingCash, setStartingCash] = useState<number>(() => {
-    if (typeof window === 'undefined') return 1000;
+    if (typeof window === 'undefined') return 50;
     try {
-      const saved = localStorage.getItem('philly_fry_starting_cash');
-      return saved !== null ? parseFloat(saved) : 1000;
+      const saved = localStorage.getItem('lapatrona_v4_starting_cash');
+      return saved !== null ? parseFloat(saved) : 50;
     } catch {
-      return 1000;
+      return 50;
     }
   });
   const [closedShifts, setClosedShifts] = useState<ClosedShiftRecord[]>(() => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') return NOTEBOOK_CLOSED_SHIFTS;
     try {
-      const saved = localStorage.getItem('philly_fry_closed_shifts');
-      return saved !== null ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem('lapatrona_v4_closed_shifts');
+      if (saved !== null) return JSON.parse(saved);
+      localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(NOTEBOOK_CLOSED_SHIFTS));
+      return NOTEBOOK_CLOSED_SHIFTS;
     } catch {
-      return [];
+      return NOTEBOOK_CLOSED_SHIFTS;
     }
   });
   const [shiftCounter, setShiftCounter] = useState<number>(() => {
-    if (typeof window === 'undefined') return 1;
+    if (typeof window === 'undefined') return 6;
     try {
-      const saved = localStorage.getItem('philly_fry_shift_counter');
-      return saved !== null ? parseInt(saved, 10) : 1;
+      const saved = localStorage.getItem('lapatrona_v4_shift_counter');
+      return saved !== null ? parseInt(saved, 10) : 6;
     } catch {
-      return 1;
+      return 6;
     }
   });
   const [isHistorialCortesOpen, setIsHistorialCortesOpen] = useState(false);
@@ -193,7 +205,7 @@ export default function SalesCounterPage() {
   const [stockMap, setStockMap] = useState<Record<string, ProductStockConfig>>(() => {
     if (typeof window === 'undefined') return INITIAL_STOCK;
     try {
-      const saved = localStorage.getItem('philly_fry_stock');
+      const saved = localStorage.getItem('lapatrona_v4_stock');
       if (!saved) return INITIAL_STOCK;
       const parsed = JSON.parse(saved);
       return { ...INITIAL_STOCK, ...parsed };
@@ -207,23 +219,22 @@ export default function SalesCounterPage() {
   const [isPantallaCocinaOpen, setIsPantallaCocinaOpen] = useState(false);
   const [isConfiguracionNegocioOpen, setIsConfiguracionNegocioOpen] = useState(false);
   const [isExportesModalOpen, setIsExportesModalOpen] = useState(false);
-  const [isTipPoolOpen, setIsTipPoolOpen] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
     if (typeof window === 'undefined') return DEFAULT_BUSINESS_INFO;
     try {
-      const saved = localStorage.getItem('philly_fry_business_info');
+      const saved = localStorage.getItem('lapatrona_v4_business_info');
       return saved !== null ? JSON.parse(saved) : DEFAULT_BUSINESS_INFO;
     } catch {
       return DEFAULT_BUSINESS_INFO;
     }
   });
   const [dailyGoal, setDailyGoal] = useState<number>(() => {
-    if (typeof window === 'undefined') return 8000;
+    if (typeof window === 'undefined') return 2000;
     try {
-      const saved = localStorage.getItem('philly_fry_daily_goal');
-      return saved !== null ? parseFloat(saved) : 8000;
+      const saved = localStorage.getItem('lapatrona_v4_daily_goal');
+      return saved !== null ? parseFloat(saved) : 2000;
     } catch {
-      return 8000;
+      return 2000;
     }
   });
   const [soundActive, setSoundActive] = useState<boolean>(() => {
@@ -245,8 +256,8 @@ export default function SalesCounterPage() {
   const handleUpdateDailyGoal = (amount: number) => {
     setDailyGoal(amount);
     try {
-      localStorage.setItem('philly_fry_daily_goal', amount.toString());
-      showToast(`✓ Meta del turno fijada: $${amount.toLocaleString('es-MX')} MXN.`);
+      localStorage.setItem('lapatrona_v4_daily_goal', amount.toString());
+      showToast(`✓ Meta del día fijada: $${amount.toLocaleString('es-MX')} MXN.`);
     } catch {}
   };
 
@@ -263,32 +274,32 @@ export default function SalesCounterPage() {
     const updated = [record, ...closedShifts];
     setClosedShifts(updated);
     try {
-      localStorage.setItem('philly_fry_closed_shifts', JSON.stringify(updated));
+      localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(updated));
     } catch (e) {
       console.error('Failed to save closed shift', e);
     }
     setShiftCounter((prev) => {
       const next = prev + 1;
       try {
-        localStorage.setItem('philly_fry_shift_counter', next.toString());
+        localStorage.setItem('lapatrona_v4_shift_counter', next.toString());
       } catch {}
       return next;
     });
-    showToast(`✓ Turno #${record.shiftNumber} archivado en el historial de cortes.`);
+    showToast(`✓ Cierre de caja archivado en el historial.`);
   };
 
   const handleClearShiftHistory = () => {
     setClosedShifts([]);
     try {
-      localStorage.removeItem('philly_fry_closed_shifts');
+      localStorage.removeItem('lapatrona_v4_closed_shifts');
     } catch {}
-    showToast('✓ Historial de turnos limpiado.');
+    showToast('✓ Historial de cierres limpiado.');
   };
 
   const handleUpdateStartingCash = (amount: number) => {
     setStartingCash(amount);
     try {
-      localStorage.setItem('philly_fry_starting_cash', amount.toString());
+      localStorage.setItem('lapatrona_v4_starting_cash', amount.toString());
       showToast(`✓ Fondo inicial de caja guardado: $${amount.toFixed(2)} MXN.`);
     } catch (e) {
       console.error('Failed to save starting cash', e);
@@ -298,7 +309,7 @@ export default function SalesCounterPage() {
   const handleSaveBusinessInfo = (newInfo: BusinessInfo) => {
     setBusinessInfo(newInfo);
     try {
-      localStorage.setItem('philly_fry_business_info', JSON.stringify(newInfo));
+      localStorage.setItem('lapatrona_v4_business_info', JSON.stringify(newInfo));
       showToast('✓ Datos del negocio y membrete actualizados.');
     } catch (e) {
       console.error('Failed to save business info', e);
@@ -309,7 +320,7 @@ export default function SalesCounterPage() {
     setOrders((prev) => {
       const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
       try {
-        localStorage.setItem('philly_fry_orders', JSON.stringify(updated));
+        localStorage.setItem('lapatrona_v4_orders', JSON.stringify(updated));
       } catch (e) {
         console.error('Failed to update order status', e);
       }
@@ -317,30 +328,28 @@ export default function SalesCounterPage() {
     });
     const statusLabels = {
       pendiente: 'marcada como pendiente',
-      preparando: 'puesta en parrilla',
+      preparando: 'puesta en plancha',
       listo: 'marcada como lista',
       entregado: 'entregada al cliente',
     };
-    showToast(`✓ Comanda ${statusLabels[newStatus]}.`);
+    showToast(`✓ Orden ${statusLabels[newStatus]}.`);
   };
 
-  // Save changes to localStorage
   const handleSaveProducts = (updatedProducts: ProductItem[]) => {
     setProducts(updatedProducts);
     try {
-      localStorage.setItem('philly_fry_products', JSON.stringify(updatedProducts));
+      localStorage.setItem('lapatrona_v4_products', JSON.stringify(updatedProducts));
       showToast('✓ Precios y costos guardados correctamente.');
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
     }
   };
 
-  // On-the-fly individual product price edit from the card
   const handleUpdateProductPrice = (productId: string, newPrice: number) => {
     const updated = products.map((p) => (p.id === productId ? { ...p, defaultPrice: newPrice } : p));
     setProducts(updated);
     try {
-      localStorage.setItem('philly_fry_products', JSON.stringify(updated));
+      localStorage.setItem('lapatrona_v4_products', JSON.stringify(updated));
       const target = updated.find((p) => p.id === productId);
       showToast(`✓ Precio de ${target?.name} actualizado a $${newPrice.toFixed(2)}.`);
     } catch (e) {
@@ -351,7 +360,7 @@ export default function SalesCounterPage() {
   const handleSaveSales = (updatedSales: SaleRecord[]) => {
     setSales(updatedSales);
     try {
-      localStorage.setItem('philly_fry_sales', JSON.stringify(updatedSales));
+      localStorage.setItem('lapatrona_v4_sales', JSON.stringify(updatedSales));
     } catch (e) {
       console.error('Failed to save sales to localStorage', e);
     }
@@ -360,7 +369,7 @@ export default function SalesCounterPage() {
   const handleSaveStock = useCallback((updatedStock: Record<string, ProductStockConfig>) => {
     setStockMap(updatedStock);
     try {
-      localStorage.setItem('philly_fry_stock', JSON.stringify(updatedStock));
+      localStorage.setItem('lapatrona_v4_stock', JSON.stringify(updatedStock));
     } catch (e) {
       console.error('Failed to save stock to localStorage', e);
     }
@@ -400,20 +409,21 @@ export default function SalesCounterPage() {
 
   const handleResetAllStock = useCallback(() => {
     handleSaveStock(INITIAL_STOCK);
-    showToast('✓ Porciones de turno reiniciadas a valores de apertura.');
+    showToast('✓ Porciones reiniciadas a valores de apertura.');
   }, [handleSaveStock]);
 
-  // Increment product sales tally
   const handleIncrement = useCallback((productId: string, amount: number = 1) => {
     const targetProduct = products.find((p) => p.id === productId);
     if (!targetProduct) return;
 
-    // Check available stock
+    // Stock check commented out - allow logging sales directly without stock restrictions
+    /*
     const currentStockConfig = stockMap[productId];
     if (currentStockConfig?.trackStock && currentStockConfig.currentStock <= 0) {
       showToast(`⚠ Agotado: No hay porciones disponibles de ${targetProduct.name}.`);
       return;
     }
+    */
 
     const newRecords: SaleRecord[] = [];
     const now = new Date().toISOString();
@@ -433,7 +443,7 @@ export default function SalesCounterPage() {
     setSales((prevSales) => {
       const updated = [...newRecords, ...prevSales];
       try {
-        localStorage.setItem('philly_fry_sales', JSON.stringify(updated));
+        localStorage.setItem('lapatrona_v4_sales', JSON.stringify(updated));
       } catch (e) {
         console.error('Failed to save sales to localStorage', e);
       }
@@ -442,7 +452,7 @@ export default function SalesCounterPage() {
 
     playCashRegisterChime();
 
-    // Deduct stock if tracked
+    /*
     if (currentStockConfig?.trackStock) {
       setStockMap((prev) => {
         const prodStock = prev[productId];
@@ -455,14 +465,14 @@ export default function SalesCounterPage() {
           },
         };
         try {
-          localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+          localStorage.setItem('lapatrona_v4_stock', JSON.stringify(next));
         } catch {}
         return next;
       });
     }
+    */
   }, [products, selectedPaymentMethod, stockMap]);
 
-  // Update payment method of a past sale (from audit ledger)
   const handleUpdateSalePaymentMethod = (saleId: string, newMethod: PaymentMethod) => {
     const updated = sales.map((s) => (s.id === saleId ? { ...s, paymentMethod: newMethod } : s));
     handleSaveSales(updated);
@@ -475,7 +485,6 @@ export default function SalesCounterPage() {
     showToast(`✓ Método de pago cambiado a ${methodNames[newMethod]}.`);
   };
 
-  // Decrement: remove latest sale for this product
   const handleDecrement = (productId: string, amount: number = 1) => {
     let toRemove = amount;
     const updated = sales.filter((s) => {
@@ -489,46 +498,51 @@ export default function SalesCounterPage() {
     handleSaveSales(updated);
   };
 
-  // Delete specific sale record from audit log
   const handleDeleteSale = (saleId: string) => {
     const updated = sales.filter((s) => s.id !== saleId);
     handleSaveSales(updated);
   };
 
-  // Expenses management
   const handleSaveExpenses = (updatedExpenses: ExpenseRecord[]) => {
     setExpenses(updatedExpenses);
     try {
-      localStorage.setItem('philly_fry_expenses', JSON.stringify(updatedExpenses));
+      localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(updatedExpenses));
     } catch (e) {
       console.error('Failed to save expenses to localStorage', e);
     }
   };
 
-  const handleAddExpense = (description: string, amount: number, category: string) => {
+  const handleAddExpense = (
+    description: string,
+    amount: number,
+    category: string,
+    paymentMethod: PaymentMethod = 'efectivo',
+    storeName?: string
+  ) => {
     const newRecord: ExpenseRecord = {
       id: `exp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       description,
       amount,
       category,
       timestamp: new Date().toISOString(),
+      paymentMethod,
+      storeName,
     };
     const updated = [newRecord, ...expenses];
     handleSaveExpenses(updated);
-    showToast(`✓ Salida de efectivo registrada: $${amount.toFixed(2)} (${description}).`);
+    showToast(`✓ Ticket registrado: $${amount.toFixed(2)} (${description}).`);
   };
 
   const handleDeleteExpense = (expenseId: string) => {
     const updated = expenses.filter((e) => e.id !== expenseId);
     handleSaveExpenses(updated);
-    showToast('✓ Gasto eliminado de la contabilidad.');
+    showToast('✓ Ticket eliminado de la contabilidad.');
   };
 
-  // Kitchen Waste & Spoilage Handlers
   const handleSaveWaste = (records: WasteRecord[]) => {
     setWasteRecords(records);
     try {
-      localStorage.setItem('philly_fry_waste', JSON.stringify(records));
+      localStorage.setItem('lapatrona_v4_waste', JSON.stringify(records));
     } catch (e) {
       console.error('Failed to save waste to localStorage', e);
     }
@@ -550,7 +564,7 @@ export default function SalesCounterPage() {
             },
           };
           try {
-            localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+            localStorage.setItem('lapatrona_v4_stock', JSON.stringify(next));
           } catch {}
           return next;
         }
@@ -567,7 +581,6 @@ export default function SalesCounterPage() {
     showToast('✓ Registro de merma eliminado.');
   };
 
-  // Complete Customer Order (Comanda)
   const handleCompleteOrder = (order: CustomerOrder) => {
     const newSales: SaleRecord[] = [];
     const now = new Date().toISOString();
@@ -615,160 +628,58 @@ export default function SalesCounterPage() {
         });
       }
     }
-    const existingIndex = orders.findIndex((o) => o.id === order.id);
-    const wasOpenTab = existingIndex !== -1 && orders[existingIndex].isOpenTab;
 
     const updated = [...newSales, ...sales];
     handleSaveSales(updated);
     setOrders((prev) => {
-      let nextOrders: CustomerOrder[];
-      const idx = prev.findIndex((o) => o.id === order.id);
-      if (idx !== -1) {
-        nextOrders = [...prev];
-        nextOrders[idx] = { ...order, isOpenTab: false, closedAt: new Date().toISOString() };
-      } else {
-        nextOrders = [{ ...order, isOpenTab: false, closedAt: new Date().toISOString() }, ...prev];
-      }
+      const nextOrders = [{ ...order, isOpenTab: false, closedAt: new Date().toISOString() }, ...prev];
       try {
-        localStorage.setItem('philly_fry_orders', JSON.stringify(nextOrders));
+        localStorage.setItem('lapatrona_v4_orders', JSON.stringify(nextOrders));
       } catch (e) {
         console.error('Failed to save orders to localStorage', e);
       }
       return nextOrders;
     });
 
-    // Deduct stock for items in this comanda if not already deducted as an open tab
-    if (!wasOpenTab) {
-      setStockMap((prev) => {
-        let changed = false;
-        const next = { ...prev };
-        for (const item of order.items) {
-          const prodStock = next[item.productId];
-          if (prodStock && prodStock.trackStock) {
-            next[item.productId] = {
-              ...prodStock,
-              currentStock: Math.max(0, prodStock.currentStock - item.quantity),
-            };
-            changed = true;
-          }
-        }
-        if (changed) {
-          try {
-            localStorage.setItem('philly_fry_stock', JSON.stringify(next));
-          } catch {}
-        }
-        return changed ? next : prev;
-      });
-
-      setOrderCounter((prev) => {
-        const next = prev + 1;
-        try {
-          localStorage.setItem('philly_fry_order_counter', next.toString());
-        } catch {}
-        return next;
-      });
-    }
-
-    setActiveTicketOrder(order);
-    setIsTicketComandaOpen(true);
-    playCashRegisterChime();
-    showToast(`✓ Comanda #${order.orderNumber} ${order.tableNumber ? `(${order.tableNumber})` : ''} cobrada ($${order.total.toFixed(2)} MXN).`);
-  };
-
-  const handleSaveOpenTab = (order: CustomerOrder) => {
-    const existingIndex = orders.findIndex((o) => o.id === order.id);
-    const prevItems = existingIndex !== -1 ? orders[existingIndex].items : [];
-
-    setOrders((prev) => {
-      let nextOrders: CustomerOrder[];
-      const idx = prev.findIndex((o) => o.id === order.id);
-      if (idx !== -1) {
-        nextOrders = [...prev];
-        nextOrders[idx] = { ...order, isOpenTab: true };
-      } else {
-        nextOrders = [{ ...order, isOpenTab: true }, ...prev];
-      }
-      try {
-        localStorage.setItem('philly_fry_orders', JSON.stringify(nextOrders));
-      } catch (e) {
-        console.error('Failed to save orders to localStorage', e);
-      }
-      return nextOrders;
-    });
-
-    // Deduct stock for newly added items
     setStockMap((prev) => {
       let changed = false;
       const next = { ...prev };
       for (const item of order.items) {
-        const prevQty = prevItems.find((p) => p.productId === item.productId)?.quantity || 0;
-        const delta = item.quantity - prevQty;
-        if (delta > 0) {
-          const prodStock = next[item.productId];
-          if (prodStock && prodStock.trackStock) {
-            next[item.productId] = {
-              ...prodStock,
-              currentStock: Math.max(0, prodStock.currentStock - delta),
-            };
-            changed = true;
-          }
+        const prodStock = next[item.productId];
+        if (prodStock && prodStock.trackStock) {
+          next[item.productId] = {
+            ...prodStock,
+            currentStock: Math.max(0, prodStock.currentStock - item.quantity),
+          };
+          changed = true;
         }
       }
       if (changed) {
         try {
-          localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+          localStorage.setItem('lapatrona_v4_stock', JSON.stringify(next));
         } catch {}
       }
       return changed ? next : prev;
     });
 
-    if (existingIndex === -1) {
-      setOrderCounter((prev) => {
-        const next = prev + 1;
-        try {
-          localStorage.setItem('philly_fry_order_counter', next.toString());
-        } catch {}
-        return next;
-      });
-    }
+    setOrderCounter((prev) => {
+      const next = prev + 1;
+      try {
+        localStorage.setItem('lapatrona_v4_order_counter', next.toString());
+      } catch {}
+      return next;
+    });
 
+    setActiveTicketOrder(order);
+    setIsTicketComandaOpen(true);
     playCashRegisterChime();
-    showToast(`✓ Cuenta de ${order.tableNumber || 'la mesa'} guardada en cuentas abiertas.`);
+    showToast(`✓ Orden #${order.orderNumber} cobrada ($${order.total.toFixed(2)} MXN).`);
   };
 
-  const handleOpenNewOrderForTable = (tableName: string) => {
-    setTableForNewOrder(tableName);
-    setEditingOrderForTable(null);
-    setIsMesasModalOpen(false);
-    setIsNuevaOrdenOpen(true);
-  };
-
-  const handleAddItemsToOrder = (order: CustomerOrder) => {
-    setTableForNewOrder(order.tableNumber);
-    setEditingOrderForTable(order);
-    setIsMesasModalOpen(false);
-    setIsNuevaOrdenOpen(true);
-  };
-
-  const handleCheckoutTableOrder = (order: CustomerOrder) => {
-    setTableForNewOrder(order.tableNumber);
-    setEditingOrderForTable(order);
-    setIsMesasModalOpen(false);
-    setIsNuevaOrdenOpen(true);
-  };
-
-  const handleCloseNuevaOrden = () => {
-    setIsNuevaOrdenOpen(false);
-    setTableForNewOrder(undefined);
-    setEditingOrderForTable(null);
-  };
-
-  // Cancel / Annul customer order
   const handleCancelOrder = (orderId: string, reason: string, restock: boolean) => {
     const targetOrder = orders.find((o) => o.id === orderId);
     if (!targetOrder) return;
 
-    // 1. Mark order as cancelled
     const updatedOrders = orders.map((o) =>
       o.id === orderId
         ? {
@@ -781,16 +692,14 @@ export default function SalesCounterPage() {
     );
     setOrders(updatedOrders);
     try {
-      localStorage.setItem('philly_fry_orders', JSON.stringify(updatedOrders));
+      localStorage.setItem('lapatrona_v4_orders', JSON.stringify(updatedOrders));
     } catch (e) {
       console.error('Failed to save orders to localStorage', e);
     }
 
-    // 2. Remove associated sale records from accounting sales ledger
     const updatedSales = sales.filter((s) => s.orderId !== orderId && s.orderNumber !== targetOrder.orderNumber);
     handleSaveSales(updatedSales);
 
-    // 3. Optionally restock kitchen portions
     if (restock) {
       setStockMap((prev) => {
         let changed = false;
@@ -807,17 +716,16 @@ export default function SalesCounterPage() {
         }
         if (changed) {
           try {
-            localStorage.setItem('philly_fry_stock', JSON.stringify(next));
+            localStorage.setItem('lapatrona_v4_stock', JSON.stringify(next));
           } catch {}
         }
         return changed ? next : prev;
       });
     }
 
-    showToast(`✓ Comanda #${targetOrder.orderNumber} anulada. ${restock ? 'Porciones reingresadas al inventario.' : ''}`);
+    showToast(`✓ Orden #${targetOrder.orderNumber} cancelada. ${restock ? 'Porciones reingresadas al inventario.' : ''}`);
   };
 
-  // Change payment method for entire comanda
   const handleChangeOrderPaymentMethod = (orderId: string, newMethod: PaymentMethod) => {
     const targetOrder = orders.find((o) => o.id === orderId);
     if (!targetOrder) return;
@@ -827,7 +735,7 @@ export default function SalesCounterPage() {
     );
     setOrders(updatedOrders);
     try {
-      localStorage.setItem('philly_fry_orders', JSON.stringify(updatedOrders));
+      localStorage.setItem('lapatrona_v4_orders', JSON.stringify(updatedOrders));
     } catch {}
 
     const updatedSales = sales.map((s) =>
@@ -843,37 +751,52 @@ export default function SalesCounterPage() {
       transferencia: 'Transferencia SPEI',
       mixto: 'Pago Mixto',
     };
-    showToast(`✓ Método de pago de comanda #${targetOrder.orderNumber} cambiado a ${methodNames[newMethod]}.`);
+    showToast(`✓ Método de pago de orden #${targetOrder.orderNumber} cambiado a ${methodNames[newMethod]}.`);
   };
 
-  // ZERO OUT THE WHOLE ACCOUNTING
-  const handleConfirmZeroOut = () => {
-    handleSaveSales([]);
-    handleSaveExpenses([]);
-    handleSaveWaste([]);
-    setOrders([]);
+  // Cloud Sync (Upstash Redis / Vercel KV on Vercel Free Tier)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    fetch('/api/sync')
+      .then((res) => res.json())
+      .then((res) => {
+        if (res?.cloudEnabled && Array.isArray(res?.data?.sales) && res.data.sales.length > 0) {
+          setSales(res.data.sales);
+          localStorage.setItem('lapatrona_v4_sales', JSON.stringify(res.data.sales));
+          if (Array.isArray(res?.data?.expenses) && res.data.expenses.length > 0) {
+            setExpenses(res.data.expenses);
+            localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(res.data.expenses));
+          }
+          if (Array.isArray(res?.data?.closedShifts)) {
+            setClosedShifts(res.data.closedShifts);
+            localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(res.data.closedShifts));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated || typeof window === 'undefined') return;
     try {
-      localStorage.removeItem('philly_fry_orders');
-      localStorage.removeItem('philly_fry_waste');
+      localStorage.setItem('lapatrona_v4_sales', JSON.stringify(sales));
+      localStorage.setItem('lapatrona_v4_expenses', JSON.stringify(expenses));
+      localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(closedShifts));
+      localStorage.setItem('lapatrona_v4_products', JSON.stringify(products));
     } catch {}
-    setOrderCounter(1);
-    try {
-      localStorage.setItem('philly_fry_order_counter', '1');
-    } catch {}
-    handleResetAllStock();
-    showToast('✓ Contabilidad reiniciada en ceros exitosamente.');
-  };
 
-  // Load sample demo shift
-  const handleLoadSample = () => {
-    const sample = generateSampleSales(products, new Date());
-    handleSaveSales(sample);
-    const sampleExp = generateSampleExpenses(new Date());
-    handleSaveExpenses(sampleExp);
-    showToast('✓ Datos de prueba cargados en el sistema.');
-  };
+    const timer = setTimeout(() => {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sales, expenses, closedShifts, products, startingCash }),
+      }).catch(() => {});
+    }, 800);
 
-  // Keyboard Shortcuts (Hotkeys) for Fast Counter Service
+    return () => clearTimeout(timer);
+  }, [isHydrated, sales, expenses, closedShifts, products, startingCash]);
+
+  // Keyboard Shortcuts
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -890,7 +813,6 @@ export default function SalesCounterPage() {
       if (e.key === 'Escape') {
         setIsPriceModalOpen(false);
         setIsHistoryModalOpen(false);
-        setIsZeroOutModalOpen(false);
         setIsCorteModalOpen(false);
         setIsGastosModalOpen(false);
         setIsCalculadoraModalOpen(false);
@@ -904,14 +826,12 @@ export default function SalesCounterPage() {
         setIsPantallaCocinaOpen(false);
         setIsConfiguracionNegocioOpen(false);
         setIsExportesModalOpen(false);
-        setIsTipPoolOpen(false);
         return;
       }
 
       const isAnyModalOpen =
         isPriceModalOpen ||
         isHistoryModalOpen ||
-        isZeroOutModalOpen ||
         isCorteModalOpen ||
         isGastosModalOpen ||
         isCalculadoraModalOpen ||
@@ -924,8 +844,7 @@ export default function SalesCounterPage() {
         isHistorialComandasOpen ||
         isPantallaCocinaOpen ||
         isConfiguracionNegocioOpen ||
-        isExportesModalOpen ||
-        isTipPoolOpen;
+        isExportesModalOpen;
 
       if (isAnyModalOpen) return;
 
@@ -935,7 +854,7 @@ export default function SalesCounterPage() {
         const targetProd = products[num - 1];
         if (targetProd) {
           handleIncrement(targetProd.id, 1);
-          showToast(`+1 ${targetProd.name} (${targetProd.variantLabel})`);
+          showToast(`+1 ${targetProd.name}`);
         }
         return;
       }
@@ -961,12 +880,6 @@ export default function SalesCounterPage() {
       if (e.key.toLowerCase() === 'c') {
         e.preventDefault();
         setIsCorteModalOpen(true);
-        return;
-      }
-
-      if (e.key.toLowerCase() === 'l') {
-        e.preventDefault();
-        setIsTipPoolOpen(true);
         return;
       }
 
@@ -1018,12 +931,6 @@ export default function SalesCounterPage() {
         return;
       }
 
-      if (e.key.toLowerCase() === 'u') {
-        e.preventDefault();
-        setIsMesasModalOpen(true);
-        return;
-      }
-
       if (e.key.toLowerCase() === 'm') {
         e.preventDefault();
         setIsConfiguracionNegocioOpen(true);
@@ -1038,7 +945,6 @@ export default function SalesCounterPage() {
     handleIncrement,
     isPriceModalOpen,
     isHistoryModalOpen,
-    isZeroOutModalOpen,
     isCorteModalOpen,
     isGastosModalOpen,
     isCalculadoraModalOpen,
@@ -1052,26 +958,23 @@ export default function SalesCounterPage() {
     isPantallaCocinaOpen,
     isConfiguracionNegocioOpen,
     isExportesModalOpen,
-    isTipPoolOpen,
   ]);
 
-  // Filter sales for the selected timeframe
   const filteredSales = useMemo(() => {
     if (!currentDate) return [];
     return filterSalesByTimeframe(sales, timeframe, currentDate);
   }, [sales, timeframe, currentDate]);
 
-  // Filter expenses for the selected timeframe
   const filteredExpenses = useMemo(() => {
     if (!currentDate) return [];
     return filterExpensesByTimeframe(expenses, timeframe, currentDate);
   }, [expenses, timeframe, currentDate]);
 
   const totalExpensesInTimeframe = useMemo(() => {
-    return filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+    const list = Array.isArray(filteredExpenses) ? filteredExpenses : [];
+    return list.reduce((acc, curr) => acc + getCalculatedExpenseAmount(curr), 0);
   }, [filteredExpenses]);
 
-  // Filter kitchen waste for the selected timeframe
   const filteredWaste = useMemo(() => {
     if (!currentDate) return [];
     return filterWasteByTimeframe(wasteRecords, timeframe, currentDate);
@@ -1081,7 +984,6 @@ export default function SalesCounterPage() {
     return filteredWaste.reduce((acc, curr) => acc + curr.totalCost, 0);
   }, [filteredWaste]);
 
-  // Filter orders for the selected timeframe (used for tip aggregation)
   const filteredOrders = useMemo(() => {
     if (!currentDate) return orders;
     return orders.filter((o) => {
@@ -1114,29 +1016,22 @@ export default function SalesCounterPage() {
     });
   }, [orders, timeframe, currentDate]);
 
-  const totalTipsInTimeframe = useMemo(() => {
-    return filteredOrders.reduce((sum, o) => sum + (o.tip || 0), 0);
-  }, [filteredOrders]);
-
   const lowStockCount = useMemo(() => {
     return Object.values(stockMap).filter((item) => {
       return item.trackStock && item.currentStock <= item.lowStockThreshold;
     }).length;
   }, [stockMap]);
 
-  // Overall counts for Today (used in Hero banner and Daily Granular view)
   const todaySales = useMemo(() => {
     if (!currentDate) return [];
     return filterSalesByTimeframe(sales, 'today', currentDate);
   }, [sales, currentDate]);
 
-  // Overall counts for Week (used in Weekly Granular view)
   const weekSales = useMemo(() => {
     if (!currentDate) return [];
     return filterSalesByTimeframe(sales, 'week', currentDate);
   }, [sales, currentDate]);
 
-  // Overall counts for Month (used in Monthly Granular view)
   const monthSales = useMemo(() => {
     if (!currentDate) return [];
     return filterSalesByTimeframe(sales, 'month', currentDate);
@@ -1154,11 +1049,6 @@ export default function SalesCounterPage() {
     return filteredSales.reduce((acc, curr) => acc + curr.quantity, 0);
   }, [filteredSales]);
 
-  // Granular computations
-  const hourlyBlocks = useMemo(() => {
-    return getDailyHourlyBreakdown(todaySales);
-  }, [todaySales]);
-
   const dailyStats = useMemo(() => {
     return getWeeklyDailyBreakdown(weekSales, currentDate);
   }, [weekSales, currentDate]);
@@ -1168,15 +1058,11 @@ export default function SalesCounterPage() {
   }, [monthSales, currentDate]);
 
   const productRanking = useMemo(() => {
-    return getProductPerformanceRanking(monthSales, products);
-  }, [monthSales, products]);
+    return getProductPerformanceRanking(filteredSales, products);
+  }, [filteredSales, products]);
 
   const activeKitchenOrdersCount = useMemo(() => {
     return orders.filter((o) => (o.status || 'pendiente') !== 'entregado').length;
-  }, [orders]);
-
-  const openTabsCount = useMemo(() => {
-    return orders.filter((o) => o.isOpenTab).length;
   }, [orders]);
 
   const handleExportPeriodCSV = () => {
@@ -1191,7 +1077,6 @@ export default function SalesCounterPage() {
     showToast('✓ Reporte contable exportado a Excel/CSV exitosamente.');
   };
 
-  // Map product counts (Today, Week, Month, All)
   const productCountMap = useMemo(() => {
     const map: Record<string, { today: number; week: number; month: number; all: number }> = {};
     for (const prod of products) {
@@ -1200,7 +1085,6 @@ export default function SalesCounterPage() {
     return map;
   }, [products, sales, currentDate]);
 
-  // Filtered products by category pill
   const filteredProducts = useMemo(() => {
     if (activeCategoryFilter === 'all') return products;
     return products.filter((p) => p.category === activeCategoryFilter);
@@ -1215,7 +1099,7 @@ export default function SalesCounterPage() {
       <div className="min-h-screen bg-[#0d0d0f] flex flex-col items-center justify-center text-neutral-400 font-sans space-y-3">
         <div className="w-6 h-6 border-2 border-[#e59b38] border-t-transparent rounded-full animate-spin" />
         <span className="font-serif tracking-widest uppercase text-xs text-neutral-300">
-          Philly & Fry • Mostrador de Ventas
+          Los Phillys de La Patrona • Mostrador
         </span>
       </div>
     );
@@ -1223,7 +1107,7 @@ export default function SalesCounterPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0d0d0f] text-[#f5f0eb]">
-      {/* Toast Alert Feedback - Mobile centered / Desktop top-right */}
+      {/* Toast Alert Feedback */}
       {toastMessage && (
         <div className="fixed top-16 inset-x-4 sm:inset-x-auto sm:right-6 sm:top-24 max-w-sm mx-auto z-50 flex items-center gap-2.5 bg-[#19191d] border border-[#e59b38]/50 text-white px-4 py-3 rounded-xl shadow-2xl animate-fade-in backdrop-blur-md">
           <CheckCircle2 className="w-4 h-4 text-[#e59b38] shrink-0" />
@@ -1237,13 +1121,10 @@ export default function SalesCounterPage() {
         onTimeframeChange={setTimeframe}
         onOpenPriceManager={() => setIsPriceModalOpen(true)}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
-        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
         onOpenCorte={() => setIsCorteModalOpen(true)}
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
-        onOpenMesas={() => setIsMesasModalOpen(true)}
-        openTabsCount={openTabsCount}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
         onOpenStockManager={() => setIsStockModalOpen(true)}
@@ -1252,7 +1133,6 @@ export default function SalesCounterPage() {
         activeKitchenOrdersCount={activeKitchenOrdersCount}
         onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
         onOpenExportesContables={() => setIsExportesModalOpen(true)}
-        onOpenTipPool={() => setIsTipPoolOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -1264,7 +1144,6 @@ export default function SalesCounterPage() {
         timeframe={timeframe}
         onScrollToProducts={scrollToProducts}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
-        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
         todayCount={todayCount}
         todayRevenue={todayRevenue}
       />
@@ -1278,11 +1157,10 @@ export default function SalesCounterPage() {
             timeframe={timeframe}
             sales={filteredSales}
             products={products}
+            expenses={filteredExpenses}
             totalExpenses={totalExpensesInTimeframe}
             totalWasteCost={totalWasteInTimeframe}
             startingCash={startingCash}
-            onLoadSample={handleLoadSample}
-            onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
             onOpenGastos={() => setIsGastosModalOpen(true)}
             onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
             onOpenMermas={() => setIsMermasModalOpen(true)}
@@ -1297,15 +1175,16 @@ export default function SalesCounterPage() {
             onUpdateGoal={handleUpdateDailyGoal}
           />
 
-          {/* Section 2: Dedicated Granular Timeframe View (Day / Week / Month / Total) */}
+          {/* Section 2: Dedicated Granular Timeframe View */}
           <GranularTimeframeView
             timeframe={timeframe}
             onTimeframeChange={setTimeframe}
             sales={filteredSales}
-            hourlyBlocks={hourlyBlocks}
+            expenses={filteredExpenses}
             dailyStats={dailyStats}
             monthlyWeekStats={monthlyWeekStats}
             productRanking={productRanking}
+            onOpenGastos={() => setIsGastosModalOpen(true)}
           />
 
           {/* Section 3: Products & Sales Counter Grid */}
@@ -1316,24 +1195,24 @@ export default function SalesCounterPage() {
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
                 <div>
                   <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-[#e59b38]">
-                    Registro Rápido al Mostrador
+                    Los Phillys de La Patrona • Aguilas #1 - Nogales
                   </div>
                   <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-white mt-0.5 sm:mt-1">
-                    Mostrador de Ventas y Comandas
+                    Mostrador de Ventas
                   </h2>
                   <p className="text-[11px] sm:text-xs text-neutral-400 mt-1">
                     Toca <span className="text-[#e59b38] font-bold">+1 Venta</span> para registrar pedidos al vuelo. Toca el <span className="text-white underline decoration-[#e59b38] underline-offset-2">precio en la tarjeta</span> para ajustarlo.
                   </p>
                 </div>
 
-                {/* Forma de Cobro Activa (Payment Mode Switcher) */}
+                {/* Forma de Cobro Activa */}
                 <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.08] self-start sm:self-auto overflow-x-auto no-scrollbar">
                   <span className="text-[10px] uppercase font-bold text-neutral-400 px-2 tracking-wider shrink-0">
                     Cobro:
                   </span>
                   {[
                     { id: 'efectivo', label: 'Efectivo', icon: Banknote, color: 'text-emerald-400', activeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-                    { id: 'tarjeta', label: 'Tarjeta / Clip', icon: CreditCard, color: 'text-cyan-400', activeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
+                    { id: 'tarjeta', label: 'Tarjeta', icon: CreditCard, color: 'text-cyan-400', activeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
                     { id: 'transferencia', label: 'Transferencia', icon: Smartphone, color: 'text-violet-400', activeBg: 'bg-violet-500/20 text-violet-300 border-violet-500/40' },
                   ].map((m) => {
                     const Icon = m.icon;
@@ -1357,18 +1236,16 @@ export default function SalesCounterPage() {
                 </div>
               </div>
 
-              {/* Category Filter Pills in Mexican Spanish - Mobile Swipeable */}
+              {/* Category Filter Pills */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06] overflow-x-auto no-scrollbar">
                   {[
-                    { id: 'all', label: 'Todos' },
+                    { id: 'all', label: 'Todos (7)' },
                     { id: 'sandwiches', label: 'Sándwiches' },
                     { id: 'quesadillas', label: 'Quesadillas' },
-                    { id: 'steak-frites', label: 'Steak Frites' },
-                    { id: 'fries', label: 'Papas' },
-                    { id: 'bebidas', label: 'Bebidas' },
-                    { id: 'extras', label: 'Extras' },
-                    { id: 'postres', label: 'Postres' },
+                    { id: 'steak-frites', label: 'Papas Lokas' },
+                    { id: 'fries', label: 'Papas c/ Queso' },
+                    { id: 'bebidas', label: 'Champurro' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -1391,7 +1268,7 @@ export default function SalesCounterPage() {
               </div>
             </div>
 
-            {/* Product Cards Grid with On-The-Fly Price Editing */}
+            {/* Product Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6">
               {filteredProducts.map((product) => {
                 const counts = productCountMap[product.id] || { today: 0, week: 0, month: 0, all: 0 };
@@ -1419,7 +1296,7 @@ export default function SalesCounterPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-3 gap-2">
               <div>
                 <h3 className="font-serif text-base sm:text-lg font-bold text-white leading-tight">
-                  Desglose por Categoría ({timeframe === 'today' ? 'HOY' : timeframe === 'week' ? 'ESTA SEMANA' : timeframe === 'month' ? 'ESTE MES' : 'HISTÓRICO'})
+                  Desglose por Categoría ({timeframe === 'today' ? 'HOY' : timeframe === 'week' ? 'ESTA SEMANA' : timeframe === 'month' ? 'ESTE MES' : 'HISTÓRICO LIBRETA'})
                 </h3>
                 <span className="text-[11px] sm:text-xs text-neutral-400">
                   Volumen e ingresos acumulados en este periodo
@@ -1430,12 +1307,13 @@ export default function SalesCounterPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-1 sm:pt-2">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4 pt-1 sm:pt-2">
               {[
-                { label: 'Sándwiches Philly', cat: 'sandwiches', desc: 'Sencillo y combo' },
-                { label: 'Quesadillas', cat: 'quesadillas', desc: 'Sencilla y combo' },
-                { label: 'Steak Frites', cat: 'steak-frites', desc: 'Carne y papas' },
-                { label: 'Papas Gourmet', cat: 'fries', desc: 'Clásicas y queso' },
+                { label: 'Sándwiches', cat: 'sandwiches', desc: 'c/ papas y solo' },
+                { label: 'Quesadillas', cat: 'quesadillas', desc: 'c/ papas y sin papas' },
+                { label: 'Papas Lokas', cat: 'steak-frites', desc: 'Preparadas' },
+                { label: 'Papas c/ Queso', cat: 'fries', desc: 'Queso amarillo' },
+                { label: 'Champurro', cat: 'bebidas', desc: 'Vaso caliente' },
               ].map((categoryItem) => {
                 const catProducts = products.filter((p) => p.category === categoryItem.cat);
                 const catSales = filteredSales.filter((s) => catProducts.some((p) => p.id === s.productId));
@@ -1468,7 +1346,6 @@ export default function SalesCounterPage() {
                         </span>
                       </div>
 
-                      {/* Progress bar */}
                       <div className="mt-1.5 w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-[#e59b38] rounded-full transition-all duration-500"
@@ -1485,15 +1362,15 @@ export default function SalesCounterPage() {
         </div>
       </main>
 
-      {/* Footer in Mexican Spanish */}
+      {/* Footer */}
       <footer className="border-t border-white/[0.08] bg-[#0d0d0f] py-8 pb-28 lg:pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
           <div className="flex items-center gap-3">
             <span className="font-bold tracking-widest uppercase text-white font-sans text-sm">
-              PHILLY & FRY
+              LOS PHILLYS DE LA PATRONA
             </span>
             <span>•</span>
-            <span>Mostrador de Ventas y Contabilidad de Restaurante</span>
+            <span>Aguilas #1 - Nogales</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-[11px]">
@@ -1502,6 +1379,13 @@ export default function SalesCounterPage() {
               className="hover:text-white transition-colors"
             >
               Configurar Precios y Costos
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => setIsGastosModalOpen(true)}
+              className="text-rose-400 hover:text-rose-300 transition-colors"
+            >
+              Tickets de Compra ({expenses.length})
             </button>
             <span>•</span>
             <button
@@ -1515,22 +1399,7 @@ export default function SalesCounterPage() {
               onClick={() => setIsCorteModalOpen(true)}
               className="text-[#e59b38] hover:text-[#d48b28] flex items-center gap-1 transition-colors"
             >
-              <span>Ticket de Corte</span>
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setIsZeroOutModalOpen(true)}
-              className="text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Poner en Ceros</span>
-            </button>
-            <span>•</span>
-            <button
-              onClick={handleLoadSample}
-              className="hover:text-[#e59b38] transition-colors"
-            >
-              Recargar Datos de Muestra
+              <span>Corte de Caja</span>
             </button>
           </div>
         </div>
@@ -1542,13 +1411,10 @@ export default function SalesCounterPage() {
         onTimeframeChange={setTimeframe}
         onOpenPriceManager={() => setIsPriceModalOpen(true)}
         onOpenHistory={() => setIsHistoryModalOpen(true)}
-        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
         onOpenCorte={() => setIsCorteModalOpen(true)}
         onOpenGastos={() => setIsGastosModalOpen(true)}
         onOpenCalculadora={() => setIsCalculadoraModalOpen(true)}
         onOpenNuevaOrden={() => setIsNuevaOrdenOpen(true)}
-        onOpenMesas={() => setIsMesasModalOpen(true)}
-        openTabsCount={openTabsCount}
         onOpenHistorialCortes={() => setIsHistorialCortesOpen(true)}
         onOpenAtajos={() => setIsAtajosModalOpen(true)}
         onOpenStockManager={() => setIsStockModalOpen(true)}
@@ -1557,7 +1423,6 @@ export default function SalesCounterPage() {
         activeKitchenOrdersCount={activeKitchenOrdersCount}
         onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
         onOpenExportesContables={() => setIsExportesModalOpen(true)}
-        onOpenTipPool={() => setIsTipPoolOpen(true)}
         lowStockCount={lowStockCount}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
@@ -1581,16 +1446,6 @@ export default function SalesCounterPage() {
         timeframe={timeframe}
         onDeleteSale={handleDeleteSale}
         onUpdatePaymentMethod={handleUpdateSalePaymentMethod}
-        onOpenZeroOut={() => setIsZeroOutModalOpen(true)}
-      />
-
-      {/* 0 Out Accounting Confirmation Modal */}
-      <ZeroOutModal
-        isOpen={isZeroOutModalOpen}
-        onClose={() => setIsZeroOutModalOpen(false)}
-        onConfirmZeroOut={handleConfirmZeroOut}
-        sales={sales}
-        products={products}
       />
 
       {/* Corte de Caja / Receipt Modal */}
@@ -1601,25 +1456,15 @@ export default function SalesCounterPage() {
         products={products}
         expenses={filteredExpenses}
         timeframe={timeframe}
-        hourlyBlocks={hourlyBlocks}
         startingCash={startingCash}
         onUpdateStartingCash={handleUpdateStartingCash}
         onArchiveShift={handleArchiveShift}
         shiftCounter={shiftCounter}
-        totalTipsCollected={totalTipsInTimeframe}
         orders={filteredOrders}
         totalWasteCost={totalWasteInTimeframe}
-        onOpenTipPool={() => {
-          setIsCorteModalOpen(false);
-          setIsTipPoolOpen(true);
-        }}
-        onConfirmZeroOut={() => {
-          setIsCorteModalOpen(false);
-          setIsZeroOutModalOpen(true);
-        }}
       />
 
-      {/* Historial de Turnos y Cortes Anteriores Modal */}
+      {/* Historial de Cierres Anteriores Modal */}
       <HistorialCortesModal
         isOpen={isHistorialCortesOpen}
         onClose={() => setIsHistorialCortesOpen(false)}
@@ -1627,7 +1472,7 @@ export default function SalesCounterPage() {
         onClearHistory={handleClearShiftHistory}
       />
 
-      {/* Gastos Menores y Salidas de Caja Modal */}
+      {/* Tickets de Compra e Insumos Modal */}
       <GastosModal
         isOpen={isGastosModalOpen}
         onClose={() => setIsGastosModalOpen(false)}
@@ -1658,36 +1503,19 @@ export default function SalesCounterPage() {
         onClose={() => setIsCalculadoraModalOpen(false)}
       />
 
-      {/* Armador de Comanda / Nueva Orden Modal */}
+      {/* Nueva Orden (Para Llevar) Modal */}
       {isNuevaOrdenOpen && (
         <NuevaOrdenModal
           isOpen={isNuevaOrdenOpen}
-          onClose={handleCloseNuevaOrden}
+          onClose={() => setIsNuevaOrdenOpen(false)}
           products={products}
-          nextOrderNumber={editingOrderForTable ? editingOrderForTable.orderNumber : orderCounter}
+          nextOrderNumber={orderCounter}
           stockMap={stockMap}
-          initialTable={tableForNewOrder}
-          existingOrder={editingOrderForTable}
           onCompleteOrder={handleCompleteOrder}
-          onSaveOpenTab={handleSaveOpenTab}
         />
       )}
 
-      {/* Mesas y Cuentas Abiertas Modal */}
-      {isMesasModalOpen && (
-        <MesasModal
-          isOpen={isMesasModalOpen}
-          onClose={() => setIsMesasModalOpen(false)}
-          tables={tables}
-          orders={orders}
-          businessInfo={businessInfo}
-          onOpenNewOrderForTable={handleOpenNewOrderForTable}
-          onAddItemsToOrder={handleAddItemsToOrder}
-          onCheckoutTableOrder={handleCheckoutTableOrder}
-        />
-      )}
-
-      {/* Ticket de Comanda / Nota de Consumo Modal */}
+      {/* Ticket de Orden Modal */}
       <TicketComandaModal
         isOpen={isTicketComandaOpen}
         onClose={() => setIsTicketComandaOpen(false)}
@@ -1716,7 +1544,7 @@ export default function SalesCounterPage() {
         stockMap={stockMap}
       />
 
-      {/* Historial y Reimpresión de Comandas Modal */}
+      {/* Historial y Reimpresión de Órdenes Modal */}
       <HistorialComandasModal
         isOpen={isHistorialComandasOpen}
         onClose={() => setIsHistorialComandasOpen(false)}
@@ -1741,7 +1569,7 @@ export default function SalesCounterPage() {
         onSaveBusinessInfo={handleSaveBusinessInfo}
       />
 
-      {/* Centro de Exportaciones Contables e Informes SAT */}
+      {/* Centro de Exportaciones Contables */}
       <ExportesContablesModal
         isOpen={isExportesModalOpen}
         onClose={() => setIsExportesModalOpen(false)}
@@ -1754,18 +1582,6 @@ export default function SalesCounterPage() {
         startingCash={startingCash}
         businessInfo={businessInfo}
         currentDate={currentDate || new Date()}
-      />
-
-      {/* Liquidación y Reparto de Propinas Modal */}
-      <PoolPropinasModal
-        isOpen={isTipPoolOpen}
-        onClose={() => setIsTipPoolOpen(false)}
-        shiftNumber={shiftCounter}
-        totalTipsCollected={totalTipsInTimeframe}
-        businessInfo={businessInfo}
-        onSaveSettlement={(record) => {
-          showToast(`✓ Liquidación de propinas Turno #${record.shiftNumber} guardada ($${record.totalTips.toFixed(2)} MXN).`);
-        }}
       />
 
       {/* Atajos de Teclado POS Guía Modal */}

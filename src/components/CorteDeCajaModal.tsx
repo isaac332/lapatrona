@@ -1,49 +1,64 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { SaleRecord, ProductItem, TimeframeFilter, HourlyBlock, ExpenseRecord, CashDenominationCount, ClosedShiftRecord, CustomerOrder } from '@/types/accounting';
-import { getPaymentBreakdown, calculateDenominationTotal, calculateExpectedDrawerCash, calculateArqueoDifference } from '@/utils/accountingCalculations';
-import { X, Printer, RotateCcw, Receipt, CheckCircle2, AlertTriangle, AlertCircle, Coins, Banknote, Share2, ShieldCheck } from 'lucide-react';
+import {
+  SaleRecord,
+  ProductItem,
+  TimeframeFilter,
+  ExpenseRecord,
+  CashDenominationCount,
+  ClosedShiftRecord,
+  CustomerOrder,
+} from '@/types/accounting';
+import {
+  getPaymentBreakdown,
+  calculateDenominationTotal,
+  calculateExpectedDrawerCash,
+  calculateArqueoDifference,
+} from '@/utils/accountingCalculations';
+import {
+  X,
+  Printer,
+  Receipt,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Coins,
+  Banknote,
+  Share2,
+  Save,
+} from 'lucide-react';
 
 interface CorteDeCajaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sales: SaleRecord[];
-  products: ProductItem[];
-  expenses: ExpenseRecord[];
+  sales?: SaleRecord[];
+  products?: ProductItem[];
+  expenses?: ExpenseRecord[];
   timeframe: TimeframeFilter;
-  hourlyBlocks: HourlyBlock[];
-  onConfirmZeroOut: () => void;
   startingCash: number;
   onUpdateStartingCash: (amount: number) => void;
   onArchiveShift?: (record: ClosedShiftRecord) => void;
   shiftCounter?: number;
-  totalTipsCollected?: number;
   orders?: CustomerOrder[];
   totalWasteCost?: number;
-  onOpenTipPool?: () => void;
 }
 
 export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
   isOpen,
   onClose,
-  sales,
-  products,
-  expenses,
+  sales = [],
+  products = [],
+  expenses = [],
   timeframe,
-  hourlyBlocks,
-  onConfirmZeroOut,
   startingCash,
   onUpdateStartingCash,
   onArchiveShift,
   shiftCounter = 1,
-  totalTipsCollected = 0,
   orders = [],
   totalWasteCost = 0,
-  onOpenTipPool,
 }) => {
   const printAreaRef = useRef<HTMLDivElement>(null);
-  const [corteType, setCorteType] = useState<'x' | 'z'>('x');
   const [isEditingStartingCash, setIsEditingStartingCash] = useState(false);
   const [startingCashInput, setStartingCashInput] = useState(startingCash.toString());
   const [arqueoMode, setArqueoMode] = useState<'directo' | 'desglose'>('directo');
@@ -58,18 +73,23 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
     coins: 0,
   });
 
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
   if (!isOpen) return null;
 
-  const totalUnits = sales.reduce((sum, s) => sum + s.quantity, 0);
-  const totalRevenue = sales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const paymentBreakdown = getPaymentBreakdown(sales);
-  
-  // Financial expected totals
-  const expectedCashInDrawer = calculateExpectedDrawerCash(startingCash, paymentBreakdown.efectivo.total, totalExpenses);
+  const totalUnits = safeSales.reduce((sum, s) => sum + (s?.quantity || 0), 0);
+  const totalRevenue = safeSales.reduce((sum, s) => sum + (s?.quantity || 0) * (s?.unitPrice || 0), 0);
+  const totalExpenses = safeExpenses.reduce((sum, e) => sum + (e?.amount || 0), 0);
+  const paymentBreakdown = getPaymentBreakdown(safeSales);
+
+  const expectedCashInDrawer = calculateExpectedDrawerCash(
+    startingCash,
+    paymentBreakdown.efectivo.total,
+    totalExpenses
+  );
   const dineroEnBanco = paymentBreakdown.tarjeta.total + paymentBreakdown.transferencia.total;
 
-  // Physical Arqueo calculation
   const denominationTotal = calculateDenominationTotal(denominations);
   const hasDenominations = denominationTotal > 0;
   const countedCash =
@@ -99,38 +119,28 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
     }));
   };
 
-  // Group by product
-  const productStats = products.map((prod) => {
-    const prodSales = sales.filter((s) => s.productId === prod.id);
-    const units = prodSales.reduce((sum, s) => sum + s.quantity, 0);
-    const revenue = prodSales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
-    return {
-      id: prod.id,
-      name: prod.name,
-      variant: prod.variantLabel,
-      units,
-      unitPrice: prod.defaultPrice,
-      revenue,
-    };
-  }).filter((item) => item.units > 0);
+  const productStats = products
+    .map((prod) => {
+      const prodSales = sales.filter((s) => s.productId === prod.id);
+      const units = prodSales.reduce((sum, s) => sum + s.quantity, 0);
+      const revenue = prodSales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+      return {
+        id: prod.id,
+        name: prod.name,
+        variant: prod.variantLabel,
+        units,
+        unitPrice: prod.defaultPrice,
+        revenue,
+      };
+    })
+    .filter((item) => item.units > 0);
 
-  // Combo attachment calculation
-  const sandwichFries = sales.filter((s) => s.productId === 'sandwich-fries').reduce((sum, s) => sum + s.quantity, 0);
-  const sandwichAlone = sales.filter((s) => s.productId === 'sandwich-alone').reduce((sum, s) => sum + s.quantity, 0);
-  const quesadillaFries = sales.filter((s) => s.productId === 'quesadilla-fries').reduce((sum, s) => sum + s.quantity, 0);
-  const quesadillaAlone = sales.filter((s) => s.productId === 'quesadilla-alone').reduce((sum, s) => sum + s.quantity, 0);
-  const totalMains = sandwichFries + sandwichAlone + quesadillaFries + quesadillaAlone;
-  const totalCombos = sandwichFries + quesadillaFries;
-  const comboRate = totalMains > 0 ? Math.round((totalCombos / totalMains) * 100) : 0;
-
-  const isCorteZ = corteType === 'z';
-  const subtotalSinIVA = totalRevenue / 1.16;
-  const iva16 = totalRevenue - subtotalSinIVA;
   const totalDiscounts = orders.reduce((sum, o) => sum + (o.discount?.amount || 0), 0);
   const orderNumbers = orders.map((o) => o.orderNumber);
-  const orderRangeText = orderNumbers.length > 0
-    ? `#${String(Math.min(...orderNumbers)).padStart(3, '0')} a #${String(Math.max(...orderNumbers)).padStart(3, '0')} (${orderNumbers.length} comandas)`
-    : undefined;
+  const orderRangeText =
+    orderNumbers.length > 0
+      ? `#${String(Math.min(...orderNumbers)).padStart(3, '0')} a #${String(Math.max(...orderNumbers)).padStart(3, '0')} (${orderNumbers.length} órdenes)`
+      : undefined;
 
   const handlePrint = () => {
     window.print();
@@ -145,48 +155,30 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
         : `▼ FALTANTE: -$${Math.abs(arqueoResult.difference).toFixed(2)}`
       : 'Sin arqueo físico';
 
-    const headerTitle = isCorteZ
-      ? `📋 *CORTE Z (CIERRE DEFINITIVO DIARIO) • LA PATRONA*`
-      : `🍔 *TICKET DE CORTE #${shiftCounter} • LA PATRONA*`;
-
-    let text = `${headerTitle}\n` +
-      `📅 Cierre: ${new Date().toLocaleString('es-MX')}\n`;
+    let text =
+      `🍔 *CIERRE DE CAJA • LOS PHILLYS DE LA PATRONA*\n` +
+      `📅 Fecha: ${new Date().toLocaleString('es-MX')}\n`;
 
     if (orderRangeText) {
-      text += `🔢 *Rango de Comandas:* ${orderRangeText}\n`;
+      text += `🔢 *Órdenes:* ${orderRangeText}\n`;
     }
 
-    text += `━━━━━━━━━━━━━━━━━━━━\n`;
-
-    if (isCorteZ) {
-      text += `🧾 *Venta Neta (Subtotal sin IVA):* $${subtotalSinIVA.toFixed(2)} MXN\n` +
-        `🏛️ *IVA Trasladado (16% SAT):* $${iva16.toFixed(2)} MXN\n`;
-    }
-
-    text += `💰 *Venta Bruta Total:* $${totalRevenue.toFixed(2)} MXN\n`;
-
-    if (totalDiscounts > 0) {
-      text += `🏷️ *Descuentos Otorgados:* -$${totalDiscounts.toFixed(2)} MXN\n`;
-    }
-    if (totalWasteCost > 0) {
-      text += `📉 *Mermas de Cocina:* -$${totalWasteCost.toFixed(2)} MXN\n`;
-    }
-
-    text += `━━━━━━━━━━━━━━━━━━━━\n` +
+    text +=
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💰 *Venta Bruta Total:* $${totalRevenue.toFixed(2)} MXN\n` +
       `(+) *Fondo Inicial:* $${startingCash.toFixed(2)} MXN\n` +
       `(+) *Ventas Efectivo:* $${paymentBreakdown.efectivo.total.toFixed(2)} MXN\n` +
       (totalExpenses > 0 ? `(-) *Salidas / Gastos:* -$${totalExpenses.toFixed(2)} MXN\n` : '') +
-      (totalTipsCollected > 0 ? `(+) *Propinas Personal:* +$${totalTipsCollected.toFixed(2)} MXN\n` : '') +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `💵 *Efectivo Esperado:* $${expectedCashInDrawer.toFixed(2)} MXN\n` +
       (countedCash !== null ? `🔎 *Efectivo Contado:* $${countedCash.toFixed(2)} MXN\n` : '') +
       `⚖️ *Resultado Arqueo:* ${statusStr}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `💳 *Tarjetas Clip:* $${paymentBreakdown.tarjeta.total.toFixed(2)} MXN\n` +
-      `📲 *Transferencias SPEI:* $${paymentBreakdown.transferencia.total.toFixed(2)} MXN\n` +
+      `💳 *Tarjetas:* $${paymentBreakdown.tarjeta.total.toFixed(2)} MXN\n` +
+      `📲 *Transferencias:* $${paymentBreakdown.transferencia.total.toFixed(2)} MXN\n` +
       `📦 *Unidades Vendidas:* ${totalUnits} piezas\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `*La Patrona • Sistema POS*`;
+      `*Los Phillys de La Patrona • Aguilas #1*`;
 
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -202,7 +194,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-xl max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#141417] border border-white/[0.12] shadow-2xl overflow-hidden">
         
-        {/* Header - Screen only */}
+        {/* Header */}
         <div className="print:hidden flex items-center justify-between p-4 sm:p-5 border-b border-white/[0.08] bg-[#19191d]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#e59b38]/15 border border-[#e59b38]/30 flex items-center justify-center">
@@ -210,10 +202,10 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
             </div>
             <div>
               <h2 className="font-serif text-lg sm:text-xl font-bold text-white">
-                Ticket de Corte de Caja
+                Apertura y Cierre de Caja
               </h2>
               <p className="text-[11px] text-neutral-400">
-                Resumen de cierre y auditoría de turno
+                Fondo inicial, arqueo de efectivo y corte de caja
               </p>
             </div>
           </div>
@@ -225,54 +217,24 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
           </button>
         </div>
 
-        {/* Scrollable Receipt Body */}
+        {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
 
-          {/* Screen Only: Corte X vs Corte Z Selector */}
-          <div className="print:hidden grid grid-cols-2 gap-2 bg-[#101013] p-1.5 rounded-2xl border border-white/10">
-            <button
-              type="button"
-              onClick={() => setCorteType('x')}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                corteType === 'x'
-                  ? 'bg-[#e59b38] text-black shadow-md font-black'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Receipt className="w-3.5 h-3.5" />
-              <span>Corte X (Parcial)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCorteType('z')}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                corteType === 'z'
-                  ? 'bg-rose-600 text-white shadow-md font-black'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Corte Z (Cierre Diario SAT)</span>
-            </button>
-          </div>
-
-          {/* Screen Only: Interactive Fondo Inicial & Arqueo Físico Controller */}
+          {/* Interactive Fondo Inicial & Arqueo Físico Controller */}
           <div className="print:hidden rounded-2xl bg-[#18181c] border border-white/[0.08] p-4 sm:p-5 space-y-4 shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
               <div>
                 <div className="text-[10px] uppercase font-bold text-[#e59b38] tracking-widest">
-                  Control de Turno
+                  Apertura y Cierre
                 </div>
                 <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                   <Banknote className="w-4 h-4 text-emerald-400" />
-                  <span>Fondo Inicial & Arqueo Físico</span>
+                  <span>Fondo de Caja & Arqueo</span>
                 </h3>
               </div>
 
-              {/* Starting Cash Float Editor */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-400">Fondo Apertura:</span>
+                <span className="text-xs text-neutral-400">Fondo Inicial:</span>
                 {isEditingStartingCash ? (
                   <div className="flex items-center gap-1.5">
                     <input
@@ -300,7 +262,6 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                       setIsEditingStartingCash(true);
                     }}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-xs font-mono text-[#e59b38] font-bold"
-                    title="Toca para cambiar el fondo de cambio"
                   >
                     <span>${startingCash.toFixed(2)} MXN</span>
                     <span className="text-[10px] text-neutral-400 underline ml-1">Editar</span>
@@ -312,7 +273,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
             {/* Quick Float Presets */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[11px] text-neutral-400">Presets fondo:</span>
-              {[500, 1000, 1500, 2000].map((preset) => (
+              {[0, 50, 100, 200, 500].map((preset) => (
                 <button
                   key={preset}
                   type="button"
@@ -332,7 +293,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-neutral-300">
-                  Conteo de Efectivo en Mano (Arqueo):
+                  Conteo de Efectivo en Mano:
                 </span>
                 <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-white/[0.06]">
                   <button
@@ -380,7 +341,6 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                     type="button"
                     onClick={() => setDirectCountInput(expectedCashInDrawer.toFixed(2))}
                     className="px-3 py-2 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] rounded-xl text-xs text-neutral-300 whitespace-nowrap"
-                    title="Copiar monto esperado exacto"
                   >
                     Copiar Esperado
                   </button>
@@ -422,7 +382,6 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                     </div>
                   ))}
 
-                  {/* Morralla / Coins input */}
                   <div className="col-span-2 flex items-center justify-between p-2 rounded-xl bg-black/40 border border-white/[0.06]">
                     <div className="flex items-center gap-1 text-xs text-neutral-300">
                       <Coins className="w-3.5 h-3.5 text-amber-400" />
@@ -453,10 +412,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
                       <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                       <div className="text-xs">
-                        <div className="font-bold">✓ Caja Cuadrada al Centavo ($0.00)</div>
-                        <div className="text-[10px] text-emerald-400/80">
-                          El efectivo contado coincide exactamente con el monto esperado.
-                        </div>
+                        <div className="font-bold">✓ Caja Cuadrada ($0.00)</div>
                       </div>
                     </div>
                   ) : arqueoResult.status === 'sobrante' ? (
@@ -465,9 +421,6 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                       <div className="text-xs">
                         <div className="font-bold">
                           ⚠️ Sobrante en Caja: +${arqueoResult.difference.toFixed(2)} MXN
-                        </div>
-                        <div className="text-[10px] text-amber-400/80">
-                          Hay más efectivo físico (${countedCash?.toFixed(2)}) que el esperado (${expectedCashInDrawer.toFixed(2)}).
                         </div>
                       </div>
                     </div>
@@ -478,15 +431,12 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                         <div className="font-bold">
                           ❌ Faltante en Caja: -${Math.abs(arqueoResult.difference).toFixed(2)} MXN
                         </div>
-                        <div className="text-[10px] text-rose-400/80">
-                          Falta dinero físico (${countedCash?.toFixed(2)} contado vs ${expectedCashInDrawer.toFixed(2)} esperado).
-                        </div>
                       </div>
                     </div>
                   )
                 ) : (
                   <div className="p-2.5 rounded-xl bg-white/[0.03] border border-dashed border-white/[0.08] text-neutral-400 text-center text-xs">
-                    Ingresa arriba el dinero contado para calcular el arqueo automáticamente.
+                    Ingresa arriba el dinero contado para calcular el arqueo.
                   </div>
                 )}
               </div>
@@ -498,29 +448,18 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
             ref={printAreaRef}
             className="bg-[#0d0d0f] p-6 rounded-2xl border border-white/[0.08] shadow-inner font-mono text-xs text-neutral-300 space-y-4 print:bg-white print:text-black print:border-none print:p-0"
           >
-            {/* Ticket Header */}
             <div className="text-center space-y-1 border-b border-dashed border-white/20 pb-4 print:border-black/30">
-              <div className="font-black tracking-[0.2em] text-lg text-white print:text-black uppercase">
-                PHILLY & FRY
+              <div className="font-black tracking-[0.15em] text-base text-white print:text-black uppercase">
+                LOS PHILLYS DE LA PATRONA
               </div>
               <div className="text-[11px] text-[#e59b38] print:text-black uppercase tracking-wider font-semibold">
-                {isCorteZ ? '*** CORTE Z - CIERRE DEFINITIVO ***' : 'Mostrador de Ventas y Contabilidad'}
+                Aguilas #1 - Nogales
               </div>
-              {isCorteZ && (
-                <div className="text-[10px] text-rose-400 print:text-black font-bold uppercase font-mono">
-                  Auditoría Fiscal y Cierre Diario
-                </div>
-              )}
-              {orderRangeText && (
-                <div className="text-[10px] text-neutral-400 print:text-neutral-600 font-mono">
-                  Folios Comandas: {orderRangeText}
-                </div>
-              )}
               <div className="text-[10px] text-neutral-400 print:text-neutral-600 mt-1">
                 {timeframeLabels[timeframe]}
               </div>
               <div className="text-[10px] text-neutral-400 print:text-neutral-600">
-                Fecha del corte: {new Date().toLocaleDateString('es-MX', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                Fecha: {new Date().toLocaleDateString('es-MX', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
 
@@ -530,66 +469,37 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                 Desglose por Forma de Pago:
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-neutral-300 print:text-black">💵 Efectivo ({paymentBreakdown.efectivo.count} pedidos):</span>
+                <span className="text-neutral-300 print:text-black">💵 Efectivo ({paymentBreakdown.efectivo.count}):</span>
                 <span className="font-mono font-bold text-white print:text-black">
                   ${paymentBreakdown.efectivo.total.toFixed(2)} ({paymentBreakdown.efectivo.percentage}%)
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-neutral-300 print:text-black">💳 Tarjeta / Clip ({paymentBreakdown.tarjeta.count} pedidos):</span>
+                <span className="text-neutral-300 print:text-black">💳 Tarjeta ({paymentBreakdown.tarjeta.count}):</span>
                 <span className="font-mono font-bold text-white print:text-black">
                   ${paymentBreakdown.tarjeta.total.toFixed(2)} ({paymentBreakdown.tarjeta.percentage}%)
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-neutral-300 print:text-black">📱 Transferencia ({paymentBreakdown.transferencia.count} pedidos):</span>
+                <span className="text-neutral-300 print:text-black">📱 Transferencia ({paymentBreakdown.transferencia.count}):</span>
                 <span className="font-mono font-bold text-white print:text-black">
                   ${paymentBreakdown.transferencia.total.toFixed(2)} ({paymentBreakdown.transferencia.percentage}%)
                 </span>
               </div>
             </div>
 
-            {/* Financial Summary & Cash Drawer Reconciliation */}
+            {/* Financial Summary */}
             <div className="space-y-1.5 py-2 border-b border-dashed border-white/20 print:border-black/30">
-              {isCorteZ && (
-                <div className="space-y-1 pb-1.5 mb-1.5 border-b border-dashed border-white/10 print:border-black/20 text-xs">
-                  <div className="flex justify-between items-center text-neutral-300 print:text-black">
-                    <span>VENTA NETA (SUBTOTAL):</span>
-                    <span className="font-mono font-bold text-white print:text-black">${subtotalSinIVA.toFixed(2)} MXN</span>
-                  </div>
-                  <div className="flex justify-between items-center text-cyan-300 print:text-black">
-                    <span>IVA TRASLADADO (16% SAT):</span>
-                    <span className="font-mono font-bold text-cyan-400 print:text-black">${iva16.toFixed(2)} MXN</span>
-                  </div>
-                </div>
-              )}
-
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400 print:text-black">VENTA BRUTA TOTAL:</span>
                 <span className="font-bold text-white print:text-black">${totalRevenue.toFixed(2)} MXN</span>
               </div>
 
-              {totalDiscounts > 0 && (
-                <div className="flex justify-between items-center text-xs text-emerald-400 print:text-black">
-                  <span>(-) DESCUENTOS Y CORTESÍAS:</span>
-                  <span className="font-bold font-mono">-${totalDiscounts.toFixed(2)} MXN</span>
-                </div>
-              )}
-
-              {totalWasteCost > 0 && (
-                <div className="flex justify-between items-center text-xs text-rose-400 print:text-black">
-                  <span>(-) MERMAS DE COCINA:</span>
-                  <span className="font-bold font-mono">-${totalWasteCost.toFixed(2)} MXN</span>
-                </div>
-              )}
-
-              {/* Fondo Inicial de Apertura */}
               <div className="flex justify-between items-center text-xs text-[#e59b38] print:text-black">
-                <span>(+) FONDO INICIAL DE APERTURA:</span>
+                <span>(+) FONDO INICIAL:</span>
                 <span className="font-bold font-mono">${startingCash.toFixed(2)} MXN</span>
               </div>
 
-              {/* Ventas en Efectivo */}
               <div className="flex justify-between items-center text-xs text-neutral-300 print:text-black">
                 <span>(+) VENTAS EN EFECTIVO:</span>
                 <span className="font-bold font-mono">${paymentBreakdown.efectivo.total.toFixed(2)} MXN</span>
@@ -597,31 +507,11 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
               {totalExpenses > 0 && (
                 <div className="flex justify-between items-center text-xs text-rose-400 print:text-black">
-                  <span>(-) GASTOS / SALIDAS DE CAJA:</span>
+                  <span>(-) GASTOS / SALIDAS:</span>
                   <span className="font-bold font-mono">-${totalExpenses.toFixed(2)} MXN</span>
                 </div>
               )}
 
-              {/* Propinas Acumuladas */}
-              {totalTipsCollected > 0 && (
-                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 print:border-black/30 print:bg-transparent space-y-1.5">
-                  <div className="flex justify-between items-center text-xs text-[#e59b38] print:text-black">
-                    <span className="font-bold">PROPINAS PERSONAL (A REPARTIR):</span>
-                    <span className="font-bold font-mono">+${totalTipsCollected.toFixed(2)} MXN</span>
-                  </div>
-                  {onOpenTipPool && (
-                    <button
-                      type="button"
-                      onClick={onOpenTipPool}
-                      className="w-full py-1.5 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors print:hidden"
-                    >
-                      <span>💰 Repartir Propinas del Turno (Pool)</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Expected Cash in drawer */}
               <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 print:border-black/40 print:bg-transparent mt-1 space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black uppercase text-emerald-300 print:text-black">
@@ -631,12 +521,8 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                     ${expectedCashInDrawer.toFixed(2)} MXN
                   </span>
                 </div>
-                <div className="text-[9px] text-neutral-400 print:text-neutral-600">
-                  (Fondo ${startingCash.toFixed(0)} + Ventas Ef. ${paymentBreakdown.efectivo.total.toFixed(0)} - Gastos ${totalExpenses.toFixed(0)})
-                </div>
               </div>
 
-              {/* Physical Counted Cash & Arqueo Difference in receipt */}
               {countedCash !== null && arqueoResult && (
                 <div className="p-2 rounded-xl bg-white/[0.04] border border-white/[0.08] print:border-black/30 space-y-1 mt-1">
                   <div className="flex justify-between items-center text-xs">
@@ -648,16 +534,8 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-xs pt-0.5 border-t border-dashed border-white/10 print:border-black/20">
-                    <span className="text-neutral-400 print:text-black">RESULTADO DE ARQUEO:</span>
-                    <span
-                      className={`font-mono font-black ${
-                        arqueoResult.status === 'cuadrada'
-                          ? 'text-emerald-400 print:text-black'
-                          : arqueoResult.status === 'sobrante'
-                          ? 'text-amber-400 print:text-black'
-                          : 'text-rose-400 print:text-black'
-                      }`}
-                    >
+                    <span className="text-neutral-400 print:text-black">RESULTADO:</span>
+                    <span className="font-mono font-black text-white print:text-black">
                       {arqueoResult.status === 'cuadrada'
                         ? '✓ CAJA CUADRADA ($0.00)'
                         : arqueoResult.status === 'sobrante'
@@ -668,13 +546,14 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                 </div>
               )}
 
-              {/* Bank and Terminal money */}
-              <div className="flex justify-between items-center text-xs pt-1 text-cyan-300 print:text-black">
-                <span>DINERO EN BANCO / CLIP:</span>
-                <span className="font-bold font-mono text-cyan-400 print:text-black">
-                  ${dineroEnBanco.toFixed(2)} MXN
-                </span>
-              </div>
+              {dineroEnBanco > 0 && (
+                <div className="flex justify-between items-center text-xs pt-1 text-cyan-300 print:text-black">
+                  <span>DINERO EN BANCO / TARJETA:</span>
+                  <span className="font-bold font-mono text-cyan-400 print:text-black">
+                    ${dineroEnBanco.toFixed(2)} MXN
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center py-1 text-xs">
@@ -682,45 +561,10 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
               <span className="font-bold text-white print:text-black">{totalUnits} uds</span>
             </div>
 
-            <div className="flex justify-between items-center py-1 text-xs">
-              <span>Tasa de combos con papas:</span>
-              <span className="font-bold text-emerald-400 print:text-black">{comboRate}%</span>
-            </div>
-
-            {/* Shift Breakdown */}
-            {hourlyBlocks.length > 0 && (
-              <div className="pt-2 border-t border-dashed border-white/10 print:border-black/20 space-y-1.5">
-                <div className="text-[10px] uppercase font-bold text-neutral-400 print:text-black">
-                  Desglose por Turno:
-                </div>
-                {hourlyBlocks.map((block) => (
-                  <div key={block.id} className="flex justify-between text-[11px]">
-                    <span className="text-neutral-400 print:text-black">{block.label} ({block.timeRange}):</span>
-                    <span>{block.count} uds • ${block.revenue.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Expenses Detail */}
-            {expenses.length > 0 && (
-              <div className="pt-2 border-t border-dashed border-white/10 print:border-black/20 space-y-1">
-                <div className="text-[10px] uppercase font-bold text-rose-300 print:text-black">
-                  Salidas de Caja Registradas ({expenses.length}):
-                </div>
-                {expenses.map((exp) => (
-                  <div key={exp.id} className="flex justify-between text-[11px] text-neutral-400 print:text-black">
-                    <span>• {exp.description}</span>
-                    <span className="font-mono text-rose-400 print:text-black">-${exp.amount.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* Products Breakdown Table */}
             <div className="pt-2 border-t border-dashed border-white/20 print:border-black/30 space-y-2">
               <div className="text-[10px] uppercase font-bold text-neutral-400 print:text-black flex justify-between">
-                <span>Platillo / Variante</span>
+                <span>Producto / Variante</span>
                 <span>Cant • Importe</span>
               </div>
               {productStats.length === 0 ? (
@@ -735,7 +579,7 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                       <div className="text-[10px] text-[#e59b38] print:text-neutral-700">{item.variant}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-white print:text-black">{item.units} x ${item.unitPrice.toFixed(2)}</div>
+                      <div className="font-bold text-white print:text-black">{item.units} pzs</div>
                       <div className="text-[10px] text-neutral-400 print:text-black">${item.revenue.toFixed(2)}</div>
                     </div>
                   </div>
@@ -743,16 +587,14 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
               )}
             </div>
 
-            {/* Ticket Footer */}
             <div className="text-center text-[10px] text-neutral-500 print:text-neutral-700 pt-3 border-t border-dashed border-white/20 print:border-black/30">
               *** FIN DEL CORTE DE CAJA ***
-              <div className="mt-1">Gracias por preferir Philly & Fry</div>
             </div>
           </div>
 
         </div>
 
-        {/* Footer Actions - Screen only */}
+        {/* Footer Actions */}
         <div className="print:hidden p-4 sm:p-5 border-t border-white/[0.08] bg-[#19191d] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
@@ -768,7 +610,6 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
               type="button"
               onClick={handleShareWhatsApp}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-xl transition-all shadow-md active:scale-95 touch-manipulation"
-              title="Compartir resumen del corte por WhatsApp"
             >
               <Share2 className="w-4 h-4" />
               <span>WhatsApp</span>
@@ -782,13 +623,11 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                 const shiftRecord: ClosedShiftRecord = {
                   id: `shift-${shiftCounter}-${Date.now()}`,
                   shiftNumber: shiftCounter,
-                  reportType: isCorteZ ? 'corte_z' : 'corte_x',
+                  reportType: 'corte_z',
                   openedAt: sales.length > 0 ? sales[sales.length - 1].timestamp : new Date().toISOString(),
                   closedAt: new Date().toISOString(),
                   startingCash,
                   totalGrossRevenue: totalRevenue,
-                  subtotalSinIVA: isCorteZ ? Math.round(subtotalSinIVA * 100) / 100 : undefined,
-                  iva16: isCorteZ ? Math.round(iva16 * 100) / 100 : undefined,
                   totalDiscounts: totalDiscounts > 0 ? totalDiscounts : undefined,
                   totalWasteCost: totalWasteCost > 0 ? totalWasteCost : undefined,
                   orderRange: orderRangeText,
@@ -796,7 +635,6 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                   cardSalesTotal: paymentBreakdown.tarjeta.total,
                   transferSalesTotal: paymentBreakdown.transferencia.total,
                   totalExpenses,
-                  totalTipsCollected,
                   expectedCashInDrawer,
                   countedCash: countedCash !== null ? countedCash : undefined,
                   difference: arqueoResult ? arqueoResult.difference : undefined,
@@ -806,12 +644,11 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
                 onArchiveShift(shiftRecord);
               }
               onClose();
-              onConfirmZeroOut();
             }}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95 touch-manipulation"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md active:scale-95 touch-manipulation"
           >
-            <RotateCcw className="w-4 h-4" />
-            <span>{isCorteZ ? `Cerrar Día y Archivar Corte Z #${shiftCounter}` : `Cerrar Turno #${shiftCounter} y Poner en Ceros`}</span>
+            <Save className="w-4 h-4" />
+            <span>Guardar Cierre de Caja</span>
           </button>
         </div>
 

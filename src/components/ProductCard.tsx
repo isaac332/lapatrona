@@ -41,12 +41,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const activeCount = counts[timeframe];
   const subtotal = activeCount * product.defaultPrice;
 
-  const isStockTracked = stockConfig?.trackStock ?? false;
-  const currentStock = stockConfig?.currentStock ?? 999;
-  const isExhausted = isStockTracked && currentStock <= 0;
-  const isLowStock = isStockTracked && currentStock > 0 && currentStock <= (stockConfig?.lowStockThreshold ?? 5);
+  // Stock checking commented out - allow logging sales freely without stock restrictions
+  // const isStockTracked = stockConfig?.trackStock ?? false;
+  // const currentStock = stockConfig?.currentStock ?? 999;
+  // const isExhausted = isStockTracked && currentStock <= 0;
+  // const isLowStock = isStockTracked && currentStock > 0 && currentStock <= (stockConfig?.lowStockThreshold ?? 5);
+  const isStockTracked = false;
+  const currentStock = 999;
+  const isExhausted = false;
+  const isLowStock = false;
 
-  // Focus and select input when entering edit mode
   useEffect(() => {
     if (isEditingPrice) {
       priceInputRef.current?.focus();
@@ -108,10 +112,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const getVariantBadgeColor = (variant: string) => {
     const lower = variant.toLowerCase();
-    if (lower.includes('papas') || lower.includes('combo')) {
-      return 'bg-[#e59b38]/15 text-[#e59b38] border-[#e59b38]/30';
+    if (lower.includes('sin papas') || lower.includes('solo') || lower.includes('sola')) {
+      return 'bg-neutral-800 text-neutral-200 border-neutral-600';
     }
-    if (lower.includes('queso') || lower.includes('fundido')) {
+    if (lower.includes('con papas')) {
+      return 'bg-[#e59b38]/20 text-[#e59b38] border-[#e59b38]/40';
+    }
+    if (lower.includes('queso') || lower.includes('preparadas')) {
       return 'bg-amber-400/15 text-amber-300 border-amber-400/30';
     }
     return 'bg-neutral-800 text-neutral-300 border-neutral-700';
@@ -127,8 +134,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const categoryNameMap: Record<string, string> = {
     sandwiches: 'Sándwiches',
     quesadillas: 'Quesadillas',
-    'steak-frites': 'Steak Frites',
-    fries: 'Papas Fritas',
+    'steak-frites': 'Papas Lokas',
+    fries: 'Papas con Queso',
+    bebidas: 'Champurro',
   };
 
   return (
@@ -160,13 +168,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.variantLabel}
           </span>
           {shortcutKey && (
-            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-black text-black bg-[#e59b38] rounded-full shadow border border-black/20" title={`Presiona ${shortcutKey} para registrar venta rápida`}>
+            <kbd
+              className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-black text-black bg-[#e59b38] rounded-full shadow border border-black/20"
+              title={`Presiona ${shortcutKey} para registrar venta rápida`}
+            >
               {shortcutKey}
             </kbd>
           )}
         </div>
 
-        {/* ON-THE-FLY EDITABLE PRICE TAG - Mobile Optimized Touch Target */}
+        {/* ON-THE-FLY EDITABLE PRICE TAG */}
         <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-20">
           {isEditingPrice ? (
             <div
@@ -265,7 +276,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </p>
         </div>
 
-        {/* Tally Box: Displays current timeframe count in large typography */}
+        {/* Tally Box */}
         <div className="bg-[#19191d] rounded-xl p-2.5 sm:p-3 border border-white/[0.06] flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-neutral-400 font-medium">
@@ -283,7 +294,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           </div>
 
-          {/* Subtotal preview */}
           {product.defaultPrice > 0 && (
             <div className="text-right">
               <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-neutral-500">
@@ -330,9 +340,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         </div>
 
-        {/* Counter Action Controls - First-Class Mobile Touch Targets */}
-        <div className="space-y-2 pt-1">
-          {/* Main + and - Tactile Buttons */}
+        {/* Counter Action Controls (Single Unit Only, Batch Buttons Removed) */}
+        <div className="pt-1">
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleDecrement(1)}
@@ -366,32 +375,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <span>+1 Venta</span>
               </button>
             )}
-          </div>
-
-          {/* Quick Increment Chips (+5 Rush and +10 Bulk) */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleIncrement(5)}
-              disabled={isExhausted}
-              className={`flex-1 py-2 sm:py-1.5 rounded-lg border border-white/[0.08] text-xs font-mono font-medium transition-colors touch-manipulation select-none active:scale-95 ${
-                isExhausted
-                  ? 'bg-transparent text-neutral-600 border-white/[0.04] cursor-not-allowed'
-                  : 'bg-white/[0.03] active:bg-white/[0.08] text-neutral-300 active:text-white'
-              }`}
-            >
-              +5 Racha
-            </button>
-            <button
-              onClick={() => handleIncrement(10)}
-              disabled={isExhausted}
-              className={`flex-1 py-2 sm:py-1.5 rounded-lg border border-white/[0.08] text-xs font-mono font-medium transition-colors touch-manipulation select-none active:scale-95 ${
-                isExhausted
-                  ? 'bg-transparent text-neutral-600 border-white/[0.04] cursor-not-allowed'
-                  : 'bg-white/[0.03] active:bg-white/[0.08] text-neutral-300 active:text-white'
-              }`}
-            >
-              +10 Lote
-            </button>
           </div>
         </div>
       </div>

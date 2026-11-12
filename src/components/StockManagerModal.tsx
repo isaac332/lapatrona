@@ -54,7 +54,7 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
                 Control de Porciones y Stock
               </h2>
               <p className="text-xs text-neutral-400">
-                Límites de inventario para cocina en el turno actual
+                Inventario disponible para venta del día
               </p>
             </div>
           </div>
@@ -64,7 +64,6 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
               <button
                 onClick={onOpenMiseEnPlace}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e59b38]/15 hover:bg-[#e59b38]/25 border border-[#e59b38]/30 text-xs font-bold text-[#e59b38] transition-all active:scale-95 shadow-sm"
-                title="Calcular insumos, kilos de carne, panes, papas y quesos para el turno"
               >
                 <ChefHat className="w-3.5 h-3.5" />
                 <span>Mise en Place</span>
@@ -74,10 +73,9 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
             <button
               onClick={onResetAllStock}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white transition-all active:scale-95"
-              title="Reiniciar stock a valores iniciales"
             >
               <RotateCcw className="w-3.5 h-3.5 text-[#e59b38]" />
-              <span>Reiniciar Turno</span>
+              <span>Reiniciar Stock</span>
             </button>
 
             <button
@@ -116,7 +114,7 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
             className="sm:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.05] border border-white/[0.08] text-[11px] text-neutral-300 active:scale-95"
           >
             <RotateCcw className="w-3 h-3 text-[#e59b38]" />
-            <span>Reiniciar Turno</span>
+            <span>Reiniciar Stock</span>
           </button>
         </div>
 
@@ -139,7 +137,6 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
                 key={product.id}
                 className="pt-3 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
-                {/* Product Info */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-800 shrink-0 border border-white/10">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -186,7 +183,6 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
 
                 {/* Stock Controls */}
                 <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-center shrink-0">
-                  {/* Current Quantity Input */}
                   <div className="flex items-center border border-white/[0.1] rounded-xl bg-white/[0.03] overflow-hidden">
                     <input
                       type="number"
@@ -204,27 +200,23 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
                     </span>
                   </div>
 
-                  {/* Quick Increment Buttons */}
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => onAddStock(product.id, 5)}
-                      className="px-2 py-1.5 rounded-lg bg-white/[0.05] hover:bg-[#e59b38]/20 hover:text-[#e59b38] border border-white/[0.08] text-xs font-mono font-bold text-neutral-300 transition-all active:scale-95"
-                      title="Agregar 5 porciones"
+                      onClick={() => onAddStock(product.id, 1)}
+                      className="px-2.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-[#e59b38]/20 hover:text-[#e59b38] border border-white/[0.08] text-xs font-mono font-bold text-neutral-300 transition-all active:scale-95"
                     >
-                      +5
+                      +1
                     </button>
                     <button
                       type="button"
-                      onClick={() => onAddStock(product.id, 10)}
-                      className="px-2 py-1.5 rounded-lg bg-white/[0.05] hover:bg-[#e59b38]/20 hover:text-[#e59b38] border border-white/[0.08] text-xs font-mono font-bold text-neutral-300 transition-all active:scale-95"
-                      title="Agregar 10 porciones"
+                      onClick={() => onAddStock(product.id, 5)}
+                      className="px-2.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-[#e59b38]/20 hover:text-[#e59b38] border border-white/[0.08] text-xs font-mono font-bold text-neutral-300 transition-all active:scale-95"
                     >
-                      +10
+                      +5
                     </button>
                   </div>
 
-                  {/* Toggle Tracking */}
                   <button
                     type="button"
                     onClick={() => onToggleTrackStock(product.id)}
@@ -233,7 +225,6 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
                         : 'bg-white/[0.03] border-white/[0.08] text-neutral-500 hover:text-neutral-300'
                     }`}
-                    title={stock.trackStock ? 'Monitoreo activo' : 'Monitoreo pausado'}
                   >
                     <ShieldCheck className="w-4 h-4" />
                   </button>
@@ -243,10 +234,9 @@ export const StockManagerModal: React.FC<StockManagerModalProps> = ({
           })}
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-white/[0.08] bg-white/[0.02] flex items-center justify-between">
           <p className="text-[11px] text-neutral-500">
-            * El stock disminuye automáticamente con cada venta directa o comanda registrada.
+            * El stock disminuye automáticamente con cada venta u orden registrada.
           </p>
           <button
             onClick={onClose}

@@ -10,8 +10,6 @@ import {
   Printer,
   Copy,
   Check,
-  UtensilsCrossed,
-  ShoppingBag,
   Banknote,
   CreditCard,
   Smartphone,
@@ -36,11 +34,11 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
   onChangeOrderPaymentMethod,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'aqui' | 'llevar' | 'canceladas'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'canceladas'>('all');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [copiedEscPos, setCopiedEscPos] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
-  const [cancelReason, setCancelReason] = useState('Error de captura del cajero');
+  const [cancelReason, setCancelReason] = useState('Error de captura');
   const [customReasonText, setCustomReasonText] = useState('');
   const [restockOnCancel, setRestockOnCancel] = useState(true);
   const [isChangingPayment, setIsChangingPayment] = useState(false);
@@ -48,13 +46,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      // Type filter
-      if (filterType === 'canceladas') {
-        if (!order.isCancelled) return false;
-      } else if (filterType !== 'all') {
-        if (order.orderType !== filterType) return false;
-      }
-      // Query filter
+      if (filterType === 'canceladas' && !order.isCancelled) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       const matchFolio =
@@ -69,7 +61,6 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
     });
   }, [orders, filterType, searchQuery]);
 
-  // Set default selection
   const activeOrder = useMemo(() => {
     if (!orders.length) return null;
     if (selectedOrderId) {
@@ -111,10 +102,10 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
             </div>
             <div>
               <h2 className="font-serif text-lg sm:text-xl font-bold text-white tracking-wide">
-                Historial y Reimpresión de Comandas
+                Historial y Reimpresión de Órdenes
               </h2>
               <p className="text-xs text-neutral-400">
-                Consulta y reimprime notas de consumo por número de folio o cliente
+                Consulta y reimprime órdenes para llevar por número de folio o cliente
               </p>
             </div>
           </div>
@@ -133,7 +124,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
             <input
               type="text"
-              placeholder="Buscar por folio (#001), cliente, mesa o platillo..."
+              placeholder="Buscar por folio (#001), cliente o producto..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#e59b38]/50"
@@ -150,28 +141,6 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
               }`}
             >
               Todas ({orders.length})
-            </button>
-            <button
-              onClick={() => setFilterType('aqui')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                filterType === 'aqui'
-                  ? 'bg-[#e59b38] text-black font-bold'
-                  : 'bg-white/[0.04] text-neutral-400 hover:text-white'
-              }`}
-            >
-              <UtensilsCrossed className="w-3 h-3" />
-              <span>Aquí</span>
-            </button>
-            <button
-              onClick={() => setFilterType('llevar')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                filterType === 'llevar'
-                  ? 'bg-[#e59b38] text-black font-bold'
-                  : 'bg-white/[0.04] text-neutral-400 hover:text-white'
-              }`}
-            >
-              <ShoppingBag className="w-3 h-3" />
-              <span>Llevar</span>
             </button>
             <button
               onClick={() => setFilterType('canceladas')}
@@ -194,11 +163,11 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
             {filteredOrders.length === 0 ? (
               <div className="text-center py-12 px-4 text-neutral-500">
                 <Receipt className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm font-semibold">No se encontraron comandas</p>
+                <p className="text-sm font-semibold">No se encontraron órdenes</p>
                 <p className="text-xs mt-1">
                   {orders.length === 0
-                    ? 'Aún no se han cobrado comandas en este turno.'
-                    : 'Intenta con otro término de búsqueda o filtro.'}
+                    ? 'Aún no se han registrado órdenes.'
+                    : 'Intenta con otro término de búsqueda.'}
                 </p>
               </div>
             ) : (
@@ -230,14 +199,8 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                         <span className={`font-mono font-black text-sm ${order.isCancelled ? 'line-through text-red-400' : 'text-[#e59b38]'}`}>
                           #{order.orderNumber.toString().padStart(3, '0')}
                         </span>
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                            order.orderType === 'aqui'
-                              ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                              : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                          }`}
-                        >
-                          {order.orderType === 'aqui' ? 'Aquí' : 'Llevar'}
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          Para Llevar
                         </span>
                         {order.isCancelled && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40">
@@ -273,7 +236,6 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
           <div className="lg:col-span-7 overflow-y-auto p-4 sm:p-6 bg-[#0a0a0c]">
             {activeOrder ? (
               <div className="max-w-md mx-auto space-y-4">
-                {/* Cancellation Warning Banner */}
                 {activeOrder.isCancelled && (
                   <div className="p-3.5 rounded-2xl bg-red-950/40 border border-red-500/40 text-xs flex items-start gap-3 shadow-lg">
                     <div className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0 text-red-400">
@@ -282,7 +244,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <span className="font-bold uppercase tracking-wider text-red-300">
-                          Comanda Anulada / Cancelada
+                          Orden Cancelada
                         </span>
                         {activeOrder.cancelledAt && (
                           <span className="text-[10px] text-neutral-400 font-mono">
@@ -293,14 +255,10 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                       <p className="text-[11px] text-neutral-300 mt-0.5">
                         Motivo: <span className="font-semibold text-white">{activeOrder.cancellationReason || 'Cancelación directa'}</span>
                       </p>
-                      <p className="text-[10px] text-red-400/80 mt-1">
-                        Esta comanda está excluida de los ingresos brutos, corte de caja y SAT.
-                      </p>
                     </div>
                   </div>
                 )}
 
-                {/* Correction Modals */}
                 {isChangingPayment && !activeOrder.isCancelled && (
                   <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between text-xs text-neutral-300">
@@ -348,7 +306,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                         }`}
                       >
                         <Smartphone className="w-3.5 h-3.5" />
-                        <span>SPEI</span>
+                        <span>Transferencia</span>
                       </button>
                     </div>
                   </div>
@@ -359,26 +317,25 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                     <div className="flex items-center gap-2 text-red-400">
                       <AlertTriangle className="w-4 h-4 shrink-0" />
                       <span className="font-bold text-xs uppercase tracking-wider text-red-300">
-                        Confirmar Anulación de Comanda #{activeOrder.orderNumber.toString().padStart(3, '0')}
+                        Confirmar Cancelación de Orden #{activeOrder.orderNumber.toString().padStart(3, '0')}
                       </span>
                     </div>
                     <p className="text-xs text-neutral-300">
-                      Al anular la comanda, se revertirán los ingresos (${activeOrder.total.toFixed(2)} MXN) de la contabilidad y arqueo de caja.
+                      Al cancelar la orden, se descontará su monto (${activeOrder.total.toFixed(2)} MXN) de la contabilidad.
                     </p>
                     <div>
                       <label className="block text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                        Motivo de la anulación:
+                        Motivo:
                       </label>
                       <select
                         value={cancelReason}
                         onChange={(e) => setCancelReason(e.target.value)}
                         className="w-full bg-[#121215] border border-white/[0.12] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
                       >
-                        <option value="Error de captura del cajero">Error de captura del cajero</option>
-                        <option value="Cliente canceló / se retiró">Cliente canceló / se retiró</option>
-                        <option value="Comanda duplicada">Comanda duplicada</option>
-                        <option value="Producto devuelto / queja">Producto devuelto / queja</option>
-                        <option value="Otro">Otro (especificar)</option>
+                        <option value="Error de captura">Error de captura</option>
+                        <option value="Cliente canceló">Cliente canceló</option>
+                        <option value="Orden duplicada">Orden duplicada</option>
+                        <option value="Otro">Otro</option>
                       </select>
                     </div>
                     {cancelReason === 'Otro' && (
@@ -397,7 +354,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                         onChange={(e) => setRestockOnCancel(e.target.checked)}
                         className="rounded bg-white/[0.08] border-white/20 text-[#e59b38] focus:ring-0"
                       />
-                      <span>Regresar porciones de platillos al inventario de cocina</span>
+                      <span>Regresar porciones al inventario</span>
                     </label>
                     <div className="flex items-center justify-end gap-2 pt-1">
                       <button
@@ -416,7 +373,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                         }}
                         className="px-4 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95"
                       >
-                        Confirmar Anulación
+                        Confirmar Cancelación
                       </button>
                     </div>
                   </div>
@@ -425,7 +382,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                 {/* Action Buttons */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                    Vista de Comanda • #{activeOrder.orderNumber.toString().padStart(3, '0')}
+                    Orden • #{activeOrder.orderNumber.toString().padStart(3, '0')}
                   </span>
 
                   <div className="flex items-center gap-2 flex-wrap">
@@ -437,7 +394,6 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                           setIsCancelConfirmOpen(false);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white transition-all active:scale-95"
-                        title="Cambiar método de pago (Efectivo, Tarjeta, Transferencia)"
                       >
                         <RefreshCw className="w-3.5 h-3.5 text-[#e59b38]" />
                         <span className="hidden sm:inline">Cambiar Pago</span>
@@ -452,10 +408,9 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                           setIsChangingPayment(false);
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-semibold text-red-300 hover:text-red-200 transition-all active:scale-95"
-                        title="Anular comanda y revertir venta"
                       >
                         <Ban className="w-3.5 h-3.5 text-red-400" />
-                        <span className="hidden sm:inline">Anular</span>
+                        <span className="hidden sm:inline">Cancelar</span>
                       </button>
                     )}
 
@@ -463,7 +418,6 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                       type="button"
                       onClick={handleCopyEscPos}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-neutral-300 hover:text-white transition-all active:scale-95"
-                      title="Copiar texto monoespaciado para app Bluetooth (RawBT)"
                     >
                       {copiedEscPos ? (
                         <>
@@ -473,7 +427,7 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5 text-[#e59b38]" />
-                          <span>Copiar ESC/POS</span>
+                          <span>Copiar Ticket</span>
                         </>
                       )}
                     </button>
@@ -496,24 +450,21 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                 >
                   <div className="text-center space-y-1 border-b border-dashed border-white/20 pb-3 print:border-black/30">
                     <div className="font-serif text-lg font-bold tracking-widest text-white print:text-black uppercase">
-                      LA PATRONA
+                      LOS PHILLYS DE LA PATRONA
                     </div>
                     <div className="text-[10px] text-[#e59b38] print:text-black uppercase font-semibold">
-                      Philly & Fry POS • Comanda de Cocina
+                      Aguilas #1 - Nogales • Orden Para Llevar
                     </div>
                     <div className="font-black text-xl text-white print:text-black tracking-wider pt-1">
-                      FOLIO #{activeOrder.orderNumber.toString().padStart(3, '0')}
+                      ORDEN #{activeOrder.orderNumber.toString().padStart(3, '0')}
                     </div>
                     <div className="text-[10px] text-neutral-400 print:text-neutral-600">
                       {new Date(activeOrder.timestamp).toLocaleString('es-MX')}
                     </div>
-                    <div className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/[0.08] text-white print:border print:border-black print:text-black">
-                      SERVICIO: {activeOrder.orderType === 'aqui' ? 'COMER AQUÍ' : 'PARA LLEVAR'}
-                    </div>
 
                     {activeOrder.isCancelled && (
                       <div className="py-1 px-3 bg-red-600 text-white font-black text-center tracking-widest uppercase text-xs rounded my-1 print:border print:border-black print:text-black">
-                        *** COMANDA ANULADA / CANCELADA ***
+                        *** ORDEN CANCELADA ***
                       </div>
                     )}
                   </div>
@@ -553,23 +504,9 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                     ))}
                   </div>
 
-                  {/* Subtotal, Tips, Total */}
+                  {/* Total */}
                   <div className="space-y-1 pt-1 text-xs">
-                    {activeOrder.tip !== undefined && activeOrder.tip > 0 && (
-                      <div className="flex justify-between text-neutral-400 print:text-neutral-600">
-                        <span>Subtotal Alimentos:</span>
-                        <span>{formatCurrencyMXN(activeOrder.total - activeOrder.tip)}</span>
-                      </div>
-                    )}
-
-                    {activeOrder.tip !== undefined && activeOrder.tip > 0 && (
-                      <div className="flex justify-between text-[#e59b38] print:text-black font-semibold">
-                        <span>(+) Propina Personal:</span>
-                        <span>+{formatCurrencyMXN(activeOrder.tip)}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center text-sm font-black text-white print:text-black pt-1 border-t border-dashed border-white/20">
+                    <div className="flex justify-between items-center text-sm font-black text-white print:text-black pt-1">
                       <span>TOTAL COBRADO:</span>
                       <span className="text-[#e59b38] print:text-black">
                         {formatCurrencyMXN(activeOrder.total)}
@@ -585,24 +522,17 @@ export const HistorialComandasModal: React.FC<HistorialComandasModalProps> = ({
                         {activeOrder.paymentMethod}
                       </span>
                     </div>
-
-                    {activeOrder.paymentMethod === 'efectivo' && activeOrder.amountReceived !== undefined && (
-                      <div className="flex justify-between text-[11px] text-neutral-400 pt-0.5">
-                        <span>Efectivo recibido:</span>
-                        <span>{formatCurrencyMXN(activeOrder.amountReceived)} (Cambio: {formatCurrencyMXN(activeOrder.change || 0)})</span>
-                      </div>
-                    )}
                   </div>
 
                   {activeOrder.notes && (
                     <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 print:text-black print:border-black">
-                      <span className="font-bold block">NOTA DE COCINA:</span>
+                      <span className="font-bold block">NOTA:</span>
                       {activeOrder.notes}
                     </div>
                   )}
 
                   <div className="text-center text-[10px] text-neutral-500 pt-3 border-t border-dashed border-white/20">
-                    ¡Gracias por su preferencia! • La Patrona
+                    ¡Gracias por su preferencia! • Los Phillys de La Patrona
                   </div>
                 </div>
               </div>

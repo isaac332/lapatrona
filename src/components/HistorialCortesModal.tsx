@@ -34,24 +34,24 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
       ? `▼ FALTANTE: -$${Math.abs(shift.difference || 0).toFixed(2)}`
       : 'Sin arqueo físico';
 
-    const text = `*CORTE DE CAJA • LA PATRONA* 🍔🍟\n` +
-      `*Turno #${shift.shiftNumber}* — ${new Date(shift.closedAt).toLocaleString('es-MX')}\n` +
+    const text =
+      `*CIERRE DE CAJA • LOS PHILLYS DE LA PATRONA* 🍔\n` +
+      `*Cierre #${shift.shiftNumber}* — ${new Date(shift.closedAt).toLocaleString('es-MX')}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `💰 *Venta Bruta Total:* $${shift.totalGrossRevenue.toFixed(2)} MXN\n` +
       `(+) *Fondo Inicial:* $${shift.startingCash.toFixed(2)} MXN\n` +
       `(+) *Ventas Efectivo:* $${shift.cashSalesTotal.toFixed(2)} MXN\n` +
       (shift.totalExpenses > 0 ? `(-) *Salidas / Gastos:* -$${shift.totalExpenses.toFixed(2)} MXN\n` : '') +
-      (shift.totalTipsCollected && shift.totalTipsCollected > 0 ? `(+) *Propinas Personal:* +$${shift.totalTipsCollected.toFixed(2)} MXN\n` : '') +
       `━━━━━━━━━━━━━━━━━━━━\n` +
       `💵 *Efectivo Esperado:* $${shift.expectedCashInDrawer.toFixed(2)} MXN\n` +
       (shift.countedCash !== undefined ? `🔎 *Efectivo Contado:* $${shift.countedCash.toFixed(2)} MXN\n` : '') +
       `⚖️ *Resultado Arqueo:* ${statusStr}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `💳 *Tarjetas Clip:* $${shift.cardSalesTotal.toFixed(2)} MXN\n` +
-      `📲 *Transferencias SPEI:* $${shift.transferSalesTotal.toFixed(2)} MXN\n` +
+      `💳 *Tarjetas:* $${shift.cardSalesTotal.toFixed(2)} MXN\n` +
+      `📲 *Transferencias:* $${shift.transferSalesTotal.toFixed(2)} MXN\n` +
       `📦 *Unidades Vendidas:* ${shift.totalUnits} piezas\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `*La Patrona • Philly & Fry POS*`;
+      `*Los Phillys de La Patrona • Aguilas #1 - Nogales*`;
 
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -68,10 +68,10 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
             </div>
             <div>
               <h2 className="font-serif text-lg sm:text-xl font-bold text-white">
-                Historial de Cortes de Turno
+                Historial de Cierres de Caja
               </h2>
               <p className="text-[11px] text-neutral-400">
-                Auditoría histórica de cierres de caja y arqueos ({shifts.length} turnos guardados)
+                Registro histórico de cierres y cortes ({shifts.length} guardados)
               </p>
             </div>
           </div>
@@ -86,15 +86,15 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* Left Column: Shift Cards List */}
+          {/* Left Column: Closed Shifts List */}
           <div className="lg:col-span-5 space-y-3">
             <div className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
-              Turnos Cerrados
+              Cierres Guardados
             </div>
 
             {shifts.length === 0 ? (
               <div className="p-8 text-center rounded-2xl bg-white/[0.02] border border-white/[0.06] text-neutral-400 text-xs">
-                Aún no hay turnos cerrados en el historial. Al realizar un corte de caja y cerrar turno, se archivará aquí automáticamente.
+                Aún no hay cierres de caja en el historial.
               </div>
             ) : (
               shifts.map((s) => {
@@ -111,7 +111,7 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs font-semibold text-white">
-                      <span>Turno #{s.shiftNumber}</span>
+                      <span>Cierre #{s.shiftNumber}</span>
                       <span className="font-mono text-[#e59b38] font-bold">
                         ${s.totalGrossRevenue.toFixed(2)}
                       </span>
@@ -119,12 +119,18 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
 
                     <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 mt-1">
                       <Calendar className="w-3 h-3 text-neutral-500" />
-                      <span>{new Date(s.closedAt).toLocaleString('es-MX', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{new Date(s.closedAt).toLocaleString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
+
+                    {s.notes && (
+                      <div className="text-[10px] text-neutral-400 mt-1 line-clamp-2">
+                        {s.notes}
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06] text-[10px]">
                       <span className="text-neutral-400">
-                        {s.totalUnits} uds • Cajón: ${s.expectedCashInDrawer.toFixed(0)}
+                        {s.totalUnits} pzs • Cajón: ${s.expectedCashInDrawer.toFixed(0)}
                       </span>
                       {s.differenceStatus === 'cuadrada' ? (
                         <span className="text-emerald-400 font-bold flex items-center gap-1">
@@ -153,7 +159,7 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
                 onClick={onClearHistory}
                 className="w-full text-center py-2 text-xs text-red-400/80 hover:text-red-300 transition-colors"
               >
-                Limpiar historial de turnos
+                Limpiar historial de cierres
               </button>
             )}
           </div>
@@ -164,14 +170,13 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
-                    Detalle del Ticket • Turno #{selectedShift.shiftNumber}
+                    Detalle • Cierre #{selectedShift.shiftNumber}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleShareWhatsApp(selectedShift)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-all active:scale-95"
-                      title="Compartir ticket por WhatsApp"
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       <span>WhatsApp</span>
@@ -183,7 +188,7 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white transition-all active:scale-95"
                     >
                       <Printer className="w-3.5 h-3.5 text-[#e59b38]" />
-                      <span>Reimprimir Ticket</span>
+                      <span>Reimprimir</span>
                     </button>
                   </div>
                 </div>
@@ -191,14 +196,14 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
                 {/* Printable Ticket Card */}
                 <div className="bg-[#0d0d0f] p-5 rounded-2xl border border-white/[0.08] shadow-inner font-mono text-xs text-neutral-300 space-y-3 print:bg-white print:text-black print:border-none print:p-0">
                   <div className="text-center space-y-1 border-b border-dashed border-white/20 pb-3 print:border-black/30">
-                    <div className="font-black tracking-[0.2em] text-base text-white print:text-black uppercase">
-                      LA PATRONA
+                    <div className="font-black tracking-[0.15em] text-base text-white print:text-black uppercase">
+                      LOS PHILLYS DE LA PATRONA
                     </div>
                     <div className="text-[10px] text-[#e59b38] print:text-black uppercase font-semibold">
-                      Philly & Fry POS • Ticket de Corte #{selectedShift.shiftNumber}
+                      Aguilas #1 - Nogales • Cierre #{selectedShift.shiftNumber}
                     </div>
                     <div className="text-[10px] text-neutral-400 print:text-neutral-600">
-                      Cierre: {new Date(selectedShift.closedAt).toLocaleString('es-MX')}
+                      Fecha: {new Date(selectedShift.closedAt).toLocaleString('es-MX')}
                     </div>
                   </div>
 
@@ -223,52 +228,20 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
                         <span>-${selectedShift.totalExpenses.toFixed(2)} MXN</span>
                       </div>
                     )}
-                    {selectedShift.totalTipsCollected !== undefined && selectedShift.totalTipsCollected > 0 && (
-                      <div className="flex justify-between text-[#e59b38] print:text-black text-[11px]">
-                        <span>(+) Propinas Personal:</span>
-                        <span>+${selectedShift.totalTipsCollected.toFixed(2)} MXN</span>
-                      </div>
-                    )}
                     <div className="flex justify-between pt-1 border-t border-dashed border-white/10 text-emerald-400 font-bold">
                       <span>Efectivo Esperado Cajón:</span>
                       <span>${selectedShift.expectedCashInDrawer.toFixed(2)} MXN</span>
                     </div>
                   </div>
 
-                  {selectedShift.countedCash !== undefined && (
-                    <div className="p-2 rounded-xl bg-white/[0.04] border border-white/[0.08] print:border-black/30 space-y-1">
-                      <div className="flex justify-between">
-                        <span>Efectivo Contado Físico:</span>
-                        <span className="font-bold text-white print:text-black">
-                          ${selectedShift.countedCash.toFixed(2)} MXN
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[11px] pt-1 border-t border-dashed border-white/10">
-                        <span>Resultado Arqueo:</span>
-                        <span className="font-bold">
-                          {selectedShift.differenceStatus === 'cuadrada'
-                            ? '✓ CAJA CUADRADA ($0.00)'
-                            : selectedShift.differenceStatus === 'sobrante'
-                            ? `▲ SOBRANTE: +$${selectedShift.difference?.toFixed(2)}`
-                            : `▼ FALTANTE: -$${Math.abs(selectedShift.difference || 0).toFixed(2)}`}
-                        </span>
-                      </div>
+                  {selectedShift.notes && (
+                    <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-[11px] text-neutral-300">
+                      {selectedShift.notes}
                     </div>
                   )}
 
-                  <div className="space-y-1 pt-1 text-[11px] text-cyan-300 print:text-black">
-                    <div className="flex justify-between">
-                      <span>Tarjetas / Clip:</span>
-                      <span>${selectedShift.cardSalesTotal.toFixed(2)} MXN</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Transferencias SPEI:</span>
-                      <span>${selectedShift.transferSalesTotal.toFixed(2)} MXN</span>
-                    </div>
-                  </div>
-
                   <div className="text-center text-[10px] text-neutral-500 pt-2 border-t border-dashed border-white/20">
-                    *** COPIA DE AUDITORÍA DE TURNO ***
+                    *** COMPROBANTE DE CIERRE ***
                   </div>
                 </div>
               </div>
@@ -276,10 +249,7 @@ export const HistorialCortesModal: React.FC<HistorialCortesModalProps> = ({
               <div className="h-full min-h-[300px] flex flex-col items-center justify-center p-8 text-center rounded-2xl bg-white/[0.02] border border-white/[0.06] text-neutral-400 space-y-2">
                 <Receipt className="w-8 h-8 text-neutral-500" />
                 <div className="text-sm font-semibold text-neutral-300">
-                  Selecciona un corte del listado
-                </div>
-                <div className="text-xs max-w-xs text-neutral-500">
-                  Podrás ver el resumen detallado de la auditoría y reimprimir el ticket térmico oficial.
+                  Selecciona un cierre del listado
                 </div>
               </div>
             )}

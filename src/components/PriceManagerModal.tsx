@@ -5,103 +5,115 @@ import { ProductItem, CategoryType } from '@/types/accounting';
 import { X, DollarSign, Save, Info, Sparkles, ChevronDown, ChevronUp, Calculator, Plus, Trash2 } from 'lucide-react';
 
 export interface RawIngredientCosts {
-  ribeyeKg: number;
-  hoagiePiece: number;
+  sirloinKg: number;
+  panHoagiePiece: number;
   tortillaPiece: number;
   cheeseKg: number;
   friesKg: number;
+  doritosPiece: number;
+  lecheChampurroPiece: number;
   cheddarCheeseKg: number;
+  veggiesKg: number;
   packagingPiece: number;
 }
 
 export const DEFAULT_RAW_COSTS: RawIngredientCosts = {
-  ribeyeKg: 300,
-  hoagiePiece: 12,
-  tortillaPiece: 4.5,
-  cheeseKg: 190,
-  friesKg: 45,
-  cheddarCheeseKg: 120,
-  packagingPiece: 4,
+  sirloinKg: 156.40,
+  panHoagiePiece: 7.50,
+  tortillaPiece: 3.50,
+  cheeseKg: 170.00,
+  friesKg: 13.50,
+  doritosPiece: 52.90,
+  lecheChampurroPiece: 48.90,
+  cheddarCheeseKg: 65.00,
+  veggiesKg: 60.00,
+  packagingPiece: 3.50,
 };
 
 export function computeEscandalloFromRaw(raw: RawIngredientCosts): Record<string, { cost: number; ingredients: string[] }> {
-  const ribeyePerGram = raw.ribeyeKg / 1000;
+  const sirloinPerGram = raw.sirloinKg / 1000;
   const cheesePerGram = raw.cheeseKg / 1000;
   const friesPerGram = raw.friesKg / 1000;
   const cheddarPerGram = raw.cheddarCheeseKg / 1000;
+  const veggiesPerGram = raw.veggiesKg / 1000;
 
-  const swAloneCost = Math.round((150 * ribeyePerGram + 50 * cheesePerGram + raw.hoagiePiece + raw.packagingPiece + 1.0) * 100) / 100;
-  const swFriesCost = Math.round((150 * ribeyePerGram + 50 * cheesePerGram + raw.hoagiePiece + 200 * friesPerGram + raw.packagingPiece + 1.0) * 100) / 100;
-  const qAloneCost = Math.round((120 * ribeyePerGram + 60 * cheesePerGram + raw.tortillaPiece + raw.packagingPiece) * 100) / 100;
-  const qFriesCost = Math.round((120 * ribeyePerGram + 60 * cheesePerGram + raw.tortillaPiece + 200 * friesPerGram + raw.packagingPiece) * 100) / 100;
-  const sfCost = Math.round((180 * ribeyePerGram + 250 * friesPerGram + 2.10 + raw.packagingPiece + 1.0) * 100) / 100;
-  const fAloneCost = Math.round((220 * friesPerGram + 3.00 + Math.max(1, raw.packagingPiece - 1.0)) * 100) / 100;
-  const fCheeseCost = Math.round((220 * friesPerGram + 70 * cheddarPerGram + 3.00 + Math.max(1, raw.packagingPiece - 1.0)) * 100) / 100;
+  const swAloneCost = Math.round((150 * sirloinPerGram + 50 * cheesePerGram + 40 * veggiesPerGram + raw.panHoagiePiece + raw.packagingPiece) * 100) / 100;
+  const swFriesCost = Math.round((150 * sirloinPerGram + 50 * cheesePerGram + 40 * veggiesPerGram + raw.panHoagiePiece + 200 * friesPerGram + raw.packagingPiece + 2.5) * 100) / 100;
+  const qAloneCost = Math.round((120 * sirloinPerGram + 60 * cheesePerGram + raw.tortillaPiece + raw.packagingPiece) * 100) / 100;
+  const qFriesCost = Math.round((120 * sirloinPerGram + 60 * cheesePerGram + raw.tortillaPiece + 200 * friesPerGram + raw.packagingPiece + 2.5) * 100) / 100;
+  const sfCost = Math.round((80 * sirloinPerGram + 40 * cheesePerGram + 250 * friesPerGram + (raw.doritosPiece / 3) + 3.0 + raw.packagingPiece) * 100) / 100;
+  const fCheeseCost = Math.round((250 * friesPerGram + 70 * cheddarPerGram + 2.5 + raw.packagingPiece) * 100) / 100;
+  const champurroCost = Math.round(((raw.lecheChampurroPiece / 3) + 3.5 + 2.5) * 100) / 100;
 
   return {
     'sandwich-alone': {
       cost: swAloneCost,
       ingredients: [
-        `Pan Hoagie artesanal ($${raw.hoagiePiece.toFixed(2)})`,
-        `Ribeye 150g ($${(150 * ribeyePerGram).toFixed(2)})`,
-        `Queso Provolone 50g ($${(50 * cheesePerGram).toFixed(2)})`,
-        'Cebollitas asadas ($1.00)',
+        `Pan Hoagie artesanal ($${raw.panHoagiePiece.toFixed(2)})`,
+        `Steak Sirloin SK 150g (SuKarne, $${(150 * sirloinPerGram).toFixed(2)})`,
+        `Queso Los Ojos / Mozzarella 50g ($${(50 * cheesePerGram).toFixed(2)})`,
+        `Cebolla y chile toreado 40g ($${(40 * veggiesPerGram).toFixed(2)})`,
         `Papel y empaque ($${raw.packagingPiece.toFixed(2)})`,
       ],
     },
     'sandwich-fries': {
       cost: swFriesCost,
       ingredients: [
-        `Pan Hoagie artesanal ($${raw.hoagiePiece.toFixed(2)})`,
-        `Ribeye 150g ($${(150 * ribeyePerGram).toFixed(2)})`,
-        `Queso Provolone 50g ($${(50 * cheesePerGram).toFixed(2)})`,
-        `Papas 200g ($${(200 * friesPerGram).toFixed(2)})`,
-        `Empaque combo ($${(raw.packagingPiece + 1.0).toFixed(2)})`,
+        `Pan Hoagie artesanal ($${raw.panHoagiePiece.toFixed(2)})`,
+        `Steak Sirloin SK 150g (SuKarne, $${(150 * sirloinPerGram).toFixed(2)})`,
+        `Queso Los Ojos / Mozzarella 50g ($${(50 * cheesePerGram).toFixed(2)})`,
+        `Cebolla y chile toreado 40g ($${(40 * veggiesPerGram).toFixed(2)})`,
+        `Papa Russet 200g (Casa Ley, $${(200 * friesPerGram).toFixed(2)})`,
+        'Aceite de freído y sal ($2.50)',
+        `Empaque combo ($${raw.packagingPiece.toFixed(2)})`,
       ],
     },
     'quesadilla-alone': {
       cost: qAloneCost,
       ingredients: [
-        `Tortilla de harina gigante ($${raw.tortillaPiece.toFixed(2)})`,
-        `Ribeye 120g ($${(120 * ribeyePerGram).toFixed(2)})`,
-        `Mezcla quesos 60g ($${(60 * cheesePerGram).toFixed(2)})`,
+        `Tortilla de harina sonorense ($${raw.tortillaPiece.toFixed(2)})`,
+        `Steak Sirloin SK 120g (SuKarne, $${(120 * sirloinPerGram).toFixed(2)})`,
+        `Queso Los Ojos / Mozzarella 60g ($${(60 * cheesePerGram).toFixed(2)})`,
         `Empaque ($${raw.packagingPiece.toFixed(2)})`,
       ],
     },
     'quesadilla-fries': {
       cost: qFriesCost,
       ingredients: [
-        `Tortilla de harina gigante ($${raw.tortillaPiece.toFixed(2)})`,
-        `Ribeye 120g ($${(120 * ribeyePerGram).toFixed(2)})`,
-        `Mezcla quesos 60g ($${(60 * cheesePerGram).toFixed(2)})`,
-        `Papas 200g ($${(200 * friesPerGram).toFixed(2)})`,
+        `Tortilla de harina sonorense ($${raw.tortillaPiece.toFixed(2)})`,
+        `Steak Sirloin SK 120g (SuKarne, $${(120 * sirloinPerGram).toFixed(2)})`,
+        `Queso Los Ojos / Mozzarella 60g ($${(60 * cheesePerGram).toFixed(2)})`,
+        `Papa Russet 200g (Casa Ley, $${(200 * friesPerGram).toFixed(2)})`,
+        'Aceite de freído y sal ($2.50)',
         `Empaque combo ($${raw.packagingPiece.toFixed(2)})`,
       ],
     },
     'steak-frites': {
       cost: sfCost,
       ingredients: [
-        `Ribeye sellado 180g ($${(180 * ribeyePerGram).toFixed(2)})`,
-        `Papas 250g ($${(250 * friesPerGram).toFixed(2)})`,
-        'Pimientos y cebolla ($2.10)',
-        `Charola artesanal ($${(raw.packagingPiece + 1.0).toFixed(2)})`,
-      ],
-    },
-    'fries-alone': {
-      cost: fAloneCost,
-      ingredients: [
-        `Papas corte casero 220g ($${(220 * friesPerGram).toFixed(2)})`,
-        'Aceite y sal ($3.00)',
-        `Cono / caja ($${Math.max(1, raw.packagingPiece - 1.0).toFixed(2)})`,
+        `Papa Russet 250g (Casa Ley, $${(250 * friesPerGram).toFixed(2)})`,
+        `1/3 bolsa Doritos Nacho (Casa Ley, $${(raw.doritosPiece / 3).toFixed(2)})`,
+        `Steak Sirloin SK 80g (SuKarne, $${(80 * sirloinPerGram).toFixed(2)})`,
+        `Queso Los Ojos / Mozzarella 40g ($${(40 * cheesePerGram).toFixed(2)})`,
+        'Aceite y aderezos ($3.00)',
+        `Charola y tenedor ($${raw.packagingPiece.toFixed(2)})`,
       ],
     },
     'fries-cheese': {
       cost: fCheeseCost,
       ingredients: [
-        `Papas corte casero 220g ($${(220 * friesPerGram).toFixed(2)})`,
+        `Papa Russet 250g (Casa Ley, $${(250 * friesPerGram).toFixed(2)})`,
         `Salsa queso cheddar 70g ($${(70 * cheddarPerGram).toFixed(2)})`,
-        'Aceite y sal ($3.00)',
-        `Charola ($${Math.max(1, raw.packagingPiece - 1.0).toFixed(2)})`,
+        'Aceite y sal ($2.50)',
+        `Charola y tenedor ($${raw.packagingPiece.toFixed(2)})`,
+      ],
+    },
+    'champurro': {
+      cost: champurroCost,
+      ingredients: [
+        `Leche sin lactosa 1/3 L (Super Ley, $${(raw.lecheChampurroPiece / 3).toFixed(2)})`,
+        'Harina tostada, piloncillo y canela ($3.50)',
+        'Vaso térmico 12oz y tapa ($2.50)',
       ],
     },
   };
@@ -161,7 +173,7 @@ function PriceManagerModalDialog({
     if (typeof window === 'undefined') return DEFAULT_RAW_COSTS;
     try {
       const saved = localStorage.getItem('philly_fry_raw_costs');
-      return saved !== null ? JSON.parse(saved) : DEFAULT_RAW_COSTS;
+      return saved !== null ? { ...DEFAULT_RAW_COSTS, ...JSON.parse(saved) } : DEFAULT_RAW_COSTS;
     } catch {
       return DEFAULT_RAW_COSTS;
     }
@@ -300,7 +312,7 @@ function PriceManagerModalDialog({
               type="button"
               onClick={handleApplyEscandallos}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-[11px] transition-all shadow-sm active:scale-95"
-              title="Cargar costos sugeridos basados en insumos (Ribeye, pan, queso, papas)"
+              title="Cargar costos sugeridos basados en insumos reales de tickets (Sirloin SuKarne, Papa Russet Ley, Queso Los Ojos)"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Autocompletar Escandallos</span>
@@ -416,27 +428,27 @@ function PriceManagerModalDialog({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Ribeye Res ($/kg)</label>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Sirloin SK SuKarne ($/kg)</label>
                 <input
                   type="number"
                   min="0"
-                  step="5"
-                  value={rawCosts.ribeyeKg}
-                  onChange={(e) => handleUpdateRawCost('ribeyeKg', parseFloat(e.target.value) || 0)}
+                  step="1"
+                  value={rawCosts.sirloinKg}
+                  onChange={(e) => handleUpdateRawCost('sirloinKg', parseFloat(e.target.value) || 0)}
                   className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Pan Hoagie ($/pz)</label>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Pan Hoagie Philly ($/pz)</label>
                 <input
                   type="number"
                   min="0"
                   step="0.5"
-                  value={rawCosts.hoagiePiece}
-                  onChange={(e) => handleUpdateRawCost('hoagiePiece', parseFloat(e.target.value) || 0)}
+                  value={rawCosts.panHoagiePiece}
+                  onChange={(e) => handleUpdateRawCost('panHoagiePiece', parseFloat(e.target.value) || 0)}
                   className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
@@ -454,7 +466,7 @@ function PriceManagerModalDialog({
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Quesos fundir ($/kg)</label>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Queso Los Ojos ($/kg)</label>
                 <input
                   type="number"
                   min="0"
@@ -466,11 +478,11 @@ function PriceManagerModalDialog({
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Papas ($/kg)</label>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Papa Russet Ley ($/kg)</label>
                 <input
                   type="number"
                   min="0"
-                  step="5"
+                  step="0.5"
                   value={rawCosts.friesKg}
                   onChange={(e) => handleUpdateRawCost('friesKg', parseFloat(e.target.value) || 0)}
                   className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
@@ -478,7 +490,31 @@ function PriceManagerModalDialog({
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Queso Cheddar ($/kg)</label>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Doritos Nacho Ley ($/pz)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={rawCosts.doritosPiece}
+                  onChange={(e) => handleUpdateRawCost('doritosPiece', parseFloat(e.target.value) || 0)}
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Leche Champurro ($/pz)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={rawCosts.lecheChampurroPiece}
+                  onChange={(e) => handleUpdateRawCost('lecheChampurroPiece', parseFloat(e.target.value) || 0)}
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Queso Amarillo ($/kg)</label>
                 <input
                   type="number"
                   min="0"
@@ -490,7 +526,19 @@ function PriceManagerModalDialog({
               </div>
 
               <div>
-                <label className="text-[10px] text-neutral-400 block mb-0.5">Empaque / caja ($/pz)</label>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Chile y Cebolla ($/kg)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={rawCosts.veggiesKg}
+                  onChange={(e) => handleUpdateRawCost('veggiesKg', parseFloat(e.target.value) || 0)}
+                  className="w-full bg-[#1c1c22] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-white text-xs focus:outline-none focus:border-[#e59b38]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-neutral-400 block mb-0.5">Empaques Llevar ($/pz)</label>
                 <input
                   type="number"
                   min="0"
@@ -501,13 +549,13 @@ function PriceManagerModalDialog({
                 />
               </div>
 
-              <div className="flex items-end">
+              <div className="sm:col-span-5 flex justify-end">
                 <button
                   type="button"
                   onClick={handleApplyEscandallos}
-                  className="w-full py-1.5 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-xs transition-colors shadow-sm"
+                  className="px-6 py-2 rounded-lg bg-[#e59b38] hover:bg-[#d48b28] text-black font-extrabold text-xs transition-colors shadow-sm"
                 >
-                  Recalcular Costos
+                  Recalcular Costos y Escandallos
                 </button>
               </div>
             </div>

@@ -47,106 +47,102 @@ export const MiseEnPlaceModal: React.FC<MiseEnPlaceModalProps> = ({
   const qAlone = stockMap['quesadilla-alone']?.currentStock || 0;
   const qFries = stockMap['quesadilla-fries']?.currentStock || 0;
   const steakFrites = stockMap['steak-frites']?.currentStock || 0;
-  const friesAlone = stockMap['fries-alone']?.currentStock || 0;
   const friesCheese = stockMap['fries-cheese']?.currentStock || 0;
+  const champurroStock = stockMap['champurro']?.currentStock || 0;
 
   // Calculations
   const totalSandwiches = swAlone + swFries;
   const totalQuesadillas = qAlone + qFries;
+  const papasLokas = steakFrites;
+  const papasQueso = friesCheese;
 
-  // Ribeye total in kg: (sw * 150g + q * 120g + sf * 180g) / 1000
-  const ribeyeGrams = totalSandwiches * 150 + totalQuesadillas * 120 + steakFrites * 180;
-  const ribeyeKg = Math.round((ribeyeGrams / 1000) * 10) / 10;
+  // Steak de Sirloin SK (SuKarne): 150g p/sw, 120g p/quesadilla, 80g p/papas lokas
+  const sirloinGrams = totalSandwiches * 150 + totalQuesadillas * 120 + papasLokas * 80;
+  const sirloinKg = Math.round((sirloinGrams / 1000) * 10) / 10;
 
-  // Hoagie pieces
+  // Pan Hoagie para Philly
   const hoagiePieces = totalSandwiches;
 
-  // Giant flour tortillas
+  // Tortillas de harina sonorenses grandes
   const tortillaPieces = totalQuesadillas;
 
-  // Potatoes in kg: (swFries * 200g + qFries * 200g + sf * 250g + fAlone * 220g + fCheese * 220g) / 1000
+  // Papa Russet (Casa Ley): 200g p/combos papas, 250g p/papas lokas y queso amarillo
   const friesGrams =
     swFries * 200 +
     qFries * 200 +
-    steakFrites * 250 +
-    friesAlone * 220 +
-    friesCheese * 220;
+    papasLokas * 250 +
+    papasQueso * 250;
   const friesKg = Math.round((friesGrams / 1000) * 10) / 10;
 
-  // Provolone cheese in kg: (totalSandwiches * 50g) / 1000
-  const provoloneKg = Math.round(((totalSandwiches * 50) / 1000) * 10) / 10;
+  // Queso Los Ojos / Mozzarella (Abastos Esperanza / Aurrera): 50g p/sw, 60g p/quesadilla, 40g p/papas lokas
+  const cheeseGrams = totalSandwiches * 50 + totalQuesadillas * 60 + papasLokas * 40;
+  const cheeseKg = Math.round((cheeseGrams / 1000) * 10) / 10;
 
-  // Queso fundir mezcla (quesadillas): (totalQuesadillas * 60g) / 1000
-  const meltingCheeseKg = Math.round(((totalQuesadillas * 60) / 1000) * 10) / 10;
+  // Salsa de Queso amarillo caliente: 70g p/orden
+  const cheddarCheeseKg = Math.round(((papasQueso * 70) / 1000) * 10) / 10;
 
-  // Cheddar cheese sauce: (friesCheese * 70g) / 1000
-  const cheddarCheeseKg = Math.round(((friesCheese * 70) / 1000) * 10) / 10;
+  // Doritos Nacho (Casa Ley): aprox 1/3 bolsa por cada orden de Papas Lokas
+  const doritosBags = Math.ceil(papasLokas / 3);
 
-  // Sautéed vegetables (onions and peppers): approx 40g per sandwich/sf
-  const veggiesKg = Math.round((((totalSandwiches + steakFrites) * 40) / 1000) * 10) / 10;
+  // Champurro caliente en litros (aprox 350ml por vaso de 12oz)
+  const champurroLitros = Math.round(champurroStock * 0.35 * 10) / 10;
 
-  // Food containers and wraps
+  // Cebolla blanca y chile caribe toreado a la plancha: approx 40g por sándwich/papas lokas
+  const veggiesKg = Math.round((((totalSandwiches + papasLokas) * 40) / 1000) * 10) / 10;
+
+  // Food containers and wraps ("Todo Para Llevar")
   const totalBoxes =
-    totalSandwiches + totalQuesadillas + steakFrites + friesAlone + friesCheese;
+    totalSandwiches + totalQuesadillas + papasLokas + papasQueso + champurroStock;
 
   const prepItems: PrepItem[] = [
     {
-      id: 'ribeye',
-      name: 'Ribeye de Res Rebanado',
-      quantityStr: `${ribeyeKg.toFixed(1)} kg`,
-      numericVal: ribeyeKg,
+      id: 'sirloin',
+      name: 'Steak de Sirloin SK Rebanado (SuKarne)',
+      quantityStr: `${sirloinKg.toFixed(1)} kg`,
+      numericVal: sirloinKg,
       unit: 'kg',
       category: 'carniceria',
-      notes: `${ribeyeGrams}g totales (150g p/sw, 120g p/quesadilla, 180g p/steak frites)`,
+      notes: `${sirloinGrams}g totales (150g p/sw, 120g p/quesadilla, 80g p/papas lokas)`,
     },
     {
       id: 'hoagie',
-      name: 'Pan Hoagie Artesanal',
+      name: 'Pan Hoagie para Philly Cheesesteak',
       quantityStr: `${hoagiePieces} pzs`,
       numericVal: hoagiePieces,
       unit: 'piezas',
       category: 'panaderia',
-      notes: 'Cortado al centro y untado con mantequilla',
+      notes: 'Pan blanco alargado cortado al centro para plancha',
     },
     {
       id: 'tortillas',
-      name: 'Tortillas de Harina Gigantes',
+      name: 'Tortillas de Harina Sonorenses',
       quantityStr: `${tortillaPieces} pzs`,
       numericVal: tortillaPieces,
       unit: 'piezas',
       category: 'panaderia',
-      notes: 'Temperatura ambiente listas para plancha',
+      notes: 'Tortilla grande a temperatura ambiente lista para dorar',
     },
     {
       id: 'papas',
-      name: 'Papas Corte Casero (Pre-cocidas / Blanqueadas)',
+      name: 'Papa Russet en Bastones (Casa Ley)',
       quantityStr: `${friesKg.toFixed(1)} kg`,
       numericVal: friesKg,
       unit: 'kg',
       category: 'verduras',
-      notes: `${friesGrams}g listos para freidora doble cocción`,
+      notes: `${friesGrams}g blanqueados para freidora doble cocción`,
     },
     {
-      id: 'provolone',
-      name: 'Queso Provolone Rebanado',
-      quantityStr: `${provoloneKg.toFixed(1)} kg`,
-      numericVal: provoloneKg,
+      id: 'queso-ojos',
+      name: 'Queso Los Ojos / Mozzarella Rallado (Abastos Esperanza)',
+      quantityStr: `${cheeseKg.toFixed(1)} kg`,
+      numericVal: cheeseKg,
       unit: 'kg',
       category: 'cremeria',
-      notes: 'Porciones de 50g por cheesesteak',
-    },
-    {
-      id: 'queso-fundir',
-      name: 'Mezcla Quesos Monterrey Jack & Oaxaca',
-      quantityStr: `${meltingCheeseKg.toFixed(1)} kg`,
-      numericVal: meltingCheeseKg,
-      unit: 'kg',
-      category: 'cremeria',
-      notes: 'Rallado fresco para quesadillas',
+      notes: `${cheeseGrams}g de mezcla fundente para sándwiches y quesadillas`,
     },
     {
       id: 'cheddar',
-      name: 'Salsa de Queso Cheddar Caliente',
+      name: 'Queso Amarillo Líquido Caliente',
       quantityStr: `${cheddarCheeseKg.toFixed(1)} kg`,
       numericVal: cheddarCheeseKg,
       unit: 'kg',
@@ -155,21 +151,39 @@ export const MiseEnPlaceModal: React.FC<MiseEnPlaceModalProps> = ({
     },
     {
       id: 'verduras',
-      name: 'Cebollitas Caramelizadas y Pimientos',
+      name: 'Cebolla Blanca y Chile Caribe Toreados',
       quantityStr: `${veggiesKg.toFixed(1)} kg`,
       numericVal: veggiesKg,
       unit: 'kg',
       category: 'verduras',
-      notes: 'Pochadas en plancha con sal y pimienta',
+      notes: 'Fileteados y toreados a la plancha con sazón Patrona',
+    },
+    {
+      id: 'doritos',
+      name: 'Doritos Nacho S Troceados (Casa Ley)',
+      quantityStr: `${doritosBags} pzs`,
+      numericVal: doritosBags,
+      unit: 'piezas',
+      category: 'empaques',
+      notes: 'Bolsas listas para montar base crujiente de Papas Lokas',
+    },
+    {
+      id: 'champurro',
+      name: 'Champurro Tradicional Caliente (Leche Sin Lacto)',
+      quantityStr: `${champurroLitros.toFixed(1)} L`,
+      numericVal: champurroLitros,
+      unit: 'litros',
+      category: 'cremeria',
+      notes: `${champurroStock} vasos de 12oz listos en termo/olla`,
     },
     {
       id: 'empaques',
-      name: 'Charolas, Papel Antigrasa y Conos',
+      name: 'Charolas Térmicas, Papel Aluminio y Bolsas',
       quantityStr: `${totalBoxes} pzs`,
       numericVal: totalBoxes,
       unit: 'piezas',
       category: 'empaques',
-      notes: 'Armadas en repisa para entrega rápida',
+      notes: 'Armadas en estación para Todo Para Llevar',
     },
   ];
 

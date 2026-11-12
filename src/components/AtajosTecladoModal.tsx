@@ -18,23 +18,17 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
   if (!isOpen) return null;
 
   const generalShortcuts = [
-    { key: 'Espacio / O', action: 'Abrir Armador de Comanda / Nueva Orden' },
-    { key: 'U', action: 'Mesas y Cuentas Abiertas (Pre-cuenta y Cobro)' },
-    { key: 'D', action: 'Pantalla de Cocina / KDS en Vivo' },
-    { key: 'B', action: 'Buscar y Reimprimir Comandas Anteriores' },
-    { key: 'S', action: 'Control de Porciones y Stock de Cocina' },
-    { key: 'C', action: 'Abrir Corte de Caja y Arqueo de Efectivo' },
-    { key: 'L', action: 'Liquidación y Reparto de Propinas del Turno (Pool)' },
-    { key: 'G', action: 'Registrar Gasto o Salida de Cajón' },
-    { key: 'W', action: 'Registrar Merma o Desperdicio de Cocina' },
+    { key: 'C', action: 'Abrir y Cerrar Caja / Corte' },
+    { key: 'G', action: 'Registrar Gasto o Salida de Caja' },
+    { key: 'W', action: 'Registrar Merma de Cocina' },
     { key: 'K', action: 'Abrir Calculadora Rápida de Cambio' },
-    { key: 'T', action: 'Ver Turnos Archivados y Reimprimir Tickets' },
+    { key: 'T', action: 'Ver Historial de Cierres de Caja' },
     { key: 'H', action: 'Ver Libro de Ventas e Historial' },
-    { key: 'E', action: 'Centro de Exportaciones Contables e Informes SAT' },
-    { key: 'P', action: 'Abrir Gestor de Precios y Costeo de Recetas' },
+    { key: 'E', action: 'Exportar Reportes en CSV' },
+    { key: 'P', action: 'Abrir Gestor de Precios y Costos' },
     { key: 'M', action: 'Configurar Membrete y Datos del Negocio' },
     { key: '?', action: 'Abrir / Cerrar esta guía de atajos' },
-    { key: 'Esc', action: 'Cerrar cualquier ventana o modal activo' },
+    { key: 'Esc', action: 'Cerrar cualquier ventana activa' },
   ];
 
   return (
@@ -52,7 +46,7 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
                 Atajos de Teclado POS
               </h2>
               <p className="text-[11px] text-neutral-400">
-                Operación a velocidad ultra-rápida para mostrador y caja
+                Operación rápida para mostrador y caja
               </p>
             </div>
           </div>
@@ -67,11 +61,10 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
         {/* Shortcuts List Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           
-          {/* Section 1: Quick product add hotkeys */}
           <div className="space-y-2.5">
             <div className="text-[11px] uppercase font-bold text-[#e59b38] tracking-wider flex items-center gap-1.5">
               <Command className="w-3.5 h-3.5" />
-              <span>Venta Rápida de Platillos (+1)</span>
+              <span>Venta Rápida de Menú (+1)</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {products.map((p, idx) => (
@@ -81,7 +74,7 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
                 >
                   <div className="truncate pr-2">
                     <div className="text-xs font-semibold text-white truncate">{p.name}</div>
-                    <div className="text-[10px] text-neutral-400 truncate">({p.variantLabel})</div>
+                    <div className="text-[10px] text-neutral-400 truncate">(${p.defaultPrice})</div>
                   </div>
                   <kbd className="px-2 py-1 text-xs font-mono font-black text-black bg-[#e59b38] rounded-lg shrink-0 shadow-sm">
                     {idx + 1}
@@ -91,7 +84,6 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
             </div>
           </div>
 
-          {/* Section 2: General Navigation & Modals */}
           <div className="space-y-2.5 pt-2 border-t border-white/[0.08]">
             <div className="text-[11px] uppercase font-bold text-neutral-300 tracking-wider">
               Navegación y Operaciones de Caja
@@ -113,10 +105,9 @@ export const AtajosTecladoModal: React.FC<AtajosTecladoModalProps> = ({
 
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-white/[0.08] bg-[#19191d] flex items-center justify-between">
           <span className="text-[11px] text-neutral-400">
-            Tip: Presiona <kbd className="px-1.5 py-0.5 font-mono text-[10px] bg-white/10 rounded">?</kbd> en cualquier momento para abrir esta guía.
+            Presiona <kbd className="px-1.5 py-0.5 font-mono text-[10px] bg-white/10 rounded">?</kbd> en cualquier momento para abrir esta guía.
           </span>
           <button
             type="button"

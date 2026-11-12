@@ -21,7 +21,7 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
   const isGoalReached = goalAmount > 0 && currentRevenue >= goalAmount;
   const difference = currentRevenue - goalAmount;
 
-  const quickGoals = [5000, 8000, 10000, 15000, 20000];
+  const quickGoals = [1000, 1500, 2000, 3000, 5000];
 
   const handleSave = () => {
     const parsed = parseFloat(tempGoal);
@@ -35,13 +35,11 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
 
   return (
     <div className="rounded-2xl bg-[#141417] border border-white/[0.08] p-3.5 sm:p-5 relative overflow-hidden shadow-lg transition-all">
-      {/* Background glow if goal reached */}
       {isGoalReached && (
         <div className="absolute inset-0 bg-gradient-to-r from-[#e59b38]/10 via-amber-500/10 to-transparent pointer-events-none" />
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        {/* Title & Goal Status */}
         <div className="flex items-center gap-2.5">
           <div
             className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
@@ -56,7 +54,7 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
-                Meta de Venta del Turno
+                Meta de Venta del Día
               </span>
 
               {isGoalReached ? (
@@ -84,7 +82,6 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
           </div>
         </div>
 
-        {/* Goal Edit Button / Amount */}
         <div className="flex items-center gap-2 self-end sm:self-center">
           {isEditing ? (
             <div className="flex items-center gap-1 bg-[#1c1c22] border border-[#e59b38] rounded-xl px-2 py-1 shadow-md">
@@ -92,7 +89,7 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
               <input
                 type="number"
                 min="100"
-                step="500"
+                step="100"
                 value={tempGoal}
                 onChange={(e) => setTempGoal(e.target.value)}
                 onKeyDown={(e) => {
@@ -133,7 +130,6 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
         </div>
       </div>
 
-      {/* Progress Bar */}
       <div className="mt-3 relative w-full h-2.5 bg-black/40 rounded-full overflow-hidden border border-white/[0.06]">
         <div
           className={`h-full rounded-full transition-all duration-700 ease-out ${
@@ -145,7 +141,6 @@ export const DailyGoalTracker: React.FC<DailyGoalTrackerProps> = ({
         />
       </div>
 
-      {/* Quick Goal Preset Buttons when editing */}
       {isEditing && (
         <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-mono mr-1">

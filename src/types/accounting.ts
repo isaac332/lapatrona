@@ -8,7 +8,7 @@ export interface ProductItem {
   description: string;
   imageUrl: string;
   defaultPrice: number;
-  cost: number; // costo de insumos por unidad
+  cost: number;
 }
 
 export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto';
@@ -16,7 +16,7 @@ export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'mixto';
 export interface SaleRecord {
   id: string;
   productId: string;
-  timestamp: string; // ISO string
+  timestamp: string;
   quantity: number;
   unitPrice: number;
   unitCost: number;
@@ -123,12 +123,45 @@ export interface CustomerOrder {
   cancelledAt?: string;
 }
 
+export interface PurchaseTicketItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: 'kg' | 'L' | 'pza';
+  regularUnitPrice: number;
+  effectiveUnitPrice: number;
+  lineTotal?: number;
+  ingredientKey?: 'sirloin' | 'queso' | 'papa' | 'chile_caribe' | 'cebolla' | 'aceite' | 'gas_lp' | 'leche' | 'doritos' | 'mayonesa' | 'limpieza' | 'otro';
+}
+
+export interface PurchaseTicketRecord {
+  id: string;
+  storeName: string;
+  branchAddress: string;
+  rfc?: string;
+  folio?: string;
+  timestamp: string;
+  paymentMethod: PaymentMethod;
+  category: 'carne' | 'quesos' | 'verduras_abarrotes' | 'gas' | 'insumos';
+  amountPaid?: number;
+  changeGiven?: number;
+  iva?: number;
+  items: PurchaseTicketItem[];
+}
+
 export interface ExpenseRecord {
   id: string;
   description: string;
-  category: string; // 'insumos' | 'servicios' | 'mercado' | 'otro'
+  category: string;
   amount: number;
-  timestamp: string; // ISO string
+  timestamp: string;
+  storeName?: string;
+  branchAddress?: string;
+  rfc?: string;
+  folio?: string;
+  paymentMethod?: PaymentMethod;
+  items?: PurchaseTicketItem[];
+  savedDiscount?: number;
 }
 
 export type WasteReason = 'quemado' | 'caida' | 'caducidad' | 'error_comanda' | 'merma_corte' | 'otro';
@@ -195,10 +228,10 @@ export interface CashDenominationCount {
 }
 
 export interface CashShiftState {
-  startingCash: number; // Fondo inicial para cambio (e.g. $1,000 MXN)
+  startingCash: number;
   openedAt: string;
   cashierName: string;
-  countedCash?: number; // Arqueo físico ingresado
+  countedCash?: number;
   denominations?: CashDenominationCount;
 }
 

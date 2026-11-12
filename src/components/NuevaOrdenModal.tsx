@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ProductItem, PaymentMethod, CustomerOrder, CustomerOrderItem, OrderItemModifier, ProductStockConfig, SplitPaymentDetail, OrderDiscount } from '@/types/accounting';
+import {
+  ProductItem,
+  PaymentMethod,
+  CustomerOrder,
+  CustomerOrderItem,
+  OrderItemModifier,
+  ProductStockConfig,
+  SplitPaymentDetail,
+  OrderDiscount,
+} from '@/types/accounting';
 import { STANDARD_MODIFIERS, QUICK_INSTRUCTIONS, ModifierOption } from '@/data/initialProducts';
 import { triggerHaptic } from '@/utils/haptics';
 import {
@@ -9,8 +18,6 @@ import {
   Plus,
   Minus,
   ShoppingBag,
-  Utensils,
-  Package,
   Banknote,
   CreditCard,
   Smartphone,
@@ -19,7 +26,6 @@ import {
   CheckCircle2,
   Tag,
   Gift,
-  Users,
   Sparkles,
   ChevronDown,
   ChevronUp,
@@ -31,15 +37,12 @@ interface NuevaOrdenModalProps {
   products: ProductItem[];
   nextOrderNumber: number;
   stockMap?: Record<string, ProductStockConfig>;
-  initialTable?: string;
   existingOrder?: CustomerOrder | null;
   onCompleteOrder: (order: CustomerOrder) => void;
-  onSaveOpenTab?: (order: CustomerOrder) => void;
 }
 
 function createNewOrder(
   nextOrderNumber: number,
-  orderType: 'aqui' | 'llevar',
   customerName: string,
   notes: string,
   items: CustomerOrderItem[],
@@ -47,24 +50,18 @@ function createNewOrder(
   paymentMethod: PaymentMethod,
   amountReceived?: number,
   change?: number,
-  tip?: number,
   splitPayment?: SplitPaymentDetail,
-  discount?: OrderDiscount,
-  tableNumber?: string,
-  isOpenTab?: boolean
+  discount?: OrderDiscount
 ): CustomerOrder {
   return {
     id: `order-${nextOrderNumber}-${Date.now()}`,
     orderNumber: nextOrderNumber,
     timestamp: new Date().toISOString(),
-    orderType,
+    orderType: 'llevar',
     customerName: customerName.trim() || undefined,
-    tableNumber,
-    isOpenTab,
     notes: notes.trim() || undefined,
     items,
     total,
-    tip,
     discount,
     paymentMethod,
     splitPayment,
@@ -79,17 +76,9 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   products,
   nextOrderNumber,
   stockMap,
-  initialTable,
   existingOrder,
   onCompleteOrder,
-  onSaveOpenTab,
 }) => {
-  const [orderType, setOrderType] = useState<'aqui' | 'llevar'>(
-    existingOrder ? existingOrder.orderType : initialTable ? 'aqui' : 'llevar'
-  );
-  const [tableNumber, setTableNumber] = useState<string>(
-    existingOrder?.tableNumber || initialTable || 'Mesa 1'
-  );
   const [customerName, setCustomerName] = useState(existingOrder?.customerName || '');
   const [notes, setNotes] = useState(existingOrder?.notes || '');
   const [cart, setCart] = useState<Record<string, number>>(() => {
@@ -116,8 +105,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
   const [customDiscount, setCustomDiscount] = useState<string>(
     existingOrder?.discount?.type === 'fixed' ? existingOrder.discount.amount.toString() : ''
   );
-  const [tipPercent, setTipPercent] = useState<number | 'custom'>(0);
-  const [customTip, setCustomTip] = useState<string>('');
   const [amountReceived, setAmountReceived] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [customizingProductId, setCustomizingProductId] = useState<string | null>(null);
@@ -220,7 +207,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
     });
   };
 
-  // Compute order items
   const orderItems: CustomerOrderItem[] = Object.entries(cart)
     .map(([productId, quantity]): CustomerOrderItem | null => {
       const prod = products.find((p) => p.id === productId);
@@ -233,7 +219,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
       const effectiveUnitCost = prod.cost + modsCost;
       const instructions = itemInstructions[productId];
 
-      const item: CustomerOrderItem = {
+      return {
         productId,
         productName: prod.name,
         variantLabel: prod.variantLabel,
@@ -244,7 +230,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
         modifiers: mods.length > 0 ? mods : undefined,
         instructions: instructions ? instructions.trim() : undefined,
       };
-      return item;
     })
     .filter((item): item is CustomerOrderItem => item !== null);
 
@@ -260,13 +245,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
     discountAmount = Math.round((foodSubtotal * discountType) / 100);
   }
 
-  const discountedFoodSubtotal = Math.max(0, foodSubtotal - discountAmount);
-
-  const tipAmount =
-    tipPercent === 'custom'
-      ? parseFloat(customTip) || 0
-      : Math.round((discountedFoodSubtotal * (tipPercent as number)) / 100);
-  const finalTotal = discountedFoodSubtotal + tipAmount;
+  const finalTotal = Math.max(0, foodSubtotal - discountAmount);
 
   const discountObj: OrderDiscount | undefined =
     discountAmount > 0
@@ -316,8 +295,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
     const completedOrder: CustomerOrder = existingOrder
       ? {
           ...existingOrder,
-          orderType,
-          tableNumber: orderType === 'aqui' ? tableNumber : undefined,
+          orderType: 'llevar',
           customerName: customerName.trim() || undefined,
           notes: notes.trim() || undefined,
           items: orderItems,
@@ -325,7 +303,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
           paymentMethod,
           amountReceived: (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? receivedNum : undefined,
           change: (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? change : undefined,
-          tip: tipAmount > 0 ? tipAmount : undefined,
           splitPayment: paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined,
           discount: discountObj,
           isOpenTab: false,
@@ -333,7 +310,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
         }
       : createNewOrder(
           nextOrderNumber,
-          orderType,
           customerName,
           notes,
           orderItems,
@@ -341,51 +317,11 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
           paymentMethod,
           (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? receivedNum : undefined,
           (paymentMethod === 'efectivo' || paymentMethod === 'mixto') && receivedNum > 0 ? change : undefined,
-          tipAmount > 0 ? tipAmount : undefined,
           paymentMethod === 'mixto' ? { cash: cashPortion, card: cardPortion } : undefined,
-          discountObj,
-          orderType === 'aqui' ? tableNumber : undefined,
-          false
+          discountObj
         );
 
     onCompleteOrder(completedOrder);
-    onClose();
-  };
-
-  const handleSaveAsOpenTab = () => {
-    if (orderItems.length === 0) return;
-    triggerHaptic('success');
-
-    const openOrder: CustomerOrder = existingOrder
-      ? {
-          ...existingOrder,
-          orderType,
-          tableNumber: orderType === 'aqui' ? tableNumber : undefined,
-          customerName: customerName.trim() || undefined,
-          notes: notes.trim() || undefined,
-          items: orderItems,
-          total: finalTotal,
-          discount: discountObj,
-          isOpenTab: true,
-        }
-      : createNewOrder(
-          nextOrderNumber,
-          orderType,
-          customerName,
-          notes,
-          orderItems,
-          finalTotal,
-          paymentMethod,
-          undefined,
-          undefined,
-          tipAmount > 0 ? tipAmount : undefined,
-          undefined,
-          discountObj,
-          orderType === 'aqui' ? tableNumber : 'Cuenta Llevar',
-          true
-        );
-
-    onSaveOpenTab?.(openOrder);
     onClose();
   };
 
@@ -397,7 +333,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-4xl max-h-[94vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-[#141417] border border-white/[0.12] shadow-2xl overflow-hidden pb-safe sm:pb-0">
         
-        {/* Mobile handle indicator */}
         <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
 
         {/* Modal Header */}
@@ -409,14 +344,14 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-serif text-lg sm:text-xl font-bold text-white">
-                  Armar Comanda / Nueva Orden
+                  Nueva Orden (Para Llevar)
                 </h2>
                 <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-[#e59b38]/20 text-[#e59b38] border border-[#e59b38]/30">
                   #{String(nextOrderNumber).padStart(3, '0')}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">
-                Selecciona los productos y cobra la comanda completa
+                Selecciona los productos del menú y cobra la orden
               </p>
             </div>
           </div>
@@ -431,7 +366,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
         {/* Main 2-Column POS Body */}
         <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/[0.08]">
           
-          {/* Left Column: Product Selection Grid (7 cols on desktop) */}
+          {/* Left Column: Product Selection Grid */}
           <div className="lg:col-span-7 flex flex-col overflow-hidden max-h-[45vh] lg:max-h-[70vh]">
             
             {/* Category Filter Pills */}
@@ -440,8 +375,9 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                 { id: 'all', label: 'Todos' },
                 { id: 'sandwiches', label: 'Sándwiches' },
                 { id: 'quesadillas', label: 'Quesadillas' },
-                { id: 'steak-frites', label: 'Steak Frites' },
-                { id: 'fries', label: 'Papas y Queso' },
+                { id: 'steak-frites', label: 'Papas Lokas' },
+                { id: 'fries', label: 'Papas c/ Queso' },
+                { id: 'bebidas', label: 'Champurro' },
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -559,86 +495,26 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Order Details & Checkout (5 cols on desktop) */}
+          {/* Right Column: Order Details & Checkout */}
           <div className="lg:col-span-5 flex flex-col overflow-y-auto max-h-[50vh] lg:max-h-[70vh] bg-[#161619] p-3.5 sm:p-5 space-y-4">
             
-            {/* Order Type Toggle: Comer Aquí vs Para Llevar */}
-            <div className="grid grid-cols-2 gap-2 bg-[#121215] p-1 rounded-xl border border-white/10 shrink-0">
-              <button
-                type="button"
-                onClick={() => setOrderType('llevar')}
-                className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${
-                  orderType === 'llevar'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <Package className="w-3.5 h-3.5" />
-                <span>Para Llevar</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType('aqui')}
-                className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${
-                  orderType === 'aqui'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <Utensils className="w-3.5 h-3.5" />
-                <span>Comer Aquí</span>
-              </button>
-            </div>
-
-            {/* Table Selection when Comer Aquí */}
-            {orderType === 'aqui' && (
-              <div className="bg-[#121215] p-2.5 rounded-xl border border-white/10 space-y-1.5 animate-fade-in">
-                <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold uppercase">
-                  <div className="flex items-center gap-1 text-[#e59b38]">
-                    <Users className="w-3 h-3" />
-                    <span>Seleccionar Mesa / Barra:</span>
-                  </div>
-                  <span className="text-white font-bold">{tableNumber}</span>
-                </div>
-                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                  {['Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Barra 1', 'Barra 2', 'Barra 3', 'Terraza 1', 'Terraza 2'].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic('light');
-                        setTableNumber(m);
-                      }}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border ${
-                        tableNumber === m
-                          ? 'bg-[#e59b38] text-black border-[#e59b38] font-bold shadow-sm'
-                          : 'bg-white/5 border-white/10 text-neutral-400 hover:text-white'
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Optional Customer Name & Notes */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                  Cliente / Mesa
+                  Nombre del Cliente
                 </label>
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Ej. Juan / Mesa 3"
+                  placeholder="Ej. Juan"
                   className="w-full bg-[#1b1b20] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-[#e59b38]"
                 />
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                  Nota / Cocina
+                  Nota de la Orden
                 </label>
                 <input
                   type="text"
@@ -653,7 +529,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
             {/* Items Summary in Cart */}
             <div className="space-y-1.5 border-t border-b border-white/[0.08] py-2.5 flex-1 min-h-[90px]">
               <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                <span>Resumen de Comanda ({totalItemsCount} piezas)</span>
+                <span>Resumen de la Orden ({totalItemsCount} piezas)</span>
                 {totalItemsCount > 0 && (
                   <button
                     type="button"
@@ -668,7 +544,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
 
               {orderItems.length === 0 ? (
                 <div className="text-center py-6 text-neutral-500 text-xs">
-                  Toca productos a la izquierda para agregarlos a la comanda.
+                  Toca productos a la izquierda para agregarlos a la orden.
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
@@ -708,7 +584,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                           </div>
                         </div>
 
-                        {/* Active Modifiers & Notes Badges */}
                         {((item.modifiers && item.modifiers.length > 0) || item.instructions) && !isCustomizing && (
                           <div className="flex flex-wrap items-center gap-1 pt-0.5">
                             {item.modifiers?.map((mod, mIdx) => (
@@ -727,7 +602,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                           </div>
                         )}
 
-                        {/* Expandable Customizer Drawer */}
                         {isCustomizing && (
                           <div className="p-2.5 rounded-lg bg-[#111114] border border-white/[0.08] space-y-2 mt-1 animate-in fade-in">
                             <div>
@@ -832,7 +706,7 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
               </div>
             </div>
 
-            {/* Split Payment (Pago Mixto) Configuration */}
+            {/* Split Payment Configuration */}
             {paymentMethod === 'mixto' && finalTotal > 0 && (
               <div className="space-y-2 bg-[#121215] p-2.5 rounded-xl border border-[#e59b38]/30 animate-fade-in">
                 <div className="flex items-center justify-between text-[10px] text-[#e59b38] font-bold uppercase tracking-wider">
@@ -856,36 +730,11 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-neutral-400 block mb-0.5">Monto Tarjeta / Clip ($)</label>
+                    <label className="text-[10px] text-neutral-400 block mb-0.5">Monto Tarjeta ($)</label>
                     <div className="w-full bg-[#18181d] border border-white/10 rounded-lg px-2.5 py-1.5 font-mono text-[#e59b38] font-bold text-xs">
                       ${cardPortion.toFixed(2)}
                     </div>
                   </div>
-                </div>
-
-                {/* Quick 50/50 Button */}
-                <div className="flex gap-1.5 pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setSplitCashInput((finalTotal / 2).toFixed(0))}
-                    className="flex-1 py-1 rounded bg-white/5 hover:bg-white/10 text-[10px] text-neutral-300 font-semibold border border-white/5"
-                  >
-                    Dividir 50/50
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSplitCashInput(Math.min(finalTotal, 200).toString())}
-                    className="py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-[10px] text-neutral-300 font-semibold border border-white/5"
-                  >
-                    $200 efec.
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSplitCashInput(Math.min(finalTotal, 500).toString())}
-                    className="py-1 px-2 rounded bg-white/5 hover:bg-white/10 text-[10px] text-neutral-300 font-semibold border border-white/5"
-                  >
-                    $500 efec.
-                  </button>
                 </div>
               </div>
             )}
@@ -951,58 +800,6 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
               </div>
             )}
 
-            {/* Propina (Tip) Selector */}
-            {foodSubtotal > 0 && (
-              <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10">
-                <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold uppercase">
-                  <span>Propina para el Personal:</span>
-                  {tipAmount > 0 && (
-                    <span className="text-[#e59b38] font-mono font-bold">
-                      +${tipAmount.toFixed(2)} MXN
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-4 gap-1">
-                  {[
-                    { id: 0, label: 'Sin propina' },
-                    { id: 10, label: '10%' },
-                    { id: 15, label: '15%' },
-                    { id: 'custom' as const, label: 'Otro' },
-                  ].map((t) => {
-                    const isActive = tipPercent === t.id;
-                    return (
-                      <button
-                        key={String(t.id)}
-                        type="button"
-                        onClick={() => setTipPercent(t.id)}
-                        className={`py-1 rounded text-[11px] font-bold transition-all ${
-                          isActive
-                            ? 'bg-[#e59b38] text-black shadow-sm font-extrabold'
-                            : 'bg-white/5 hover:bg-white/10 text-neutral-400 border border-white/10'
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {tipPercent === 'custom' && (
-                  <div className="pt-1 flex items-center gap-1.5">
-                    <span className="text-xs text-neutral-400 font-mono">$</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      placeholder="Monto de propina"
-                      value={customTip}
-                      onChange={(e) => setCustomTip(e.target.value)}
-                      className="w-full bg-[#1b1b20] border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-[#e59b38]"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Cash Payment Bill Helper */}
             {(paymentMethod === 'efectivo' || (paymentMethod === 'mixto' && cashPortion > 0)) && finalTotal > 0 && (
               <div className="space-y-1.5 bg-[#121215] p-2.5 rounded-xl border border-white/10 animate-fade-in">
@@ -1035,24 +832,16 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
 
             {/* Total and Submit Button */}
             <div className="pt-2">
-              {(tipAmount > 0 || discountAmount > 0) && (
+              {discountAmount > 0 && (
                 <div className="space-y-0.5 pb-2 mb-2 border-b border-white/[0.08] text-xs">
                   <div className="flex justify-between text-neutral-400">
                     <span>Subtotal Alimentos:</span>
                     <span className="font-mono text-white">${foodSubtotal.toFixed(2)}</span>
                   </div>
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-400 font-semibold">
-                      <span>(-) {discountObj?.label || 'Descuento'}:</span>
-                      <span className="font-mono font-bold">-${discountAmount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {tipAmount > 0 && (
-                    <div className="flex justify-between text-[#e59b38]">
-                      <span>(+) Propina:</span>
-                      <span className="font-mono font-bold">+${tipAmount.toFixed(2)}</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-emerald-400 font-semibold">
+                    <span>(-) {discountObj?.label || 'Descuento'}:</span>
+                    <span className="font-mono font-bold">-${discountAmount.toFixed(2)}</span>
+                  </div>
                 </div>
               )}
 
@@ -1063,38 +852,24 @@ export const NuevaOrdenModal: React.FC<NuevaOrdenModalProps> = ({
                 </span>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={handleComplete}
-                  disabled={orderItems.length === 0}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#e59b38] hover:bg-[#d48b28] disabled:opacity-30 disabled:pointer-events-none text-black font-extrabold text-sm uppercase tracking-wider transition-all shadow-lg active:scale-98 touch-manipulation"
-                >
-                  {discountType === 'cortesia' && finalTotal === 0 ? (
-                    <>
-                      <Gift className="w-4 h-4" />
-                      <span>Registrar Cortesía ($0.00)</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>{existingOrder ? 'Cobrar y Cerrar Cuenta' : 'Cobrar Ahora'}</span>
-                    </>
-                  )}
-                </button>
-
-                {onSaveOpenTab && (
-                  <button
-                    type="button"
-                    onClick={handleSaveAsOpenTab}
-                    disabled={orderItems.length === 0}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/15 disabled:opacity-30 disabled:pointer-events-none text-neutral-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all touch-manipulation"
-                  >
-                    <Users className="w-3.5 h-3.5 text-[#e59b38]" />
-                    <span>Guardar en Cuenta Abierta ({orderType === 'aqui' ? tableNumber : 'Llevar'})</span>
-                  </button>
+              <button
+                type="button"
+                onClick={handleComplete}
+                disabled={orderItems.length === 0}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#e59b38] hover:bg-[#d48b28] disabled:opacity-30 disabled:pointer-events-none text-black font-extrabold text-sm uppercase tracking-wider transition-all shadow-lg active:scale-98 touch-manipulation"
+              >
+                {discountType === 'cortesia' && finalTotal === 0 ? (
+                  <>
+                    <Gift className="w-4 h-4" />
+                    <span>Registrar Cortesía ($0.00)</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Cobrar Orden</span>
+                  </>
                 )}
-              </div>
+              </button>
             </div>
 
           </div>
