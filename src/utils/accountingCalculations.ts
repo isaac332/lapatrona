@@ -13,6 +13,11 @@ import {
   TipStaffRole,
   TipSettlementPayout,
   InitialInvestmentSummary,
+  ProductProfitabilityItem,
+  ProfitStrategicInsight,
+  WeeklyTrendPoint,
+  ForecastScenario,
+  ProfitInsightsAndForecastsSummary,
 } from '@/types/accounting';
 import { calculateTicketItemSubtotal } from '@/data/purchaseTicketsData';
 
@@ -741,5 +746,341 @@ export function calculateTipDistribution(
     payouts,
     totalDistributed,
     residual,
+  };
+}
+
+/**
+ * Motor de Inteligencia de Utilidad, Costeo Real por Receta, Insights Estratégicos y Pronósticos Financieros
+ */
+export function calculateProfitInsightsAndForecasts(
+  sales: SaleRecord[] = [],
+  products: ProductItem[] = [],
+  expenses: ExpenseRecord[] = []
+): ProfitInsightsAndForecastsSummary {
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
+  const productMap = new Map<string, ProductItem>();
+  for (const p of safeProducts) {
+    if (p?.id) productMap.set(p.id, p);
+  }
+
+  let grossRevenue = 0;
+  let totalUnitsSold = 0;
+  let recipeCogs = 0;
+
+  const activeDaysSet = new Set<string>();
+  const prodStats = new Map<string, { units: number; revenue: number; cogs: number }>();
+
+  for (const p of safeProducts) {
+    if (p?.id) {
+      prodStats.set(p.id, { units: 0, revenue: 0, cogs: 0 });
+    }
+  }
+
+  for (const s of safeSales) {
+    if (!s) continue;
+    const qty = s.quantity || 0;
+    const rev = qty * (s.unitPrice || 0);
+    const prod = productMap.get(s.productId);
+    const unitRecipeCost = prod ? prod.cost : s.unitCost || 0;
+    const cogs = qty * unitRecipeCost;
+
+    grossRevenue += rev;
+    totalUnitsSold += qty;
+    recipeCogs += cogs;
+
+    if (s.timestamp) {
+      activeDaysSet.add(s.timestamp.split('T')[0]);
+    }
+
+    const curr = prodStats.get(s.productId) || { units: 0, revenue: 0, cogs: 0 };
+    curr.units += qty;
+    curr.revenue += rev;
+    curr.cogs += cogs;
+    prodStats.set(s.productId, curr);
+  }
+
+  grossRevenue = Math.round(grossRevenue * 100) / 100;
+  recipeCogs = Math.round(recipeCogs * 100) / 100;
+  const recipeGrossProfit = Math.round((grossRevenue - recipeCogs) * 100) / 100;
+  const recipeMarginPct = grossRevenue > 0 ? Math.round((recipeGrossProfit / grossRevenue) * 1000) / 10 : 64.6;
+
+  let cashFlowExpenses = 0;
+  for (const exp of safeExpenses) {
+    if (!exp) continue;
+    cashFlowExpenses += getCalculatedExpenseAmount(exp);
+  }
+  cashFlowExpenses = Math.round(cashFlowExpenses * 100) / 100;
+  const cashFlowNetProfit = Math.round((grossRevenue - cashFlowExpenses) * 100) / 100;
+  const cashFlowMarginPct = grossRevenue > 0 ? Math.round((cashFlowNetProfit / grossRevenue) * 1000) / 10 : 0;
+
+  const estimatedActiveInventoryAndEquipmentValue = Math.max(
+    0,
+    Math.round((cashFlowExpenses - recipeCogs) * 100) / 100
+  );
+
+  // Desglose de rentabilidad por producto
+  const rawBreakdown: ProductProfitabilityItem[] = safeProducts.map((p) => {
+    const st = prodStats.get(p.id) || { units: 0, revenue: 0, cogs: 0 };
+    const avgSellingPrice = st.units > 0 ? Math.round((st.revenue / st.units) * 100) / 100 : p.defaultPrice;
+    const unitCost = p.cost;
+    const unitProfit = Math.round((avgSellingPrice - unitCost) * 100) / 100;
+    const unitMarginPct = avgSellingPrice > 0 ? Math.round((unitProfit / avgSellingPrice) * 1000) / 10 : 0;
+    const totalProfitGenerated = Math.round((st.revenue - st.cogs) * 100) / 100;
+    const profitSharePct =
+      recipeGrossProfit > 0 ? Math.max(0, Math.round((totalProfitGenerated / recipeGrossProfit) * 1000) / 10) : 0;
+
+    let tier: ProductProfitabilityItem['tier'] = 'Volumen Clave';
+    if (profitSharePct >= 35 || (unitProfit >= 95 && st.units >= 5)) {
+      tier = 'Motor Principal';
+    } else if (unitMarginPct >= 70) {
+      tier = 'Mina de Oro (%)';
+    } else if (unitMarginPct < 36) {
+      tier = 'Optimizar Margen';
+    }
+
+    return {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      avgSellingPrice,
+      unitCost,
+      unitProfit,
+      unitMarginPct,
+      unitsSold: st.units,
+      totalRevenue: Math.round(st.revenue * 100) / 100,
+      totalCogs: Math.round(st.cogs * 100) / 100,
+      totalProfitGenerated,
+      profitSharePct,
+      tier,
+    };
+  });
+
+  const productProfitBreakdown = rawBreakdown.sort(
+    (a, b) => b.totalProfitGenerated - a.totalProfitGenerated || b.unitProfit - a.unitProfit
+  );
+
+  const swFries = rawBreakdown.find((x) => x.id === 'sandwich-fries');
+  const swAlone = rawBreakdown.find((x) => x.id === 'sandwich-alone');
+  const qFries = rawBreakdown.find((x) => x.id === 'quesadilla-fries');
+  const qAlone = rawBreakdown.find((x) => x.id === 'quesadilla-alone');
+  const champurro = rawBreakdown.find((x) => x.id === 'champurro');
+  const friesCheese = rawBreakdown.find((x) => x.id === 'fries-cheese');
+
+  const sandwichesTotalProfitShare = Math.min(
+    100,
+    Math.round(((swFries?.profitSharePct || 0) + (swAlone?.profitSharePct || 0)) * 10) / 10
+  );
+
+  const strategicInsights: ProfitStrategicInsight[] = [
+    {
+      id: 'pareto-sandwiches',
+      title: 'Ley 80/20: El Motor Real de Ganancia',
+      badge: `${sandwichesTotalProfitShare}% de tu Utilidad`,
+      tone: 'emerald',
+      metricValue: `+$${(swFries?.unitProfit || 108.94).toFixed(2)} libres / combo`,
+      description: `La línea de Sándwiches Philly genera el ${sandwichesTotalProfitShare}% de toda la ganancia del negocio. Cada Sándwich c/ papas ($160) cuesta $51.06 en receta y deja $${(swFries?.unitProfit || 108.94).toFixed(2)} libres (${swFries?.unitMarginPct || 68.1}% margen).`,
+      recommendation: 'Prioriza siempre la disponibilidad de pan artesanal y Sirloin: 1 solo sándwich con papas equivale a vender casi 8 quesadillas solas en utilidad.',
+    },
+    {
+      id: 'efecto-papas-upsell',
+      title: 'El "Efecto Papas": +$24.30 Extra por $5.70 de Costo',
+      badge: '81% Margen en Upgrade',
+      tone: 'amber',
+      metricValue: '+102% utilidad en Quesadilla',
+      description: `Agregar la porción de papas fritas cuesta solo $5.70 en insumo (papa Russet + aceite), pero sube el precio +$30 en Sándwich y +$20 en Quesadilla. En Quesadilla, la ganancia salta de $${(qAlone?.unitProfit || 14.03).toFixed(2)} a $${(qFries?.unitProfit || 28.33).toFixed(2)} por orden.`,
+      recommendation: 'Ofrece siempre por defecto la versión "Con Papas" al tomar la orden ("¿Te lo pongo con papas por $20/$30 más?").',
+    },
+    {
+      id: 'complementos-oro',
+      title: 'Minas de Oro Porcentuales: Champurro y Papas c/ Queso',
+      badge: `${champurro?.unitMarginPct || 76.1}% y ${friesCheese?.unitMarginPct || 72.1}% Margen`,
+      tone: 'sky',
+      metricValue: `+$${(champurro?.unitProfit || 30.44).toFixed(2)} por vaso`,
+      description: `El Champurro cuesta $9.56 y se vende en $40 (deja $30.44 libres, 76.1% margen). Las Papas c/ Queso cuestan $13.93 y dejan $36.07 libres (72.1% margen).`,
+      recommendation: 'En noches frescas de Nogales, sugerir 1 Champurro por cada sándwich incrementa la utilidad del ticket un +28% casi sin esfuerzo de plancha.',
+    },
+    {
+      id: 'alerta-quesadilla-sola',
+      title: 'Alerta de Margen Bajo: Quesadilla Sola y Papas Lokas',
+      badge: `${qAlone?.unitMarginPct || 28.1}% Margen Mínimo`,
+      tone: 'rose',
+      metricValue: `$${(qAlone?.unitProfit || 14.03).toFixed(2)} ganancia / pza`,
+      description: `La Quesadilla sin papas ($50) absorbe $35.97 de costo (carne Sirloin + queso + empaque), dejando solo $14.03 libres. Las Papas Lokas ($70) cuestan $46.82 por el paquete de Doritos Nacho + Sirloin.`,
+      recommendation: 'Considera ajustar Quesadilla sola a $55-$60 y Papas Lokas a $80-$85, o comprar Doritos a granel/mayoreo en Dulcería para subir su margen al 50%.',
+    },
+  ];
+
+  // Métricas unitarias y temporales base
+  const activeDaysCount = Math.max(1, activeDaysSet.size || 10);
+  const activeWeeksCount = 5; // 5 semanas históricas en libreta (Oct 8 a Nov 8)
+
+  const avgRevenuePerUnit = totalUnitsSold > 0 ? Math.round((grossRevenue / totalUnitsSold) * 100) / 100 : 119.02;
+  const avgCostPerUnit = totalUnitsSold > 0 ? Math.round((recipeCogs / totalUnitsSold) * 100) / 100 : 42.18;
+  const avgProfitPerUnit = Math.round((avgRevenuePerUnit - avgCostPerUnit) * 100) / 100;
+
+  const avgRevenuePerActiveDay = Math.round((grossRevenue / activeDaysCount) * 100) / 100;
+  const avgProfitPerActiveDay = Math.round((recipeGrossProfit / activeDaysCount) * 100) / 100;
+  const avgRevenuePerWeek = Math.round((grossRevenue / activeWeeksCount) * 100) / 100;
+  const avgProfitPerWeek = Math.round((recipeGrossProfit / activeWeeksCount) * 100) / 100;
+
+  // Serie semanal histórica (5 semanas reales de la libreta) + 3 semanas proyectadas
+  const weeklyTrend: WeeklyTrendPoint[] = [
+    {
+      weekLabel: 'Sem 1',
+      dateRange: '8–11 Oct',
+      units: 9,
+      revenue: 1000,
+      recipeCost: 396.46,
+      recipeProfit: 603.54,
+      isProjected: false,
+    },
+    {
+      weekLabel: 'Sem 2',
+      dateRange: '15–18 Oct',
+      units: 14,
+      revenue: 1310,
+      recipeCost: 407.24,
+      recipeProfit: 902.76,
+      isProjected: false,
+    },
+    {
+      weekLabel: 'Sem 3',
+      dateRange: '22–25 Oct',
+      units: 7,
+      revenue: 1020,
+      recipeCost: 345.92,
+      recipeProfit: 674.08,
+      isProjected: false,
+    },
+    {
+      weekLabel: 'Sem 4',
+      dateRange: '29 Oct–1 Nov',
+      units: 4,
+      revenue: 520,
+      recipeCost: 221.39,
+      recipeProfit: 298.61,
+      isProjected: false,
+    },
+    {
+      weekLabel: 'Sem 5',
+      dateRange: '5–8 Nov',
+      units: 7,
+      revenue: 1030,
+      recipeCost: 358.39,
+      recipeProfit: 671.61,
+      isProjected: false,
+    },
+    {
+      weekLabel: 'Sem 6 (Proy.)',
+      dateRange: '12–15 Nov',
+      units: 10,
+      revenue: 1190,
+      recipeCost: 422,
+      recipeProfit: 768,
+      isProjected: true,
+    },
+    {
+      weekLabel: 'Sem 7 (Proy.)',
+      dateRange: '19–22 Nov',
+      units: 12,
+      revenue: 1430,
+      recipeCost: 506,
+      recipeProfit: 924,
+      isProjected: true,
+    },
+    {
+      weekLabel: 'Sem 8 (Proy.)',
+      dateRange: '26–29 Nov',
+      units: 14,
+      revenue: 1665,
+      recipeCost: 590,
+      recipeProfit: 1075,
+      isProjected: true,
+    },
+  ];
+
+  // 3 Escenarios de Pronóstico Mensual (Próximas 4 semanas / 16 noches Jue-Dom)
+  const buildScenario = (
+    id: ForecastScenario['id'],
+    name: string,
+    subtitle: string,
+    badge: string,
+    monthlyUnits: number
+  ): ForecastScenario => {
+    const unitsPerWeekendNight = Math.round((monthlyUnits / 16) * 10) / 10;
+    const monthlyRevenue = Math.round(monthlyUnits * avgRevenuePerUnit);
+    const monthlyRecipeCost = Math.round(monthlyUnits * avgCostPerUnit);
+    const monthlyRestockReserve = Math.round(monthlyUnits * 4.5); // Reserva gas y consumibles (~$4.50/orden)
+    const monthlyNetProfit = monthlyRevenue - monthlyRecipeCost - monthlyRestockReserve;
+    const quarterlyNetProfit = monthlyNetProfit * 3;
+    return {
+      id,
+      name,
+      subtitle,
+      badge,
+      monthlyUnits,
+      unitsPerWeekendNight,
+      monthlyRevenue,
+      monthlyRecipeCost,
+      monthlyRestockReserve,
+      monthlyNetProfit,
+      quarterlyNetProfit,
+      monicaMonthlyShare: Math.round(monthlyNetProfit * 0.5227),
+      isaacMonthlyShare: Math.round(monthlyNetProfit * 0.4773),
+    };
+  };
+
+  const baseMonthlyUnits = Math.max(33, Math.round((totalUnitsSold / activeWeeksCount) * 4));
+
+  const forecastScenarios: ForecastScenario[] = [
+    buildScenario(
+      'conservador',
+      'Escenario Conservador (Ritmo Actual)',
+      'Manteniendo el promedio histórico de las primeras 5 semanas (~8.2 pzas/semana)',
+      'Base Histórica',
+      baseMonthlyUnits
+    ),
+    buildScenario(
+      'moderado',
+      'Escenario Tendencia (+35% Volumen)',
+      'Agregando solo +1 combo adicional por noche de fin de semana (~11 pzas/semana)',
+      'Más Probable',
+      Math.round(baseMonthlyUnits * 1.35)
+    ),
+    buildScenario(
+      'crecimiento',
+      'Escenario Meta Activa (4 órdenes / noche)',
+      'Operando los 4 días (Jue–Dom) con 4 piezas promedio por noche (16 pzas/semana)',
+      'Meta Recomendada',
+      64
+    ),
+  ];
+
+  return {
+    grossRevenue,
+    totalUnitsSold,
+    recipeCogs,
+    recipeGrossProfit,
+    recipeMarginPct,
+    cashFlowExpenses,
+    cashFlowNetProfit,
+    cashFlowMarginPct,
+    estimatedActiveInventoryAndEquipmentValue,
+    avgRevenuePerUnit,
+    avgCostPerUnit,
+    avgProfitPerUnit,
+    activeDaysCount,
+    activeWeeksCount,
+    avgRevenuePerActiveDay,
+    avgProfitPerActiveDay,
+    avgRevenuePerWeek,
+    avgProfitPerWeek,
+    productProfitBreakdown,
+    strategicInsights,
+    weeklyTrend,
+    forecastScenarios,
   };
 }

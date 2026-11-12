@@ -331,3 +331,80 @@ export interface BusinessInfo {
   rfc?: string;
   footerNote: string;
 }
+
+export interface ProductProfitabilityItem {
+  id: string;
+  name: string;
+  category: string;
+  avgSellingPrice: number;
+  unitCost: number;
+  unitProfit: number;
+  unitMarginPct: number;
+  unitsSold: number;
+  totalRevenue: number;
+  totalCogs: number;
+  totalProfitGenerated: number;
+  profitSharePct: number;
+  tier: 'Motor Principal' | 'Mina de Oro (%)' | 'Volumen Clave' | 'Optimizar Margen';
+}
+
+export interface ProfitStrategicInsight {
+  id: string;
+  title: string;
+  badge: string;
+  tone: 'emerald' | 'amber' | 'sky' | 'rose';
+  metricValue: string;
+  description: string;
+  recommendation: string;
+}
+
+export interface WeeklyTrendPoint {
+  weekLabel: string;
+  dateRange: string;
+  units: number;
+  revenue: number;
+  recipeCost: number;
+  recipeProfit: number;
+  isProjected: boolean;
+}
+
+export interface ForecastScenario {
+  id: 'conservador' | 'moderado' | 'crecimiento';
+  name: string;
+  subtitle: string;
+  badge: string;
+  monthlyUnits: number;
+  unitsPerWeekendNight: number;
+  monthlyRevenue: number;
+  monthlyRecipeCost: number;
+  monthlyRestockReserve: number;
+  monthlyNetProfit: number;
+  quarterlyNetProfit: number;
+  monicaMonthlyShare: number;
+  isaacMonthlyShare: number;
+}
+
+export interface ProfitInsightsAndForecastsSummary {
+  grossRevenue: number;
+  totalUnitsSold: number;
+  recipeCogs: number;
+  recipeGrossProfit: number;
+  recipeMarginPct: number;
+  cashFlowExpenses: number;
+  cashFlowNetProfit: number;
+  cashFlowMarginPct: number;
+  estimatedActiveInventoryAndEquipmentValue: number;
+  avgRevenuePerUnit: number;
+  avgCostPerUnit: number;
+  avgProfitPerUnit: number;
+  activeDaysCount: number;
+  activeWeeksCount: number;
+  avgRevenuePerActiveDay: number;
+  avgProfitPerActiveDay: number;
+  avgRevenuePerWeek: number;
+  avgProfitPerWeek: number;
+  productProfitBreakdown: ProductProfitabilityItem[];
+  strategicInsights: ProfitStrategicInsight[];
+  weeklyTrend: WeeklyTrendPoint[];
+  forecastScenarios: ForecastScenario[];
+}

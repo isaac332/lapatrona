@@ -32,6 +32,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileBottomDock } from '@/components/MobileBottomDock';
 import { HeroBanner } from '@/components/HeroBanner';
 import { KPICards } from '@/components/KPICards';
+import { ProfitInsightsAndForecasts } from '@/components/ProfitInsightsAndForecasts';
 import { GranularTimeframeView } from '@/components/GranularTimeframeView';
 import { ProductCard } from '@/components/ProductCard';
 import { PriceManagerModal } from '@/components/PriceManagerModal';
@@ -1176,6 +1177,15 @@ export default function SalesCounterPage() {
             currentRevenue={todayRevenue}
             goalAmount={dailyGoal}
             onUpdateGoal={handleUpdateDailyGoal}
+          />
+
+          {/* Section 1.5: Profit Intelligence, Unit Economics Insights & Financial Forecasts */}
+          <ProfitInsightsAndForecasts
+            sales={filteredSales}
+            products={products}
+            expenses={filteredExpenses}
+            onOpenPriceManager={() => setIsPriceModalOpen(true)}
+            onOpenGastos={() => setIsGastosModalOpen(true)}
           />
 
           {/* Section 2: Dedicated Granular Timeframe View */}
