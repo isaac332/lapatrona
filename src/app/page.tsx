@@ -53,7 +53,7 @@ import { ConfiguracionNegocioModal } from '@/components/ConfiguracionNegocioModa
 import { MiseEnPlaceModal } from '@/components/MiseEnPlaceModal';
 import { ExportesContablesModal } from '@/components/ExportesContablesModal';
 import { playCashRegisterChime, isSoundEnabled, setSoundEnabled } from '@/utils/soundEffects';
-import { CheckCircle2, Banknote, CreditCard, Smartphone } from 'lucide-react';
+import { CheckCircle2, Banknote, CreditCard, Smartphone, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
 
 const subscribe = () => () => {};
 
@@ -146,6 +146,26 @@ export default function SalesCounterPage() {
   const [isCalculadoraModalOpen, setIsCalculadoraModalOpen] = useState(false);
   const [isNuevaOrdenOpen, setIsNuevaOrdenOpen] = useState(false);
   const [isMermasModalOpen, setIsMermasModalOpen] = useState(false);
+  const [isAdvancedView, setIsAdvancedView] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('lapatrona_v5_vista_avanzada') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleAdvancedView = useCallback(() => {
+    setIsAdvancedView((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lapatrona_v5_vista_avanzada', String(next));
+      } catch {
+        // Ignore
+      }
+      return next;
+    });
+  }, []);
   const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -1141,6 +1161,8 @@ export default function SalesCounterPage() {
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
         onToggleSound={handleToggleSound}
+        isAdvancedView={isAdvancedView}
+        onToggleAdvancedView={handleToggleAdvancedView}
       />
 
       {/* Hero Banner */}
@@ -1153,8 +1175,8 @@ export default function SalesCounterPage() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 bg-vertical-grid py-6 sm:py-10">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-6 sm:space-y-10">
+      <main className="flex-1 bg-vertical-grid py-4 sm:py-10 pb-36 lg:pb-12">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-5 sm:space-y-10">
           
           {/* Section 1: KPI & Aggregate Performance Overview */}
           <KPICards
@@ -1170,6 +1192,8 @@ export default function SalesCounterPage() {
             onOpenMermas={() => setIsMermasModalOpen(true)}
             onOpenCorte={() => setIsCorteModalOpen(true)}
             onExportCSV={handleExportPeriodCSV}
+            isAdvancedView={isAdvancedView}
+            onToggleAdvancedView={handleToggleAdvancedView}
           />
 
           {/* Daily Sales Target Goal Progress Bar */}
@@ -1179,14 +1203,66 @@ export default function SalesCounterPage() {
             onUpdateGoal={handleUpdateDailyGoal}
           />
 
-          {/* Section 1.5: Profit Intelligence, Unit Economics Insights & Financial Forecasts */}
-          <ProfitInsightsAndForecasts
-            sales={filteredSales}
-            products={products}
-            expenses={filteredExpenses}
-            onOpenPriceManager={() => setIsPriceModalOpen(true)}
-            onOpenGastos={() => setIsGastosModalOpen(true)}
-          />
+          {/* Section 1.5: Profit Intelligence, Unit Economics Insights & Financial Forecasts (Hidden under Vista Avanzada) */}
+          {isAdvancedView ? (
+            <div id="vista-avanzada-section" className="space-y-4 animate-fade-in scroll-mt-20">
+              <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                    <SlidersHorizontal className="w-4 h-4 text-[#e59b38]" />
+                  </div>
+                  <div>
+                    <span className="text-xs sm:text-sm font-bold text-white block">Vista Avanzada Activa</span>
+                    <span className="text-[11px] text-amber-200/90 block">
+                      Mostrando utilidad devengada por receta, análisis 80/20 y proyecciones
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleAdvancedView}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-neutral-200 hover:text-white transition-all active:scale-95 shrink-0"
+                >
+                  Ocultar ✕
+                </button>
+              </div>
+
+              <ProfitInsightsAndForecasts
+                sales={filteredSales}
+                products={products}
+                expenses={filteredExpenses}
+                onOpenPriceManager={() => setIsPriceModalOpen(true)}
+                onOpenGastos={() => setIsGastosModalOpen(true)}
+              />
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-4 flex items-center justify-between gap-3 shadow-md hover:border-amber-500/30 transition-all">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center shrink-0">
+                  <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-[#e59b38]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs sm:text-sm font-bold text-white">Vista Avanzada</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/[0.06] text-amber-300/90 border border-white/[0.08]">
+                      Utilidad • Insights • Metas
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-neutral-400 mt-0.5 truncate">
+                    Márgenes unitarios por receta, análisis 80/20 y simulador mensual de metas
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleAdvancedView}
+                className="px-3.5 py-2 rounded-xl bg-[#e59b38] active:bg-[#d48b28] hover:bg-[#d48b28] text-black font-extrabold text-xs flex items-center gap-1.5 shrink-0 transition-all active:scale-95 shadow-md touch-manipulation"
+              >
+                <span>Activar</span>
+                <ChevronDown className="w-3.5 h-3.5 stroke-[3]" />
+              </button>
+            </div>
+          )}
 
           {/* Section 2: Dedicated Granular Timeframe View */}
           <GranularTimeframeView
@@ -1219,8 +1295,8 @@ export default function SalesCounterPage() {
                 </div>
 
                 {/* Forma de Cobro Activa */}
-                <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.08] self-start sm:self-auto overflow-x-auto no-scrollbar">
-                  <span className="text-[10px] uppercase font-bold text-neutral-400 px-2 tracking-wider shrink-0">
+                <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.08] w-full sm:w-auto overflow-x-auto no-scrollbar">
+                  <span className="text-[10px] uppercase font-bold text-neutral-400 px-1.5 sm:px-2 tracking-wider shrink-0">
                     Cobro:
                   </span>
                   {[
@@ -1235,7 +1311,7 @@ export default function SalesCounterPage() {
                         key={m.id}
                         type="button"
                         onClick={() => setSelectedPaymentMethod(m.id as PaymentMethod)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all touch-manipulation select-none active:scale-95 border ${
+                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap min-h-[38px] transition-all touch-manipulation select-none active:scale-95 border ${
                           isActive
                             ? `${m.activeBg} font-bold shadow-sm`
                             : 'border-transparent text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -1251,7 +1327,7 @@ export default function SalesCounterPage() {
 
               {/* Category Filter Pills */}
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06] overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-1.5 bg-[#17171a] p-1.5 rounded-xl border border-white/[0.06] overflow-x-auto no-scrollbar w-full sm:w-auto">
                   {[
                     { id: 'all', label: 'Todos (7)' },
                     { id: 'sandwiches', label: 'Sándwiches' },
@@ -1262,11 +1338,12 @@ export default function SalesCounterPage() {
                   ].map((cat) => (
                     <button
                       key={cat.id}
+                      type="button"
                       onClick={() => setActiveCategoryFilter(cat.id)}
-                      className={`px-3 py-1.5 text-xs rounded-lg transition-colors font-medium whitespace-nowrap shrink-0 touch-manipulation select-none active:scale-95 ${
+                      className={`px-3.5 py-2 text-xs rounded-lg transition-colors font-semibold whitespace-nowrap shrink-0 touch-manipulation select-none active:scale-95 min-h-[36px] ${
                         activeCategoryFilter === cat.id
-                          ? 'bg-[#e59b38] text-black font-semibold'
-                          : 'text-neutral-400 hover:text-white'
+                          ? 'bg-[#e59b38] text-black font-extrabold shadow-sm'
+                          : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                       }`}
                     >
                       {cat.label}
@@ -1433,13 +1510,15 @@ export default function SalesCounterPage() {
         onOpenStockManager={() => setIsStockModalOpen(true)}
         onOpenHistorialComandas={() => setIsHistorialComandasOpen(true)}
         onOpenPantallaCocina={() => setIsPantallaCocinaOpen(true)}
-        activeKitchenOrdersCount={activeKitchenOrdersCount}
         onOpenConfiguracionNegocio={() => setIsConfiguracionNegocioOpen(true)}
         onOpenExportesContables={() => setIsExportesModalOpen(true)}
-        lowStockCount={lowStockCount}
+        onOpenMermas={() => setIsMermasModalOpen(true)}
         totalUnitsInTimeframe={totalUnitsInTimeframe}
         soundEnabled={soundActive}
         onToggleSound={handleToggleSound}
+        isAdvancedView={isAdvancedView}
+        onToggleAdvancedView={handleToggleAdvancedView}
+        onScrollToProducts={scrollToProducts}
       />
 
       {/* Pricing and Cost Management Modal */}

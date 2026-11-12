@@ -270,7 +270,88 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
               )}
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Card List (sm:hidden) */}
+            <div className="sm:hidden divide-y divide-white/[0.06] p-3 space-y-3">
+              {data.productProfitBreakdown.map((item) => {
+                const isHighMargin = item.unitMarginPct >= 65;
+                const isLowMargin = item.unitMarginPct < 36;
+                return (
+                  <div key={item.id} className="pt-3 first:pt-0 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <span className="font-bold text-white text-xs truncate">{item.name}</span>
+                        <span
+                          className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded-full border ${
+                            item.tier === 'Motor Principal'
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : item.tier === 'Mina de Oro (%)'
+                              ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                              : item.tier === 'Optimizar Margen'
+                              ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                              : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          }`}
+                        >
+                          {item.tier}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded font-bold text-[10px] shrink-0 font-mono ${
+                          isHighMargin
+                            ? 'bg-emerald-500/15 text-emerald-300'
+                            : isLowMargin
+                            ? 'bg-rose-500/15 text-rose-300'
+                            : 'bg-amber-500/15 text-amber-300'
+                        }`}
+                      >
+                        {item.unitMarginPct}% margen
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 p-2 rounded-xl bg-white/[0.02] border border-white/[0.04] text-[10px]">
+                      <div>
+                        <span className="text-neutral-500 block">Precio</span>
+                        <span className="font-mono text-white font-semibold">${item.avgSellingPrice.toFixed(0)}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">Costo</span>
+                        <span className="font-mono text-rose-300">-${item.unitCost.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">Ganancia/Pza</span>
+                        <span className="font-mono text-emerald-400 font-bold">+${item.unitProfit.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] pt-0.5">
+                      <span className="text-neutral-400">
+                        Vendidos: <strong className="text-white font-mono">{item.unitsSold} pzs</strong>
+                      </span>
+                      <div className="text-right">
+                        <span className="text-neutral-400 mr-1.5">Utilidad Total:</span>
+                        <span className="font-mono font-extrabold text-emerald-400">
+                          +${item.totalProfitGenerated.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-400 rounded-full"
+                          style={{ width: `${Math.min(100, item.profitSharePct)}%` }}
+                        />
+                      </div>
+                      <span className="font-mono text-[9px] text-neutral-400 shrink-0">
+                        {item.profitSharePct}% del total
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table (hidden sm:block) */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-wider text-neutral-400 bg-white/[0.02]">

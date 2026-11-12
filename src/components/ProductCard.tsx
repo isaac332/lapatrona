@@ -227,7 +227,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               type="button"
               onClick={handleStartEditPrice}
               title="Toca para cambiar precio al vuelo"
-              className={`min-h-[36px] flex items-center gap-1.5 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-mono font-bold transition-all touch-manipulation active:scale-95 select-none ${
+              className={`min-h-[40px] flex items-center gap-1.5 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition-all touch-manipulation active:scale-95 select-none ${
                 priceFlash
                   ? 'bg-emerald-500 text-black border border-emerald-400 scale-105 shadow-md shadow-emerald-500/30'
                   : 'bg-black/85 hover:bg-black text-white hover:text-[#e59b38] border border-white/20 hover:border-[#e59b38]/50 shadow-md'

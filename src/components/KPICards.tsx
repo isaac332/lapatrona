@@ -3,7 +3,7 @@
 import React from 'react';
 import { TimeframeFilter, ProductItem, SaleRecord, ExpenseRecord } from '@/types/accounting';
 import { getPaymentBreakdown, calculateExpensesAnalytics, calculateInitialInvestmentSummary } from '@/utils/accountingCalculations';
-import { ShoppingBag, DollarSign, Award, Wallet, Calculator, Download, Trash2, TrendingUp } from 'lucide-react';
+import { ShoppingBag, DollarSign, Award, Wallet, Calculator, Download, Trash2, TrendingUp, SlidersHorizontal } from 'lucide-react';
 
 interface KPICardsProps {
   timeframe: TimeframeFilter;
@@ -18,6 +18,8 @@ interface KPICardsProps {
   onOpenMermas?: () => void;
   onOpenCorte?: () => void;
   onExportCSV?: () => void;
+  isAdvancedView?: boolean;
+  onToggleAdvancedView?: () => void;
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
@@ -33,6 +35,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
   onOpenMermas,
   onOpenCorte,
   onExportCSV,
+  isAdvancedView = false,
+  onToggleAdvancedView,
 }) => {
   const safeSales = Array.isArray(sales) ? sales : [];
   const safeProducts = Array.isArray(products) ? products : [];
@@ -95,10 +99,25 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
+          {onToggleAdvancedView && (
+            <button
+              onClick={onToggleAdvancedView}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-all touch-manipulation active:scale-95 shrink-0 ${
+                isAdvancedView
+                  ? 'bg-amber-500/20 text-[#e59b38] border-amber-500/40 shadow-sm'
+                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-neutral-400 hover:text-white border-white/[0.08]'
+              }`}
+              title="Activar o desactivar métricas de utilidad e insights"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>{isAdvancedView ? 'Vista Avanzada: Activa' : 'Vista Avanzada'}</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenCalculadora}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 transition-colors touch-manipulation active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 transition-colors touch-manipulation active:scale-95 shrink-0"
           >
             <Calculator className="w-3.5 h-3.5" />
             <span>Calcular Cambio</span>
@@ -106,16 +125,16 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
           <button
             onClick={onOpenGastos}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 transition-colors touch-manipulation active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 transition-colors touch-manipulation active:scale-95 shrink-0"
           >
             <Wallet className="w-3.5 h-3.5" />
-            <span>Ver Tickets de Compra ({expenses.length})</span>
+            <span>Tickets ({expenses.length})</span>
           </button>
 
           {onOpenMermas && (
             <button
               onClick={onOpenMermas}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors touch-manipulation active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors touch-manipulation active:scale-95 shrink-0 ${
                 totalWasteCost > 0
                   ? 'text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/25'
                   : 'text-neutral-400 hover:text-white bg-white/5 border-white/10'
@@ -129,20 +148,20 @@ export const KPICards: React.FC<KPICardsProps> = ({
           {onExportCSV && sales.length > 0 && (
             <button
               onClick={onExportCSV}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 transition-colors touch-manipulation active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 transition-colors touch-manipulation active:scale-95 shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Exportar CSV</span>
+              <span>CSV</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Initial Investment Partner Banner */}
-      {investmentSummary.totalInitialInvestment > 0 && (
+      {/* Initial Investment Partner Banner (Shown only in Advanced View) */}
+      {isAdvancedView && investmentSummary.totalInitialInvestment > 0 && (
         <div
           onClick={onOpenGastos}
-          className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-emerald-500/10 border border-amber-500/30 cursor-pointer hover:border-amber-500/50 transition-all text-xs shadow-sm"
+          className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-emerald-500/10 border border-amber-500/30 cursor-pointer hover:border-amber-500/50 transition-all text-xs shadow-sm animate-fade-in"
           title="Ver desglose de inversión inicial por socio (Mónica y Isaac)"
         >
           <div className="flex items-center gap-2 flex-wrap">
@@ -167,8 +186,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
       )}
 
-      {/* 5 Sleek KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
+      {/* Responsive KPI Cards: 4 cards in basic mode (2x2 on mobile), 5 cards in advanced mode */}
+      <div className={`grid gap-2.5 sm:gap-4 ${isAdvancedView ? 'grid-cols-2 lg:grid-cols-5' : 'grid-cols-2 lg:grid-cols-4'}`}>
         
         {/* Metric 1: Total Units */}
         <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] transition-all">
@@ -217,10 +236,10 @@ export const KPICards: React.FC<KPICardsProps> = ({
           className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-rose-500/25 p-3 sm:p-5 hover:border-rose-500/50 cursor-pointer transition-all group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs uppercase tracking-wider text-rose-300 font-medium">
-              Inversión + Gastos ({safeExpenses.length})
+            <span className="text-[10px] sm:text-xs uppercase tracking-wider text-rose-300 font-medium truncate">
+              Gastos e Insumos ({safeExpenses.length})
             </span>
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/25">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/25 shrink-0">
               <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-rose-400" />
             </div>
           </div>
@@ -230,37 +249,39 @@ export const KPICards: React.FC<KPICardsProps> = ({
             </span>
           </div>
           <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-400 group-hover:text-rose-300 transition-colors truncate">
-            Inversión: ${expenseAnalytics.initialInvestmentTotal.toFixed(0)} • Reabasto: ${expenseAnalytics.operationalExpensesTotal.toFixed(0)}
+            ${expenseAnalytics.initialInvestmentTotal.toFixed(0)} inicial • ${expenseAnalytics.operationalExpensesTotal.toFixed(0)} reabasto
           </div>
         </div>
 
-        {/* Metric 4: Net Profit (Utilidad Neta Real = Ventas - Tickets) */}
-        <div
-          onClick={onOpenGastos}
-          className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1a1e1b] to-[#141417] border border-emerald-500/35 p-3 sm:p-5 hover:border-emerald-500/60 cursor-pointer transition-all group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs uppercase tracking-wider text-emerald-300 font-bold">
-              Utilidad Neta Real
-            </span>
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+        {/* Metric 4: Net Profit (Shown only in Advanced View) */}
+        {isAdvancedView && (
+          <div
+            onClick={onOpenGastos}
+            className="col-span-2 lg:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1a1e1b] to-[#141417] border border-emerald-500/35 p-3 sm:p-5 hover:border-emerald-500/60 cursor-pointer transition-all group animate-fade-in"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs uppercase tracking-wider text-emerald-300 font-bold">
+                Utilidad Neta Real
+              </span>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+            </div>
+            <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
+              <span className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-400 truncate">
+                ${netRealProfit.toFixed(2)}
+              </span>
+            </div>
+            <div className="mt-1 text-[10px] sm:text-[11px] text-emerald-300/80 font-mono truncate">
+              Margen real: {netMarginPct}% (Ventas - Tickets)
             </div>
           </div>
-          <div className="mt-2 sm:mt-3 flex items-baseline gap-1">
-            <span className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-400 truncate">
-              ${netRealProfit.toFixed(2)}
-            </span>
-          </div>
-          <div className="mt-1 text-[10px] sm:text-[11px] text-emerald-300/80 font-mono truncate">
-            Margen real: {netMarginPct}% (Ventas - Tickets)
-          </div>
-        </div>
+        )}
 
         {/* Metric 5: Cash in Drawer */}
         <div
           onClick={onOpenCorte}
-          className="col-span-2 sm:col-span-1 relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] cursor-pointer transition-all"
+          className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#141417] border border-white/[0.08] p-3 sm:p-5 hover:border-white/[0.15] cursor-pointer transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs uppercase tracking-wider text-neutral-400 font-medium">
@@ -276,7 +297,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
             </div>
           </div>
           <div className="mt-1 text-[10px] sm:text-[11px] text-neutral-500 truncate">
-            Fondo ${startingCash} + Ventas Ef. - Tickets Ef.
+            Fondo ${startingCash} + Ef. ventas - gastos
           </div>
         </div>
 

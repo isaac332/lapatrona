@@ -20,6 +20,7 @@ import {
   FileSpreadsheet,
   ChevronDown,
   MoreHorizontal,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 const subscribeOnline = (callback: () => void) => {
@@ -56,6 +57,8 @@ interface NavbarProps {
   totalUnitsInTimeframe: number;
   soundEnabled?: boolean;
   onToggleSound?: () => void;
+  isAdvancedView?: boolean;
+  onToggleAdvancedView?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -79,6 +82,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   totalUnitsInTimeframe,
   soundEnabled = true,
   onToggleSound,
+  isAdvancedView = false,
+  onToggleAdvancedView,
 }) => {
   // Hide Nueva Orden, Cocina, Órdenes, Porciones for now
   const HIDE_ORDER_MODULES = true;
@@ -248,6 +253,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {/* Vista Avanzada Button */}
+          {onToggleAdvancedView && (
+            <button
+              onClick={onToggleAdvancedView}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                isAdvancedView
+                  ? 'bg-amber-500/20 text-[#e59b38] border-amber-500/40 shadow-sm'
+                  : 'text-neutral-300 hover:text-white hover:bg-white/[0.06] border-white/[0.08]'
+              }`}
+              title="Activar / Desactivar Vista Avanzada (Utilidad & Insights)"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>{isAdvancedView ? 'Avanzada' : 'Avanzada'}</span>
+            </button>
+          )}
+
           {/* Menú Más Herramientas */}
           <div className="relative" ref={toolsMenuRef}>
             <button
@@ -379,6 +400,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Mobile Header Quick Stats */}
         <div className="flex lg:hidden items-center gap-1.5">
+          {onToggleAdvancedView && (
+            <button
+              onClick={onToggleAdvancedView}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                isAdvancedView
+                  ? 'bg-amber-500/20 text-[#e59b38] border-amber-500/40 shadow-sm'
+                  : 'bg-white/[0.04] text-neutral-400 border-white/[0.08]'
+              }`}
+              title="Vista Avanzada (Utilidad & Insights)"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span className="text-[10px] hidden xs:inline">{isAdvancedView ? 'Avanzada' : 'Avanzada'}</span>
+            </button>
+          )}
+
           {onToggleSound && (
             <button
               onClick={onToggleSound}

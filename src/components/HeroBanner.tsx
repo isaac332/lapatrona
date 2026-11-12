@@ -30,22 +30,22 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
       : 'Histórico Total';
 
   return (
-    <section className="relative w-full border-b border-white/[0.08] overflow-hidden bg-[#0d0d0f] bg-vertical-grid py-6 sm:py-12 md:py-16">
+    <section className="relative w-full border-b border-white/[0.08] overflow-hidden bg-[#0d0d0f] bg-vertical-grid py-4 sm:py-10 md:py-16">
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 bg-[#e59b38]/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-12 items-center">
           
           {/* Left Column: Bold Editorial Typography */}
-          <div className="lg:col-span-7 flex flex-col justify-center space-y-4 sm:space-y-6">
+          <div className="lg:col-span-7 flex flex-col justify-center space-y-3 sm:space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] w-fit">
               <Sparkles className="w-3.5 h-3.5 text-[#e59b38]" />
-              <span className="text-[11px] sm:text-xs uppercase tracking-widest text-neutral-300 font-medium">
-                Los Phillys de La Patrona • Aguilas #1 - Nogales • {timeframeLabel}
+              <span className="text-[10px] sm:text-xs uppercase tracking-widest text-neutral-300 font-medium">
+                Los Phillys de La Patrona • Aguilas #1 • {timeframeLabel}
               </span>
             </div>
 
-            <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#f5f0eb] leading-[1.1] uppercase">
+            <h1 className="font-serif text-2xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#f5f0eb] leading-[1.1] uppercase">
               LOS PHILLYS DE <br />
               <span className="text-[#e59b38]">LA PATRONA.</span>
             </h1>
@@ -120,7 +120,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         </div>
 
         {/* Section Ticker Footer */}
-        <div className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-white/[0.08] flex items-center justify-between text-[11px] uppercase tracking-[0.15em] sm:tracking-[0.2em] text-neutral-400">
+        <div className="mt-4 sm:mt-10 pt-3 sm:pt-6 border-t border-white/[0.08] flex items-center justify-between text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.2em] text-neutral-400">
           <div className="flex items-center gap-3 sm:gap-8 font-medium overflow-x-auto no-scrollbar whitespace-nowrap py-1">
             <span className="hover:text-white transition-colors cursor-pointer shrink-0" onClick={onScrollToProducts}>
               <strong className="text-white">01</strong> / Sándwiches
