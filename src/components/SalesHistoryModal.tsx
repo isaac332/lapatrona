@@ -27,15 +27,18 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
 
   if (!isOpen) return null;
 
-  const productMap = new Map(products.map((p) => [p.id, p]));
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const safeProducts = Array.isArray(products) ? products : [];
 
-  const displayedSales = sales.filter((s) => {
+  const productMap = new Map(safeProducts.map((p) => [p.id, p]));
+
+  const displayedSales = safeSales.filter((s) => {
     if (paymentFilter === 'all') return true;
     return (s.paymentMethod || 'efectivo') === paymentFilter;
   });
 
   const handleExportCSV = () => {
-    if (sales.length === 0) return;
+    if (safeSales.length === 0) return;
 
     const headers = [
       'ID Venta',
@@ -51,7 +54,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
       'Margen (%)',
       'Forma de Pago',
     ];
-    const rows = sales.map((s) => {
+    const rows = safeSales.map((s) => {
       const prod = productMap.get(s.productId);
       const subtotal = s.quantity * s.unitPrice;
       const subcost = s.quantity * s.unitCost;

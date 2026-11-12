@@ -75,6 +75,8 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
 
   const safeSales = Array.isArray(sales) ? sales : [];
   const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeOrders = Array.isArray(orders) ? orders : [];
 
   if (!isOpen) return null;
 
@@ -119,9 +121,9 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
     }));
   };
 
-  const productStats = products
+  const productStats = safeProducts
     .map((prod) => {
-      const prodSales = sales.filter((s) => s.productId === prod.id);
+      const prodSales = safeSales.filter((s) => s.productId === prod.id);
       const units = prodSales.reduce((sum, s) => sum + s.quantity, 0);
       const revenue = prodSales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
       return {
@@ -135,8 +137,8 @@ export const CorteDeCajaModal: React.FC<CorteDeCajaModalProps> = ({
     })
     .filter((item) => item.units > 0);
 
-  const totalDiscounts = orders.reduce((sum, o) => sum + (o.discount?.amount || 0), 0);
-  const orderNumbers = orders.map((o) => o.orderNumber);
+  const totalDiscounts = safeOrders.reduce((sum, o) => sum + (o?.discount?.amount || 0), 0);
+  const orderNumbers = safeOrders.map((o) => o?.orderNumber).filter((n): n is number => typeof n === 'number');
   const orderRangeText =
     orderNumbers.length > 0
       ? `#${String(Math.min(...orderNumbers)).padStart(3, '0')} a #${String(Math.max(...orderNumbers)).padStart(3, '0')} (${orderNumbers.length} órdenes)`

@@ -23,13 +23,16 @@ export const ZeroOutModal: React.FC<ZeroOutModalProps> = ({
 
   if (!isOpen) return null;
 
-  const totalUnits = sales.reduce((sum, s) => sum + s.quantity, 0);
-  const totalRevenue = sales.reduce((sum, s) => sum + s.quantity * s.unitPrice, 0);
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+
+  const totalUnits = safeSales.reduce((sum, s) => sum + (s?.quantity || 0), 0);
+  const totalRevenue = safeSales.reduce((sum, s) => sum + (s?.quantity || 0) * (s?.unitPrice || 0), 0);
 
   const handleExportBackup = () => {
-    if (sales.length === 0) return;
+    if (safeSales.length === 0) return;
 
-    const productMap = new Map(products.map((p) => [p.id, p]));
+    const productMap = new Map(safeProducts.map((p) => [p.id, p]));
     const headers = [
       'ID Venta',
       'Fecha y Hora',
@@ -42,7 +45,7 @@ export const ZeroOutModal: React.FC<ZeroOutModalProps> = ({
       'Forma de Pago',
     ];
 
-    const rows = sales.map((s) => {
+    const rows = safeSales.map((s) => {
       const prod = productMap.get(s.productId);
       const total = (s.quantity * s.unitPrice).toFixed(2);
       const methodLabel =
