@@ -50,8 +50,8 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
     const requiredUnitsPerWeek = Math.round((requiredUnitsPerMonth / 4) * 10) / 10;
     const requiredUnitsPerNight = Math.round((requiredUnitsPerMonth / 16) * 10) / 10; // 16 noches (Jue-Dom x 4 sem)
 
-    // Equivalente si fueran puros Sándwiches c/ papas ($108.94 utilidad - $4.50 reserva = $104.44 libres)
-    const sandwichFriesEquivalentPerNight = Math.round((targetMonthlyProfit / 104.44 / 16) * 10) / 10;
+    // Equivalente si fueran puros Sándwiches c/ papas ($55.50 libres por combo con papas)
+    const sandwichFriesEquivalentPerNight = Math.round((targetMonthlyProfit / 55.50 / 16) * 10) / 10;
 
     const projectedGrossRevenue = Math.round(requiredUnitsPerMonth * data.avgRevenuePerUnit);
     const projectedIngredientsBudget = Math.round(requiredUnitsPerMonth * data.avgCostPerUnit);
