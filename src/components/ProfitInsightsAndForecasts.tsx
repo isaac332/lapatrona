@@ -426,6 +426,19 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
          ===================================================================== */}
       {activeTab === 'insights' && (
         <div className="space-y-4 animate-fade-in">
+          {/* Rough Estimates Banner */}
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <span className="text-amber-200">
+                <strong>Estimaciones Preliminares:</strong> Sándwich (~$95 c/ empaque y extras) • Papas (&lt;$10 c/ empaque y extras) • Champurro (~$10) • Quesadilla (&lt;$30 producida).
+              </span>
+            </div>
+            <span className="text-[10px] text-neutral-400 shrink-0 font-mono hidden sm:inline">
+              Costos aproximados base
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data.strategicInsights.map((insight) => {
               const toneStyles = {
@@ -504,9 +517,9 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                 <span className="text-[10px] text-neutral-400 uppercase font-bold block">Costo de agregar papas</span>
-                <span className="font-mono text-lg font-bold text-rose-300 mt-0.5 block">-$5.70 MXN</span>
+                <span className="font-mono text-lg font-bold text-rose-300 mt-0.5 block">&lt; $10.00 MXN</span>
                 <span className="text-[11px] text-neutral-400">
-                  150g Papa Russet ($2.10) + Aceite proporcional ($3.60)
+                  Aproximadamente ~$9.50 contando papa Russet, aceite, extras y empaque.
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
@@ -514,10 +527,10 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
                   En Sándwich ($130 ➔ $160)
                 </span>
                 <span className="font-mono text-lg font-extrabold text-emerald-400 mt-0.5 block">
-                  +$24.30 ganancia extra
+                  +$20.50 ganancia extra
                 </span>
                 <span className="text-[11px] text-neutral-300">
-                  La utilidad sube de <strong>$84.64</strong> a <strong>$108.94</strong> por orden (+28.7% más dinero libre).
+                  La utilidad sube de <strong>$35.00</strong> a <strong>$55.50</strong> por orden (+58.6% más dinero libre por cliente).
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
@@ -525,10 +538,10 @@ export const ProfitInsightsAndForecasts: React.FC<ProfitInsightsAndForecastsProp
                   En Quesadilla ($50 ➔ $70)
                 </span>
                 <span className="font-mono text-lg font-extrabold text-[#e59b38] mt-0.5 block">
-                  +$14.30 ganancia extra
+                  +$10.50 ganancia extra
                 </span>
                 <span className="text-[11px] text-neutral-300">
-                  La utilidad se duplica de <strong>$14.03</strong> a <strong>$28.33</strong> por orden (+101.9% más ganancia).
+                  La utilidad sube de <strong>$22.00</strong> a <strong>$32.50</strong> por orden (+47.7% más ganancia por cliente).
                 </span>
               </div>
             </div>
