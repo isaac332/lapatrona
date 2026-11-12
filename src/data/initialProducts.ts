@@ -61,7 +61,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     description: 'Sándwich Philly con carne Sirloin, queso fundido y cebollita asada acompañado de papas.',
     imageUrl: 'https://images.unsplash.com/photo-1521305916504-4a1121188589?auto=format&fit=crop&w=800&q=80',
     defaultPrice: 160.00,
-    cost: 51.06,
+    cost: 104.50, // ~$95 sándwich + ~$9.50 papas y empaques
   },
   {
     id: 'sandwich-alone',
@@ -71,7 +71,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     description: 'Sándwich Philly con carne Sirloin, queso derretido y cebollita asada en pan artesanal (sin papas).',
     imageUrl: 'https://images.unsplash.com/photo-1549611016-3a70d82b5040?auto=format&fit=crop&w=800&q=80',
     defaultPrice: 130.00,
-    cost: 45.36,
+    cost: 95.00, // Estimado ~$95.00 producción con empaque y extras
   },
   {
     id: 'quesadilla-fries',
@@ -81,7 +81,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     description: 'Quesadilla con carne Sirloin estilo Philly y queso fundido, acompañada con papas.',
     imageUrl: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?auto=format&fit=crop&w=800&q=80',
     defaultPrice: 70.00,
-    cost: 41.67,
+    cost: 37.50, // ~$28 quesadilla + ~$9.50 papas
   },
   {
     id: 'quesadilla-alone',
@@ -91,7 +91,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     description: 'Quesadilla en tortilla de harina dorada a la plancha con carne Sirloin y queso fundido (sin papas).',
     imageUrl: 'https://images.unsplash.com/photo-1618040996337-56904b7850b9?auto=format&fit=crop&w=800&q=80',
     defaultPrice: 50.00,
-    cost: 35.97,
+    cost: 28.00, // Menos de $30.00 producción con empaque (< $30 MXN)
   },
   {
     id: 'steak-frites',
@@ -101,7 +101,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     description: 'Orden de papas preparadas estilo Papas Lokas con Doritos Nacho, carne Sirloin y queso.',
     imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
     defaultPrice: 70.00,
-    cost: 46.82,
+    cost: 38.00, // Papas (<$10) + Doritos + carne Sirloin
   },
   {
     id: 'fries-cheese',
@@ -111,17 +111,17 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     description: 'Papas a la francesa doradas y crujientes bañadas en queso amarillo caliente.',
     imageUrl: 'https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=800&q=80',
     defaultPrice: 50.00,
-    cost: 13.93,
+    cost: 9.50, // Menos de $10.00 con empaque y extras (< $10 MXN)
   },
   {
     id: 'champurro',
     name: 'Champurro',
     variantLabel: 'Vaso Caliente',
     category: 'bebidas',
-    description: 'Champurro tradicional caliente con leche sin lactosa recién preparado.',
+    description: 'Champurro tradicional caliente recién preparado.',
     imageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=800&q=80',
     defaultPrice: 40.00,
-    cost: 22.30,
+    cost: 10.00, // Estimado ~$10.00 por vaso con tapa y leche
   },
 ];
 

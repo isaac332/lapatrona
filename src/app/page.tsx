@@ -83,9 +83,9 @@ export default function SalesCounterPage() {
   const [products, setProducts] = useState<ProductItem[]>(() => {
     if (typeof window === 'undefined') return INITIAL_PRODUCTS;
     try {
-      const saved = localStorage.getItem('lapatrona_v4_products');
+      const saved = localStorage.getItem('lapatrona_v5_products');
       if (!saved) {
-        localStorage.setItem('lapatrona_v4_products', JSON.stringify(INITIAL_PRODUCTS));
+        localStorage.setItem('lapatrona_v5_products', JSON.stringify(INITIAL_PRODUCTS));
         return INITIAL_PRODUCTS;
       }
       const parsed: ProductItem[] = JSON.parse(saved);
@@ -342,7 +342,7 @@ export default function SalesCounterPage() {
   const handleSaveProducts = (updatedProducts: ProductItem[]) => {
     setProducts(updatedProducts);
     try {
-      localStorage.setItem('lapatrona_v4_products', JSON.stringify(updatedProducts));
+      localStorage.setItem('lapatrona_v5_products', JSON.stringify(updatedProducts));
       showToast('✓ Precios y costos guardados correctamente.');
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
@@ -353,7 +353,7 @@ export default function SalesCounterPage() {
     const updated = products.map((p) => (p.id === productId ? { ...p, defaultPrice: newPrice } : p));
     setProducts(updated);
     try {
-      localStorage.setItem('lapatrona_v4_products', JSON.stringify(updated));
+      localStorage.setItem('lapatrona_v5_products', JSON.stringify(updated));
       const target = updated.find((p) => p.id === productId);
       showToast(`✓ Precio de ${target?.name} actualizado a $${newPrice.toFixed(2)}.`);
     } catch (e) {
@@ -786,7 +786,7 @@ export default function SalesCounterPage() {
       localStorage.setItem('lapatrona_v4_sales', JSON.stringify(sales));
       localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(expenses));
       localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(closedShifts));
-      localStorage.setItem('lapatrona_v4_products', JSON.stringify(products));
+      localStorage.setItem('lapatrona_v5_products', JSON.stringify(products));
     } catch {}
 
     const timer = setTimeout(() => {
