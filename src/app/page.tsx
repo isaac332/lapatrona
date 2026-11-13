@@ -65,6 +65,15 @@ const getClientDate = (): Date => {
   return cachedClientDate;
 };
 
+function mergeWithInitialTickets(existing: ExpenseRecord[]): ExpenseRecord[] {
+  const safeExisting = Array.isArray(existing) ? existing.filter(Boolean) : [];
+  const initialIds = new Set(INITIAL_TICKET_EXPENSES.map((t) => t.id));
+  const customExpenses = safeExisting.filter((e) => e?.id && !initialIds.has(e.id));
+  return [...INITIAL_TICKET_EXPENSES, ...customExpenses].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+}
+
 export default function SalesCounterPage() {
   // Hide Nueva Orden, Cocina, Órdenes, Porciones for now
   const HIDE_ORDER_MODULES = true;
@@ -125,33 +134,15 @@ export default function SalesCounterPage() {
     if (typeof window === 'undefined') return INITIAL_TICKET_EXPENSES;
     try {
       const saved = localStorage.getItem('lapatrona_v5_expenses');
-      const syncedRaw = localStorage.getItem('lapatrona_v5_synced_ticket_ids');
-      const syncedSet = new Set<string>(syncedRaw ? JSON.parse(syncedRaw) : []);
-      const allInitialIds = INITIAL_TICKET_EXPENSES.map((t) => t.id);
-
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const existingIds = new Set<string>(parsed.map((e: ExpenseRecord) => e.id));
-          const missingNewTickets = INITIAL_TICKET_EXPENSES.filter(
-            (t) => !existingIds.has(t.id) && !syncedSet.has(t.id)
-          );
-          if (missingNewTickets.length > 0) {
-            const merged = [...missingNewTickets, ...parsed].sort(
-              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-            localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(merged));
-            localStorage.setItem('lapatrona_v5_synced_ticket_ids', JSON.stringify(allInitialIds));
-            return merged;
-          }
-          if (syncedRaw === null) {
-            localStorage.setItem('lapatrona_v5_synced_ticket_ids', JSON.stringify(allInitialIds));
-          }
-          return parsed;
+          const merged = mergeWithInitialTickets(parsed);
+          localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(merged));
+          return merged;
         }
       }
       localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(INITIAL_TICKET_EXPENSES));
-      localStorage.setItem('lapatrona_v5_synced_ticket_ids', JSON.stringify(allInitialIds));
       return INITIAL_TICKET_EXPENSES;
     } catch {
       return INITIAL_TICKET_EXPENSES;
@@ -795,8 +786,9 @@ export default function SalesCounterPage() {
           setSales(res.data.sales);
           localStorage.setItem('lapatrona_v4_sales', JSON.stringify(res.data.sales));
           if (Array.isArray(res?.data?.expenses) && res.data.expenses.length > 0) {
-            setExpenses(res.data.expenses);
-            localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(res.data.expenses));
+            const mergedRemoteExpenses = mergeWithInitialTickets(res.data.expenses);
+            setExpenses(mergedRemoteExpenses);
+            localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(mergedRemoteExpenses));
           }
           if (Array.isArray(res?.data?.closedShifts)) {
             setClosedShifts(res.data.closedShifts);

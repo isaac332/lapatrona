@@ -92,9 +92,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.warn('SW registration failed:', err);
-      });
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((reg) => reg.update().catch(() => {}))
+        .catch((err) => {
+          console.warn('SW registration failed:', err);
+        });
     }
   }, []);
 

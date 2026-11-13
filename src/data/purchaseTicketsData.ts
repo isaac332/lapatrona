@@ -455,7 +455,7 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
     branchAddress: 'Dr. Norman E. Borlaug y 700 Esq., S/N Valle del Yaqui, Sonora, C.P. 8519 (Carburación Raquet • Equipo 4)',
     rfc: 'RGA-960729-EU3',
     folio: '339773',
-    timestamp: '2026-11-12T22:31:00.000Z',
+    timestamp: '2026-11-12T15:31:00.000Z',
     paymentMethod: 'efectivo',
     category: 'gas',
     amountPaid: 200.00,

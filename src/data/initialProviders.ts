@@ -215,7 +215,7 @@ export const VERIFIED_PROVIDERS: ProviderRecord[] = [
     city: 'Nogales, Sonora',
     category: 'gas',
     paymentMethodDefault: 'efectivo',
-    ticketFoliosSample: ['Folio 335276'],
+    ticketFoliosSample: ['Folio 335276', 'Folio 339773'],
     notes: 'Proveedor de combustible Gas LP para plancha, freidoras y estufa.',
     catalog: [
       {
@@ -223,7 +223,7 @@ export const VERIFIED_PROVIDERS: ProviderRecord[] = [
         name: 'Gas LP Carburación / Comercial',
         unit: 'L',
         regularPrice: 11.13,
-        effectivePrice: 11.13,
+        effectivePrice: 11.09,
         notes: 'Carga de gas para cilindro y estufa de preparación',
       },
     ],
