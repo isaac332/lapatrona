@@ -1,7 +1,7 @@
 import { PurchaseTicketRecord, PurchaseTicketItem, ExpenseRecord } from '@/types/accounting';
 
 /**
- * Datos crudos exactos de los 9 tickets físicos de compra (Nogales, Sonora)
+ * Datos crudos exactos de los tickets físicos de compra (Sonora)
  * El sistema calcula dinámicamente los importes por línea, ahorros, totales y costos promedio por insumo.
  */
 export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
@@ -444,6 +444,32 @@ export const RAW_PURCHASE_TICKETS: PurchaseTicketRecord[] = [
         effectiveUnitPrice: 12.90,
         lineTotal: 45.54,
         ingredientKey: 'papa',
+      },
+    ],
+  },
+
+  // TICKET 10: Rivera Gas 12/11/2026 (Reabasto Gas LP)
+  {
+    id: 'ticket-rivera-gas-2026-11-12',
+    storeName: 'Rivera Gas S.A. de C.V.',
+    branchAddress: 'Dr. Norman E. Borlaug y 700 Esq., S/N Valle del Yaqui, Sonora, C.P. 8519 (Carburación Raquet • Equipo 4)',
+    rfc: 'RGA-960729-EU3',
+    folio: '339773',
+    timestamp: '2026-11-12T22:31:00.000Z',
+    paymentMethod: 'efectivo',
+    category: 'gas',
+    amountPaid: 200.00,
+    changeGiven: 0.00,
+    items: [
+      {
+        id: 'item-gas-2',
+        description: 'GAS LP',
+        quantity: 18.03,
+        unit: 'L',
+        regularUnitPrice: 11.09,
+        effectiveUnitPrice: 11.09,
+        lineTotal: 200.00,
+        ingredientKey: 'gas_lp',
       },
     ],
   },
