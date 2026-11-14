@@ -220,6 +220,49 @@ export const NOTEBOOK_INITIAL_SALES: SaleRecord[] = [
     unitCost: 0,
     paymentMethod: 'efectivo' as PaymentMethod,
   })),
+
+  // =========================================================================
+  // SEMANA 6: JUEVES 12 AL VIERNES 13 DE NOVIEMBRE 2026 (Parcial: $840.00)
+  // =========================================================================
+  // Jueves 12 de Noviembre 2026: 3 Quesadillas c/ papas ($70 c/u = $210), 3 Sándwich solo ($130 c/u = $390) = $600
+  ...Array.from({ length: 3 }, (_, i): SaleRecord => ({
+    id: `nb-2026-11-12-q-fries-${i + 1}`,
+    productId: 'quesadilla-fries',
+    timestamp: `2026-11-12T19:${10 + i * 5}:00.000Z`,
+    quantity: 1,
+    unitPrice: 70,
+    unitCost: 37.5,
+    paymentMethod: 'efectivo' as PaymentMethod,
+  })),
+  ...Array.from({ length: 3 }, (_, i): SaleRecord => ({
+    id: `nb-2026-11-12-sw-alone-${i + 1}`,
+    productId: 'sandwich-alone',
+    timestamp: `2026-11-12T20:${10 + i * 5}:00.000Z`,
+    quantity: 1,
+    unitPrice: 130,
+    unitCost: 95,
+    paymentMethod: 'efectivo' as PaymentMethod,
+  })),
+
+  // Viernes 13 de Noviembre 2026: 1 Sándwich c/ papas ($160), 2 Champurros ($40 c/u = $80) = $240
+  {
+    id: 'nb-2026-11-13-sw-fries-1',
+    productId: 'sandwich-fries',
+    timestamp: '2026-11-13T19:30:00.000Z',
+    quantity: 1,
+    unitPrice: 160,
+    unitCost: 104.5,
+    paymentMethod: 'efectivo' as PaymentMethod,
+  },
+  ...Array.from({ length: 2 }, (_, i): SaleRecord => ({
+    id: `nb-2026-11-13-champurro-${i + 1}`,
+    productId: 'champurro',
+    timestamp: `2026-11-13T20:${10 + i * 5}:00.000Z`,
+    quantity: 1,
+    unitPrice: 40,
+    unitCost: 10,
+    paymentMethod: 'efectivo' as PaymentMethod,
+  })),
 ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
 export const NOTEBOOK_CLOSED_SHIFTS: ClosedShiftRecord[] = [
