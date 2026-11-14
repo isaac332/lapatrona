@@ -74,6 +74,24 @@ function mergeWithInitialTickets(existing: ExpenseRecord[]): ExpenseRecord[] {
   );
 }
 
+function mergeProductsWithInitial(existing: ProductItem[]): ProductItem[] {
+  const safeExisting = Array.isArray(existing) ? existing.filter(Boolean) : [];
+  const initialIds = new Set(INITIAL_PRODUCTS.map((p) => p.id));
+  const mergedInitial = INITIAL_PRODUCTS.map((init) => {
+    const found = safeExisting.find((p) => p.id === init.id);
+    if (found) {
+      return {
+        ...init,
+        defaultPrice: typeof found.defaultPrice === 'number' ? found.defaultPrice : init.defaultPrice,
+        cost: typeof found.cost === 'number' ? found.cost : init.cost,
+      };
+    }
+    return init;
+  });
+  const customProducts = safeExisting.filter((p) => p?.id && !initialIds.has(p.id));
+  return [...mergedInitial, ...customProducts];
+}
+
 export default function SalesCounterPage() {
   // Hide Nueva Orden, Cocina, Órdenes, Porciones for now
   const HIDE_ORDER_MODULES = true;
@@ -97,18 +115,7 @@ export default function SalesCounterPage() {
         localStorage.setItem('lapatrona_v5_products', JSON.stringify(INITIAL_PRODUCTS));
         return INITIAL_PRODUCTS;
       }
-      const parsed: ProductItem[] = JSON.parse(saved);
-      return INITIAL_PRODUCTS.map((init) => {
-        const found = parsed.find((p) => p.id === init.id);
-        if (found) {
-          return {
-            ...init,
-            defaultPrice: typeof found.defaultPrice === 'number' ? found.defaultPrice : init.defaultPrice,
-            cost: typeof found.cost === 'number' ? found.cost : init.cost,
-          };
-        }
-        return init;
-      });
+      return mergeProductsWithInitial(JSON.parse(saved));
     } catch {
       return INITIAL_PRODUCTS;
     }
@@ -777,24 +784,62 @@ export default function SalesCounterPage() {
   };
 
   // Cloud Sync (Upstash Redis / Vercel KV on Vercel Free Tier)
+  const [isCloudReady, setIsCloudReady] = useState(false);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    fetch('/api/sync')
-      .then((res) => res.json())
+    fetch('/api/sync', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
       .then((res) => {
-        if (res?.cloudEnabled && Array.isArray(res?.data?.sales) && res.data.sales.length > 0) {
-          setSales(res.data.sales);
-          localStorage.setItem('lapatrona_v4_sales', JSON.stringify(res.data.sales));
-          if (Array.isArray(res?.data?.expenses) && res.data.expenses.length > 0) {
-            const mergedRemoteExpenses = mergeWithInitialTickets(res.data.expenses);
+        if (!res?.cloudEnabled) return;
+        const remote = res?.data;
+        if (remote && typeof remote === 'object') {
+          if (Array.isArray(remote.sales) && remote.sales.length > 0) {
+            setSales(remote.sales);
+            localStorage.setItem('lapatrona_v4_sales', JSON.stringify(remote.sales));
+          }
+          if (Array.isArray(remote.expenses) && remote.expenses.length > 0) {
+            const mergedRemoteExpenses = mergeWithInitialTickets(remote.expenses);
             setExpenses(mergedRemoteExpenses);
             localStorage.setItem('lapatrona_v5_expenses', JSON.stringify(mergedRemoteExpenses));
           }
-          if (Array.isArray(res?.data?.closedShifts)) {
-            setClosedShifts(res.data.closedShifts);
-            localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(res.data.closedShifts));
+          if (Array.isArray(remote.closedShifts)) {
+            setClosedShifts(remote.closedShifts);
+            localStorage.setItem('lapatrona_v4_closed_shifts', JSON.stringify(remote.closedShifts));
+          }
+          if (Array.isArray(remote.products) && remote.products.length > 0) {
+            const mergedRemoteProducts = mergeProductsWithInitial(remote.products);
+            setProducts(mergedRemoteProducts);
+            localStorage.setItem('lapatrona_v5_products', JSON.stringify(mergedRemoteProducts));
+          }
+          if (typeof remote.startingCash === 'number') {
+            setStartingCash(remote.startingCash);
+            localStorage.setItem('lapatrona_v4_starting_cash', remote.startingCash.toString());
+          }
+          if (Array.isArray(remote.wasteRecords)) {
+            setWasteRecords(remote.wasteRecords);
+            localStorage.setItem('lapatrona_v4_waste', JSON.stringify(remote.wasteRecords));
+          }
+          if (remote.stockMap && typeof remote.stockMap === 'object') {
+            const mergedStock = { ...INITIAL_STOCK, ...remote.stockMap };
+            setStockMap(mergedStock);
+            localStorage.setItem('lapatrona_v4_stock', JSON.stringify(mergedStock));
+          }
+          if (remote.businessInfo && typeof remote.businessInfo === 'object') {
+            const mergedInfo = { ...DEFAULT_BUSINESS_INFO, ...remote.businessInfo };
+            setBusinessInfo(mergedInfo);
+            localStorage.setItem('lapatrona_v4_business_info', JSON.stringify(mergedInfo));
+          }
+          if (typeof remote.dailyGoal === 'number') {
+            setDailyGoal(remote.dailyGoal);
+            localStorage.setItem('lapatrona_v4_daily_goal', remote.dailyGoal.toString());
+          }
+          if (typeof remote.shiftCounter === 'number') {
+            setShiftCounter(remote.shiftCounter);
+            localStorage.setItem('lapatrona_v4_shift_counter', remote.shiftCounter.toString());
           }
         }
+        setIsCloudReady(true);
       })
       .catch(() => {});
   }, []);
@@ -808,16 +853,42 @@ export default function SalesCounterPage() {
       localStorage.setItem('lapatrona_v5_products', JSON.stringify(products));
     } catch {}
 
+    if (!isCloudReady) return;
+
     const timer = setTimeout(() => {
       fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sales, expenses, closedShifts, products, startingCash }),
+        body: JSON.stringify({
+          sales,
+          expenses,
+          closedShifts,
+          products,
+          startingCash,
+          wasteRecords,
+          stockMap,
+          businessInfo,
+          dailyGoal,
+          shiftCounter,
+        }),
       }).catch(() => {});
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [isHydrated, sales, expenses, closedShifts, products, startingCash]);
+  }, [
+    isHydrated,
+    isCloudReady,
+    sales,
+    expenses,
+    closedShifts,
+    products,
+    startingCash,
+    wasteRecords,
+    stockMap,
+    businessInfo,
+    dailyGoal,
+    shiftCounter,
+  ]);
 
   // Keyboard Shortcuts
   useEffect(() => {
