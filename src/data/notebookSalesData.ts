@@ -222,9 +222,9 @@ export const NOTEBOOK_INITIAL_SALES: SaleRecord[] = [
   })),
 
   // =========================================================================
-  // SEMANA 6: JUEVES 12 AL VIERNES 13 DE NOVIEMBRE 2026 (Parcial: $840.00)
+  // SEMANA 6: JUEVES 12 AL VIERNES 13 DE NOVIEMBRE 2026 (Parcial: $930.00)
   // =========================================================================
-  // Jueves 12 de Noviembre 2026: 3 Quesadillas c/ papas ($70 c/u = $210), 3 Sándwich solo ($130 c/u = $390) = $600
+  // Jueves 12 de Noviembre 2026: 3 Quesadillas c/ papas ($70 c/u = $210), 3 Sándwich c/ papas ($160 c/u = $480) = $690
   ...Array.from({ length: 3 }, (_, i): SaleRecord => ({
     id: `nb-2026-11-12-q-fries-${i + 1}`,
     productId: 'quesadilla-fries',
@@ -235,12 +235,12 @@ export const NOTEBOOK_INITIAL_SALES: SaleRecord[] = [
     paymentMethod: 'efectivo' as PaymentMethod,
   })),
   ...Array.from({ length: 3 }, (_, i): SaleRecord => ({
-    id: `nb-2026-11-12-sw-alone-${i + 1}`,
-    productId: 'sandwich-alone',
+    id: `nb-2026-11-12-sw-fries-${i + 1}`,
+    productId: 'sandwich-fries',
     timestamp: `2026-11-12T20:${10 + i * 5}:00.000Z`,
     quantity: 1,
-    unitPrice: 130,
-    unitCost: 95,
+    unitPrice: 160,
+    unitCost: 104.5,
     paymentMethod: 'efectivo' as PaymentMethod,
   })),
 
